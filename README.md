@@ -2,6 +2,9 @@
 
 BibLib is a streamlined approach to academic reference management that leverages Obsidian's core strengths: plain text, interlinked notes, and powerful metadata. Unlike plugins that focus on Zotero integration, BibLib enables you to manage your entire reference library directly within Obsidian, eliminating synchronization complexities and giving you a fully integrated knowledge system.
 
+![Screenshot of biblib Obsidian plugin](https://github.com/callumalpass/obsidian-biblib/blob/main/screenshots/create-lit-note.gif?raw=true)
+
+
 ## Why BibLib?
 
 Most reference management solutions for Obsidian focus on integrating with external tools like Zotero. While powerful, this approach creates overhead—keeping two separate libraries in sync, handling format conversions, and maintaining complex workflows.
