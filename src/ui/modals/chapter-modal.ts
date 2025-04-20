@@ -447,17 +447,48 @@ export class ChapterModal extends Modal {
      * Populate form fields from the selected book
      */
     private populateFromBook(book: {id: string, title: string, frontmatter: any}): void {
+        // Clear any existing container fields
+        this.additionalFields = this.additionalFields.filter(field => 
+            !['container-title', 'container-title-short', 'collection-title', 'collection-number'].includes(field.name)
+        );
+        
         // Set container-title from book title
-        this.additionalFields = this.additionalFields.filter(field => field.name !== 'container-title');
         this.addAdditionalField('standard', 'container-title', book.title);
         
-        // Set publisher and publisher-place if they exist in the book
+        // Add container-title-short if available
+        if (book.frontmatter['title-short']) {
+            this.addAdditionalField('standard', 'container-title-short', book.frontmatter['title-short']);
+        }
+        
+        // Add series info if available
+        if (book.frontmatter['collection-title']) {
+            this.addAdditionalField('standard', 'collection-title', book.frontmatter['collection-title']);
+        }
+        if (book.frontmatter['collection-number']) {
+            this.addAdditionalField('number', 'collection-number', book.frontmatter['collection-number']);
+        }
+        
+        // Set publisher info if it exists in the book
         if (book.frontmatter.publisher) {
+            this.additionalFields = this.additionalFields.filter(f => f.name === 'publisher');
             this.addAdditionalField('standard', 'publisher', book.frontmatter.publisher);
         }
         
         if (book.frontmatter['publisher-place']) {
+            this.additionalFields = this.additionalFields.filter(f => f.name === 'publisher-place');
             this.addAdditionalField('standard', 'publisher-place', book.frontmatter['publisher-place']);
+        }
+        
+        // Add ISBN if available
+        if (book.frontmatter.ISBN) {
+            this.additionalFields = this.additionalFields.filter(f => f.name === 'ISBN');
+            this.addAdditionalField('standard', 'ISBN', book.frontmatter.ISBN);
+        }
+        
+        // Add book-specific identifiers if needed
+        if (book.frontmatter.DOI && !this.doiInput.value) {
+            this.doiInput.value = book.frontmatter.DOI;
+            this.doiInput.dispatchEvent(new Event('input'));
         }
         
         // Set year/date info if not already set
@@ -467,16 +498,33 @@ export class ChapterModal extends Modal {
         }
         
         // Add editors as container-authors if they exist
+        let foundEditors = false;
+        
+        // Remove existing container-authors
+        this.contributors = this.contributors.filter(c => c.role !== 'container-author');
+        
+        // Try different editor field formats that might exist in the frontmatter
         if (book.frontmatter.editor && Array.isArray(book.frontmatter.editor)) {
-            // Remove existing container-authors
-            this.contributors = this.contributors.filter(c => c.role !== 'container-author');
-            
-            // Add editors from book as container-authors
+            // Standard editor format
             book.frontmatter.editor.forEach((editor: any) => {
                 if (editor.family) {
-                    this.addContributor('container-author', editor.given || '', editor.family);
+                    this.addContributor('editor', editor.given || '', editor.family);
+                    foundEditors = true;
                 }
             });
+        } else if (book.frontmatter.collection_editor && Array.isArray(book.frontmatter.collection_editor)) {
+            // Alternative collection editor format
+            book.frontmatter.collection_editor.forEach((editor: any) => {
+                if (editor.family) {
+                    this.addContributor('editor', editor.given || '', editor.family);
+                    foundEditors = true;
+                }
+            });
+        }
+        
+        if (foundEditors) {
+            new Notice('Imported editors from container book as editors');
+        }
         }
         
         // Offer to use same attachment if available
