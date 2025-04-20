@@ -112,6 +112,7 @@ export class BibliographyBuilder {
             }
         } catch (error) {
             console.error(`Error ensuring biblib directory exists (${biblibPath}):`, error);
+            // Don't necessarily stop if folder creation fails, process might still work if path is root
         }
         
         // Write the files using modify/create
@@ -120,6 +121,8 @@ export class BibliographyBuilder {
             if (existingRawFile instanceof TFile) {
                 await this.app.vault.modify(existingRawFile, rawKeys);
             } else {
+                 // If it exists but is not a TFile (e.g., folder), delete it first?
+                 if (existingRawFile) await this.app.vault.delete(existingRawFile);
                 await this.app.vault.create(rawFilePath, rawKeys);
             }
             
@@ -127,6 +130,7 @@ export class BibliographyBuilder {
             if (existingFormattedFile instanceof TFile) {
                 await this.app.vault.modify(existingFormattedFile, formattedKeys);
             } else {
+                 if (existingFormattedFile) await this.app.vault.delete(existingFormattedFile);
                 await this.app.vault.create(formattedFilePath, formattedKeys);
             }
 
@@ -144,10 +148,11 @@ export class BibliographyBuilder {
         // Prepare the data for each literature note
         const bibliographyData = literatureNotes.map(note => {
             // Extract the relevant data from frontmatter
+            // We only need fields relevant for bibliography generation, not all metadata
             const { 
                 position, // Remove Obsidian-specific metadata
-                tags, 
-                 ...cslData 
+                tags, // Keep tags? Maybe configurable?
+                 ...cslData // Keep the rest which should be mostly CSL compatible
             } = note.frontmatter;
             
             // Add file path for reference
@@ -169,6 +174,7 @@ export class BibliographyBuilder {
             if (existingFile instanceof TFile) {
                 await this.app.vault.modify(existingFile, bibliographyJson);
             } else {
+                if (existingFile) await this.app.vault.delete(existingFile);
                 await this.app.vault.create(outputFilePath, bibliographyJson);
             }
         } catch (error) {

@@ -75,7 +75,9 @@ export class ChapterModal extends Modal {
     
     async onOpen() {
         const { contentEl } = this;
-        contentEl.addClass('bibliography-modal chapter-modal'); // Add specific class
+        // Fix: Add classes separately
+        contentEl.addClass('bibliography-modal');
+        contentEl.addClass('chapter-modal'); 
 
         // Modal title
         contentEl.createEl('h2', { text: 'Create Book Chapter Entry' });
