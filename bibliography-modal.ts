@@ -648,7 +648,7 @@ export class BibliographyModal extends Modal {
         if (additionalFieldsHeading) {
           // Get the parent .setting-item and then the next div
           const settingItem = additionalFieldsHeading.closest('.setting-item');
-          additionalFieldsContainer = settingItem.nextElementSibling as HTMLDivElement;
+          additionalFieldsContainer = settingItem?.nextElementSibling as HTMLDivElement;
         }
       }
       
@@ -662,11 +662,12 @@ export class BibliographyModal extends Modal {
         // Add the additional fields to the UI
         this.additionalFields.forEach(field => {
           // Add UI element for this field
-          const fieldDiv = additionalFieldsContainer.createDiv({ cls: 'bibliography-additional-field' });
+          const fieldDiv = additionalFieldsContainer?.createDiv({ cls: 'bibliography-additional-field' });
           
           // Create type dropdown
-          const typeSelect = fieldDiv.createEl('select', { cls: 'bibliography-input bibliography-field-type' });
-          ['', 'Standard', 'Number', 'Date'].forEach(typeOption => {
+          if (fieldDiv) {
+            const typeSelect = fieldDiv.createEl('select', { cls: 'bibliography-input bibliography-field-type' });
+            ['', 'Standard', 'Number', 'Date'].forEach((typeOption: string) => {
             const option = typeSelect.createEl('option', { 
               text: typeOption, 
               value: typeOption.toLowerCase() 

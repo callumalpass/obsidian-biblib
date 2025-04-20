@@ -7,7 +7,7 @@ export class CrossRefService {
      * @param doi The DOI to query
      * @returns Promise with the citation data mapped to Citoid format, or null if not found
      */
-    async fetch(doi: string): Promise<CitoidResponse | null> {
+    async fetch(doi: string): Promise<CitoidResponse> {
         try {
             const crossrefUrl = `https://api.crossref.org/works/${encodeURIComponent(doi)}`;
             console.log(`Trying CrossRef API: ${crossrefUrl}`);
@@ -26,10 +26,10 @@ export class CrossRefService {
                 return this.mapToCitoidFormat(crossrefResponse.json.message);
             }
             
-            return null;
+            return {} as CitoidResponse;
         } catch (error) {
             console.error('Error fetching from CrossRef API:', error);
-            return null;
+            return {} as CitoidResponse;
         }
     }
     
@@ -137,7 +137,7 @@ export class CrossRefService {
             return result;
         } catch (error) {
             console.error('Error mapping CrossRef data:', error);
-            return null;
+            return {} as CitoidResponse;
         }
     }
     
