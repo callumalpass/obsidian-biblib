@@ -79,6 +79,13 @@
   align-items: center;
 }
 
+/* Highlight non-standard CSL fields */
+.bibliography-additional-field.non-csl-field {
+	background-color: rgba(255, 0, 0, 0.1); /* Light red background */
+	border: 1px solid var(--text-error); /* Red border */
+	border-radius: 4px;
+}
+
 .bibliography-field-value-container {
   margin: 0;
 }

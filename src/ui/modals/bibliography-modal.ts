@@ -494,6 +494,13 @@ export class BibliographyModal extends Modal {
 
         // --- Additional CSL fields section --- 
         new Setting(contentEl).setName('Additional Fields').setHeading();
+
+        // Add explanation for highlighted fields
+		const additionalFieldsDesc = contentEl.createEl('p', { 
+		    cls: 'setting-item-description', // Use standard Obsidian description class
+		    text: 'Fields that are not standard CSL variables will be highlighted. These are often imported from external sources but may not be recognized by all citation tools.'
+		});
+
         this.additionalFieldsContainer = contentEl.createDiv();
 
         // Button to add additional fields
@@ -738,6 +745,8 @@ export class BibliographyModal extends Modal {
             'curator', 'editorial-director', 'executive-producer', 'guest', 'host', 
             'narrator', 'organizer', 'performer', 'producer', 'script-writer', 
             'series-creator',
+			// Source-specific fields whose values are mapped elsewhere or should be ignored
+			// 'publisherTitle', 'itemType',
             // Fields used internally or mapped
             'key', 'tags' 
         ]);

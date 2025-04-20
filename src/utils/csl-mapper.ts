@@ -16,7 +16,7 @@ export class CslMapper {
             'itemType': 'type',
             'journalAbbreviation': 'container-title-short',
             'shortTitle': 'title-short',
-            'publicationTitle': 'container-title',
+            'publicationTitle': 'publisher',
             'bookTitle': 'container-title',
             'conferenceName': 'event',
             'proceedingsTitle': 'container-title',
@@ -44,7 +44,7 @@ export class CslMapper {
             'abstractNote': 'abstract'
         };
         
-        // Map non-CSL fields to their CSL equivalents
+        // Map non-CSL fields to their CSL equivalents and remove original keys
         Object.keys(fieldMappings).forEach(key => {
             if (normalized[key] !== undefined) {
                 const cslKey = fieldMappings[key];
@@ -52,13 +52,21 @@ export class CslMapper {
                 if (normalized[cslKey] === undefined) {
                     normalized[cslKey] = normalized[key];
                 }
+				// Always remove the original non-CSL key if it differs from the target CSL key
+				if (key !== cslKey) {
+					delete normalized[key];
+				}
             }
         });
         
         // Handle Zotero itemType -> CSL type mapping
         if (normalized.itemType && !normalized.type) {
             normalized.type = this.mapZoteroType(normalized.itemType);
-        }
+			delete normalized.itemType; // Delete the original itemType Field
+        } else if (normalized.itemType && normalized.type) {
+			// If both exist, prefer the already existing 'type' and remove 'itemType'
+			delete normalized.itemType; 
+		}
         
         // Handle author field in MediaWiki format (array of [firstName, lastName] arrays)
         if (normalized.author && Array.isArray(normalized.author)) {
@@ -99,7 +107,8 @@ export class CslMapper {
         }
         
         // Handle dates in Zotero format (YYYY-MM-DD) and convert to CSL format
-        ['date', 'accessDate', 'dateDecided', 'dateEnacted'].forEach(dateField => {
+        // Also convert any existing 'accessed' strings to CSL date format
+        ['date', 'accessDate', 'accessed', 'dateDecided', 'dateEnacted'].forEach(dateField => {
             if (normalized[dateField] && typeof normalized[dateField] === 'string') {
                 const dateParts = normalized[dateField].split('-').map(Number);
                 const cslField = fieldMappings[dateField] || dateField;

@@ -1,5 +1,23 @@
 import { AdditionalField } from '../../types/citation';
 
+// Define standard CSL fields based on CSL v1.0.1/1.0.2 Appendix IV (all lowercase)
+const CSL_STANDARD_VARIABLES = new Set([
+  '', // Handle empty selection
+  'abstract', 'annote', 'archive', 'archive_location', 'authority', 'call-number',
+  'chapter-number', 'citation-key', 'citation-label', 'collection-number', 'collection-title',
+  'container-title', 'dimensions', 'doi', 'edition', 'event', 'event-date', 'event-place',
+  'first-reference-note-number', 'genre', 'isbn', 'issn', 'issue', 'jurisdiction',
+  'keyword', 'language', 'license', 'locator', 'medium', 'note', 'number',
+  'number-of-pages', 'number-of-volumes', 'original-author', 'original-date',
+  'original-publisher', 'original-publisher-place', 'original-title', 'page',
+  'page-first', 'part', 'pmcid', 'pmid', 'publisher', 'publisher-place',
+  'references', 'reviewed-author', 'reviewed-title', 'scale', 'section',
+  'source', 'status', 'supplement', 'title', 'title-short', 'url', 'version',
+  'volume', 'year-suffix',
+  // Date Variables also included above
+  'accessed', 'available-date', 'issued', 'submitted'
+]);
+
 export class AdditionalFieldComponent {
     private containerEl: HTMLDivElement;
     public field: AdditionalField;
@@ -7,6 +25,7 @@ export class AdditionalFieldComponent {
 
     // UI elements
     private typeSelect: HTMLSelectElement;
+    private fieldDiv: HTMLDivElement; // Store the main field row div
     private fieldSelect: HTMLSelectElement;
     private valueInputContainer: HTMLDivElement;
 
@@ -22,10 +41,10 @@ export class AdditionalFieldComponent {
     }
 
     private render(): void {
-        const fieldDiv = this.containerEl.createDiv({ cls: 'bibliography-additional-field' });
+        this.fieldDiv = this.containerEl.createDiv({ cls: 'bibliography-additional-field' });
         
         // Type dropdown
-        this.typeSelect = fieldDiv.createEl('select', { cls: 'bibliography-input bibliography-field-type' });
+        this.typeSelect = this.fieldDiv.createEl('select', { cls: 'bibliography-input bibliography-field-type' });
         ['Standard', 'Number', 'Date'].forEach(typeOption => {
             const option = this.typeSelect.createEl('option', { 
                 text: typeOption, 
@@ -48,27 +67,30 @@ export class AdditionalFieldComponent {
         };
         
         // Field name dropdown
-        this.fieldSelect = fieldDiv.createEl('select', { cls: 'bibliography-input bibliography-field-name' });
+        this.fieldSelect = this.fieldDiv.createEl('select', { cls: 'bibliography-input bibliography-field-name' });
         this.updateFieldOptions();
         
         this.fieldSelect.onchange = () => {
             this.field.name = this.fieldSelect.value;
-            this.updateValueInput(fieldDiv);
+            this.updateValueInput();
+            this.updateHighlight(); // Update highlight on name change
         };
         
         // Create value input
-        this.valueInputContainer = fieldDiv.createDiv({ cls: 'bibliography-field-value-container' });
-        this.updateValueInput(fieldDiv);
+        this.valueInputContainer = this.fieldDiv.createDiv({ cls: 'bibliography-field-value-container' });
+        this.updateValueInput();
         
         // Remove button
-        const removeButton = fieldDiv.createEl('button', { 
+        const removeButton = this.fieldDiv.createEl('button', { 
             text: 'Remove', 
             cls: 'bibliography-remove-field-button' 
         });
         removeButton.onclick = () => {
             this.onRemove(this.field);
-            fieldDiv.remove();
+            this.fieldDiv.remove();
         };
+        
+        this.updateHighlight(); // Initial highlight check
     }
 
     private updateFieldOptions(): void {
@@ -124,7 +146,7 @@ export class AdditionalFieldComponent {
         });
     }
 
-    private updateValueInput(fieldDiv: HTMLDivElement): void {
+    private updateValueInput(): void {
         // Remove any existing value input
         this.valueInputContainer.empty();
         
@@ -159,5 +181,18 @@ export class AdditionalFieldComponent {
                 this.field.value = valueInput.value.trim();
             };
         }
+    }
+
+    /**
+     * Adds or removes a highlight class based on whether the current field name is a standard CSL variable.
+     */
+    private updateHighlight(): void {
+		const fieldNameLower = this.field.name?.toLowerCase() || ''; // Ensure lowercase and handle null/undefined
+		const isNonStandard = fieldNameLower !== '' && !CSL_STANDARD_VARIABLES.has(fieldNameLower);
+		if (isNonStandard) {
+			this.fieldDiv.addClass('non-csl-field');
+		} else {
+			this.fieldDiv.removeClass('non-csl-field');
+		}
     }
 }
