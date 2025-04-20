@@ -1,0 +1,192 @@
+/* Modal Container */
+.bibliography-modal {
+  padding: 20px;
+  max-width: 800px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.bibliography-modal h2 {
+  margin-bottom: 20px;
+  text-align: left;
+  color: var(--text-normal);
+}
+
+/* Settings Container */
+.bibliography-modal .setting-item {
+  border-top: 1px solid var(--background-modifier-border);
+  padding: 12px 0;
+}
+
+.bibliography-modal .setting-item:first-child {
+  border-top: none;
+}
+
+.bibliography-modal .setting-item-name {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+/* Input Fields */
+.bibliography-modal input[type="text"],
+.bibliography-modal input[type="number"],
+.bibliography-modal input[type="date"],
+.bibliography-modal select,
+.bibliography-modal textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.bibliography-modal textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Contributors Section */
+.bibliography-contributors-list {
+  margin: 10px 0;
+}
+
+.bibliography-contributor {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+
+.bibliography-contributor select,
+.bibliography-contributor input {
+  margin: 0;
+}
+
+/* Additional Fields Section */
+.bibliography-additional-field {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr auto;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+
+.bibliography-field-value-container {
+  margin: 0;
+}
+
+/* Buttons */
+.bibliography-modal button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.bibliography-modal button:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.bibliography-add-contributor-button,
+.bibliography-add-field-button {
+  margin: 10px 0;
+  width: 100%;
+  background-color: var(--background-secondary);
+}
+
+.bibliography-remove-contributor-button,
+.bibliography-remove-field-button {
+  padding: 4px 8px;
+  color: var(--text-error);
+}
+
+/* Create Note Button */
+.bibliography-modal .create-button {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 12px;
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-weight: 600;
+}
+
+.bibliography-modal .create-button:hover {
+  background-color: var(--interactive-accent-hover);
+}
+
+/* File Upload Button */
+.bibliography-modal input[type="file"] {
+  display: none;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 600px) {
+  .bibliography-contributor,
+  .bibliography-additional-field {
+    grid-template-columns: 1fr;
+  }
+
+  .bibliography-modal {
+    padding: 10px;
+  }
+}
+
+/* Validation Styles */
+.bibliography-modal input:invalid,
+.bibliography-modal select:invalid {
+  border-color: var(--text-error);
+}
+
+/* Hover States */
+.bibliography-modal input:hover,
+.bibliography-modal select:hover,
+.bibliography-modal textarea:hover {
+  border-color: var(--interactive-accent);
+}
+
+/* Focus States */
+.bibliography-modal input:focus,
+.bibliography-modal select:focus,
+.bibliography-modal textarea:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--background-modifier-border);
+}
+
+/* Disabled States */
+.bibliography-modal input:disabled,
+.bibliography-modal select:disabled,
+.bibliography-modal textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Loading State */
+.bibliography-modal.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Scrollbar Styling */
+.bibliography-modal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.bibliography-modal::-webkit-scrollbar-track {
+  background: var(--background-primary);
+}
+
+.bibliography-modal::-webkit-scrollbar-thumb {
+  background-color: var(--background-modifier-border);
+  border-radius: 4px;
+}
+
+.bibliography-modal::-webkit-scrollbar-thumb:hover {
+  background-color: var(--background-modifier-hover);
+}
