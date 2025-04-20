@@ -105,7 +105,6 @@ export class CitekeyGenerator {
                 citekey += randomSuffix;
             }
             
-            console.log(`Generated citekey: ${citekey} from author: ${authorPart} and year: ${yearPart}`);
             return citekey;
         } catch (error) {
             console.error('Error generating citekey:', error);

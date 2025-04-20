@@ -60,7 +60,6 @@ export class ContributorField {
         this.roleSelect.value = this.contributor.role;
         this.roleSelect.onchange = () => {
             this.contributor.role = this.roleSelect.value;
-            console.log(`Contributor role set to: ${this.contributor.role}`);
         };
         
         // Given name input
@@ -72,7 +71,6 @@ export class ContributorField {
         this.givenInput.value = this.contributor.given;
         this.givenInput.oninput = () => {
             this.contributor.given = this.givenInput.value.trim();
-            console.log(`Contributor given name set to: ${this.contributor.given}`);
         };
         
         // Family name input
@@ -84,7 +82,6 @@ export class ContributorField {
         this.familyInput.value = this.contributor.family;
         this.familyInput.oninput = () => {
             this.contributor.family = this.familyInput.value.trim();
-            console.log(`Contributor family name set to: ${this.contributor.family}`);
         };
         
         // Remove button
@@ -95,7 +92,6 @@ export class ContributorField {
         this.removeButton.onclick = () => {
             this.onRemove(this.contributor);
             contributorDiv.remove();
-            console.log('Contributor removed');
         };
     }
 }

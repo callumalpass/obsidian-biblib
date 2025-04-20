@@ -45,13 +45,12 @@ export class CitoidService {
                         return crossRefData;
                     }
                 } catch (crossRefError) {
-                    console.log('CrossRef API failed, trying Citoid API as fallback');
+                    console.error('CrossRef API failed, trying Citoid API as fallback');
                 }
             }
             
             // Prepare and make the request to Citoid API
             const url = `${apiUrl}${encodeURIComponent(identifier)}`;
-            console.log(`Fetching from Citoid API: ${url}`);
             
             const response = await requestUrl({
                 url: url,

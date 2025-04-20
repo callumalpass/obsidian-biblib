@@ -50,7 +50,6 @@ export class ChapterModal extends Modal {
         const book = await this.fileManager.getBookEntryByPath(bookPath);
         if (book) {
             this.selectedBook = book;
-            console.log('Loaded book:', this.selectedBook);
             
             // Only apply the book data after UI elements are created
             if (this.bookDropdown) {
@@ -66,7 +65,6 @@ export class ChapterModal extends Modal {
     }
     
     async onOpen() {
-        console.log('ChapterModal opened');
         const { contentEl } = this;
         contentEl.addClass('bibliography-modal');
 
@@ -75,7 +73,6 @@ export class ChapterModal extends Modal {
         
         // Load book entries
         this.bookEntries = await this.fileManager.getBookEntries();
-        console.log(`Found ${this.bookEntries.length} book entries`);
         
         // Add section title
         contentEl.createEl('h3', { text: 'Chapter Details' });
@@ -97,7 +94,6 @@ export class ChapterModal extends Modal {
             .addText(text => {
                 this.idInput = text.inputEl;
                 text.setPlaceholder('Enter Citekey').onChange(value => {
-                    console.log(`Citekey set to: ${value.trim()}`);
                 });
             });
 
@@ -107,7 +103,6 @@ export class ChapterModal extends Modal {
             .addText(text => {
                 this.titleInput = text.inputEl;
                 text.setPlaceholder('Enter Chapter Title').onChange(value => {
-                    console.log(`Title set to: ${value.trim()}`);
                     
                     // Auto-generate a citekey if the title is provided and citekey is empty
                     if (value.trim() && !this.idInput.value.trim()) {
@@ -131,7 +126,6 @@ export class ChapterModal extends Modal {
             .addText(text => {
                 this.titleShortInput = text.inputEl;
                 text.setPlaceholder('Enter Short Title').onChange(value => {
-                    console.log(`Title-Short set to: ${value.trim()}`);
                 });
             });
 
@@ -141,7 +135,6 @@ export class ChapterModal extends Modal {
             .addText(text => {
                 this.pageInput = text.inputEl;
                 text.setPlaceholder('Enter Page Range (e.g., 45-67)').onChange(value => {
-                    console.log(`Page set to: ${value.trim()}`);
                 });
             });
 
@@ -178,7 +171,6 @@ export class ChapterModal extends Modal {
                         this.selectedBook = book;
                         this.populateFromBook(book);
                         this.bookPathDisplay.textContent = value;
-                        console.log(`Selected book: ${book.title}`);
                     }
                 } else {
                     this.selectedBook = null;
@@ -215,7 +207,6 @@ export class ChapterModal extends Modal {
             .addText(text => {
                 this.yearInput = text.inputEl;
                 text.setPlaceholder('Enter Year').onChange(value => {
-                    console.log(`Year set to: ${value.trim()}`);
                 });
             });
 
@@ -245,7 +236,6 @@ export class ChapterModal extends Modal {
             .addText(text => {
                 this.dayInput = text.inputEl;
                 text.setPlaceholder('Enter Day (optional)').onChange(value => {
-                    console.log(`Day set to: ${value.trim()}`);
                 });
             });
             
@@ -255,7 +245,6 @@ export class ChapterModal extends Modal {
             .addText(text => {
                 this.doiInput = text.inputEl;
                 text.setPlaceholder('Enter DOI (optional)').onChange(value => {
-                    console.log(`DOI set to: ${value.trim()}`);
                 });
             });
 
@@ -265,7 +254,6 @@ export class ChapterModal extends Modal {
             .addTextArea(text => {
                 this.abstractInput = text.inputEl as HTMLTextAreaElement;
                 text.setPlaceholder('Enter Abstract').onChange(value => {
-                    console.log('Abstract set');
                 });
             });
 
@@ -430,7 +418,6 @@ export class ChapterModal extends Modal {
                 return;
             }
             
-            console.log('Submit button clicked, all validations passed');
             this.handleSubmit(citation);
         };
     }
@@ -637,7 +624,6 @@ export class ChapterModal extends Modal {
      * Handle form submission
      */
     private async handleSubmit(citation: Citation): Promise<void> {
-        console.log('Handling submit for chapter');
         try {
             await this.fileManager.createLiteratureNote(
                 citation,
@@ -655,6 +641,5 @@ export class ChapterModal extends Modal {
     onClose() {
         const { contentEl } = this;
         contentEl.empty();
-        console.log('ChapterModal closed');
     }
 }

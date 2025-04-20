@@ -64,7 +64,6 @@ export class CslMapper {
         if (normalized.author && Array.isArray(normalized.author)) {
             // Check if the first element is an array (MediaWiki format)
             if (normalized.author.length > 0 && Array.isArray(normalized.author[0])) {
-                console.log('Converting MediaWiki author format to CSL format');
                 
                 // Convert MediaWiki format to CSL format
         normalized.author = normalized.author.map((nameArray: any[]) => {
@@ -82,7 +81,6 @@ export class CslMapper {
           return null; // Explicitly return null for invalid cases
                 }).filter((name: any): name is { family: string; given?: string } => name !== null);
                 
-                console.log('Converted authors:', normalized.author);
             }
         }
         

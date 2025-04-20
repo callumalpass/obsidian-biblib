@@ -74,7 +74,6 @@ export class FileManager {
                         family: contributor.family,
                         ...(contributor.given && { given: contributor.given }),
                     });
-                    console.log(`Contributor added: ${contributor.role}, ${contributor.given} ${contributor.family}`);
                 }
             });
 
@@ -89,7 +88,6 @@ export class FileManager {
 
                 if (authorLinks.length > 0) {
                     frontmatter.authorLink = authorLinks;
-                    console.log('Author links added');
                 }
             }
 
@@ -115,7 +113,6 @@ export class FileManager {
                         // For standard fields, use the value as is
                         frontmatter[field.name] = field.value;
                     }
-                    console.log(`Additional field added: ${field.name}, ${typeof frontmatter[field.name] === 'object' ? JSON.stringify(frontmatter[field.name]) : frontmatter[field.name]}`);
                 }
             });
 
@@ -150,7 +147,6 @@ export class FileManager {
             const notePath = this.getLiteratureNotePath(citation.id);
             await this.app.vault.create(notePath, content);
             new Notice(`Literature note "${citation.title}" created.`);
-            console.log(`Literature note created: ${notePath}`);
             
             return;
         } catch (error) {
@@ -167,7 +163,6 @@ export class FileManager {
         try {
             // If it's a link to an existing file
             if (attachmentData.type === AttachmentType.LINK && attachmentData.path) {
-                console.log(`Using existing file at path: ${attachmentData.path}`);
                 return attachmentData.path;
             }
             
@@ -176,7 +171,6 @@ export class FileManager {
                 const biblibPath = this.settings.attachmentFolderPath;
                 if (!this.app.vault.getAbstractFileByPath(biblibPath)) {
                     await this.app.vault.createFolder(biblibPath);
-                    console.log(`Folder created: ${biblibPath}`);
                 }
 
                 const fileExtension = attachmentData.file.name.split('.').pop();
@@ -187,7 +181,6 @@ export class FileManager {
                     const attachmentFolderPath = `${biblibPath}/${id}`;
                     if (!this.app.vault.getAbstractFileByPath(attachmentFolderPath)) {
                         await this.app.vault.createFolder(attachmentFolderPath);
-                        console.log(`Folder created: ${attachmentFolderPath}`);
                     }
                     attachmentPath = `${attachmentFolderPath}/${id}.${fileExtension}`;
                 } else {
@@ -198,7 +191,6 @@ export class FileManager {
                 const arrayBuffer = await attachmentData.file.arrayBuffer();
                 const data = new Uint8Array(arrayBuffer);
                 await this.app.vault.createBinary(attachmentPath, data);
-                console.log(`Attachment saved: ${attachmentPath}`);
                 
                 return attachmentPath;
             }

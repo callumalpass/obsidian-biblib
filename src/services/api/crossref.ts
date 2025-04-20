@@ -10,7 +10,6 @@ export class CrossRefService {
     async fetch(doi: string): Promise<CitoidResponse> {
         try {
             const crossrefUrl = `https://api.crossref.org/works/${encodeURIComponent(doi)}`;
-            console.log(`Trying CrossRef API: ${crossrefUrl}`);
             
             const crossrefResponse = await requestUrl({
                 url: crossrefUrl,
@@ -38,7 +37,6 @@ export class CrossRefService {
      */
     mapToCitoidFormat(crossRefData: any): CitoidResponse {
         try {
-            console.log('Mapping CrossRef data:', JSON.stringify(crossRefData, null, 2));
             
             const result: CitoidResponse = {
                 title: crossRefData.title ? crossRefData.title[0] : '',
@@ -133,7 +131,6 @@ export class CrossRefService {
                 }
             });
             
-            console.log('Mapped CrossRef data to Citoid format:', JSON.stringify(result, null, 2));
             return result;
         } catch (error) {
             console.error('Error mapping CrossRef data:', error);

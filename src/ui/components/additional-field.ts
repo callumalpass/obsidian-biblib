@@ -44,7 +44,6 @@ export class AdditionalFieldComponent {
         
         this.typeSelect.onchange = () => {
             this.field.type = this.typeSelect.value || 'standard';
-            console.log(`Field type set to: ${this.field.type}`);
             this.updateFieldOptions();
         };
         
@@ -54,7 +53,6 @@ export class AdditionalFieldComponent {
         
         this.fieldSelect.onchange = () => {
             this.field.name = this.fieldSelect.value;
-            console.log(`Field name set to: ${this.field.name}`);
             this.updateValueInput(fieldDiv);
         };
         
@@ -70,7 +68,6 @@ export class AdditionalFieldComponent {
         removeButton.onclick = () => {
             this.onRemove(this.field);
             fieldDiv.remove();
-            console.log('Additional field removed');
         };
     }
 
@@ -141,7 +138,6 @@ export class AdditionalFieldComponent {
             valueInput.value = this.field.value !== undefined ? this.field.value.toString() : '';
             valueInput.oninput = () => {
                 this.field.value = Number(valueInput.value.trim()).toString();
-                console.log(`Field value set to: ${this.field.value}`);
             };
         } else if (this.field.type === 'date') {
             const valueInput = this.valueInputContainer.createEl('input', { 
@@ -151,7 +147,6 @@ export class AdditionalFieldComponent {
             valueInput.value = this.field.value !== undefined ? this.field.value.toString() : '';
             valueInput.oninput = () => {
                 this.field.value = valueInput.value.trim();
-                console.log(`Field value set to: ${this.field.value}`);
             };
         } else {
             const valueInput = this.valueInputContainer.createEl('input', { 
@@ -162,7 +157,6 @@ export class AdditionalFieldComponent {
             valueInput.value = this.field.value !== undefined ? this.field.value.toString() : '';
             valueInput.oninput = () => {
                 this.field.value = valueInput.value.trim();
-                console.log(`Field value set to: ${this.field.value}`);
             };
         }
     }

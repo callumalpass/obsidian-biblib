@@ -46,11 +46,9 @@ export class BibliographyModal extends Modal {
         super(app);
         this.citoidService = new CitoidService(settings.citoidApiUrl);
         this.fileManager = new FileManager(app, settings);
-        console.log('BibliographyModal initialized');
     }
 
     onOpen() {
-        console.log('BibliographyModal opened');
         const { contentEl } = this;
         contentEl.addClass('bibliography-modal');
 
@@ -124,7 +122,6 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.idInput = text.inputEl;
                 text.setPlaceholder('Enter Citekey').onChange(value => {
-                    console.log(`Citekey set to: ${value.trim()}`);
                 });
             });
 
@@ -180,10 +177,8 @@ export class BibliographyModal extends Modal {
                     treaty: 'Treaty',
                     webpage: 'Webpage',
                 });
-                console.log(`Initial type set to: article`);
 
                 dropdown.onChange(value => {
-                    console.log(`Type set to: ${value}`);
                 });
             });
 
@@ -193,7 +188,6 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.titleInput = text.inputEl;
                 text.setPlaceholder('Enter Title').onChange(value => {
-                    console.log(`Title set to: ${value.trim()}`);
                 });
             });
 
@@ -203,7 +197,6 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.titleShortInput = text.inputEl;
                 text.setPlaceholder('Enter Short Title').onChange(value => {
-                    console.log(`Title-Short set to: ${value.trim()}`);
                 });
             });
 
@@ -213,7 +206,6 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.pageInput = text.inputEl;
                 text.setPlaceholder('Enter Page or Page Range').onChange(value => {
-                    console.log(`Page set to: ${value.trim()}`);
                 });
             });
 
@@ -223,7 +215,6 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.urlInput = text.inputEl;
                 text.setPlaceholder('Enter URL').onChange(value => {
-                    console.log(`URL set to: ${value.trim()}`);
                 });
             });
 
@@ -249,7 +240,6 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.yearInput = text.inputEl;
                 text.setPlaceholder('Enter Year').onChange(value => {
-                    console.log(`Year set to: ${value.trim()}`);
                 });
             });
 
@@ -274,10 +264,8 @@ export class BibliographyModal extends Modal {
                 });
 
                 dropdown.onChange(value => {
-                    console.log(`Month set to: ${value.trim()}`);
                     // If "select option" is chosen, the value needs to be cleared
                     if(value == '0') {
-                        console.log(`Month reset`);
                     }
                 });
             });
@@ -287,7 +275,6 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.dayInput = text.inputEl;
                 text.setPlaceholder('Enter Day (optional)').onChange(value => {
-                    console.log(`Day set to: ${value.trim()}`);
                 });
             });
 
@@ -297,7 +284,6 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.containerTitleInput = text.inputEl;
                 text.setPlaceholder('Enter Container Title').onChange(value => {
-                    console.log(`Container Title set to: ${value.trim()}`);
                 });
             });
 
@@ -307,7 +293,6 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.publisherInput = text.inputEl;
                 text.setPlaceholder('Enter Publisher').onChange(value => {
-                    console.log(`Publisher set to: ${value.trim()}`);
                 });
             });
 
@@ -317,7 +302,6 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.publisherPlaceInput = text.inputEl;
                 text.setPlaceholder('Enter Publisher Place').onChange(value => {
-                    console.log(`Publisher Place set to: ${value.trim()}`);
                 });
             });
 
@@ -327,7 +311,6 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.editionInput = text.inputEl;
                 text.setPlaceholder('Enter Edition (optional)').onChange(value => {
-                    console.log(`Edition set to: ${value.trim()}`);
                 });
             });
 
@@ -337,7 +320,6 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.volumeInput = text.inputEl;
                 text.setPlaceholder('Enter Volume (optional)').onChange(value => {
-                    console.log(`Volume set to: ${value.trim()}`);
                 });
             });
 
@@ -347,7 +329,6 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.numberInput = text.inputEl;
                 text.setPlaceholder('Enter Number (optional)').onChange(value => {
-                    console.log(`Number set to: ${value.trim()}`);
                 });
             });
 
@@ -369,7 +350,6 @@ export class BibliographyModal extends Modal {
                     'ru': 'Russian',
                 });
                 dropdown.onChange(value => {
-                    console.log(`Language set to: ${value.trim()}`);
                 });
             });
 
@@ -379,7 +359,6 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.doiInput = text.inputEl;
                 text.setPlaceholder('Enter DOI').onChange(value => {
-                    console.log(`DOI set to: ${value.trim()}`);
                 });
             });
 
@@ -389,7 +368,6 @@ export class BibliographyModal extends Modal {
             .addTextArea(text => {
                 this.abstractInput = text.inputEl as HTMLTextAreaElement;
                 text.setPlaceholder('Enter Abstract').onChange(value => {
-                    console.log('Abstract set');
                 });
             });
 
@@ -414,7 +392,6 @@ export class BibliographyModal extends Modal {
                                 filename: fileInput.files[0].name
                             };
                             button.setButtonText(fileInput.files[0].name);
-                            console.log(`Attachment selected: ${fileInput.files[0].name}`);
                         }
                     };
                     fileInput.click();
@@ -526,7 +503,6 @@ export class BibliographyModal extends Modal {
                 return;
             }
             
-            console.log('Submit button clicked, all validations passed');
             this.handleSubmit(citation);
         };
     }
@@ -572,11 +548,9 @@ export class BibliographyModal extends Modal {
      */
     private populateFormFromCitoid(citationData: any): void {
         try {
-            console.log('Received citation data:', citationData);
             
             // Normalize citation data to CSL format
             const normalizedData = CslMapper.normalizeToCslFormat(citationData);
-            console.log('Normalized citation data:', normalizedData);
             
             // Map basic fields
             if (normalizedData.id) {
@@ -593,7 +567,6 @@ export class BibliographyModal extends Modal {
             }
             
             // Log the citekey being set
-            console.log(`Citekey set to: ${this.idInput.value}`);
             
             // Type - handle both CSL 'type' and Zotero 'itemType'
             if (normalizedData.type) {
@@ -867,7 +840,6 @@ export class BibliographyModal extends Modal {
                 
                 // Add the field
                 this.addAdditionalField(fieldType, key, fieldValue);
-                console.log(`Added additional field: ${key} (${fieldType}) = ${JSON.stringify(fieldValue)}`);
             }
         });
     }
@@ -931,7 +903,6 @@ export class BibliographyModal extends Modal {
      * Handle form submission
      */
     private async handleSubmit(citation: Citation): Promise<void> {
-        console.log('Handling submit');
         try {
             await this.fileManager.createLiteratureNote(
                 citation,
@@ -949,6 +920,5 @@ export class BibliographyModal extends Modal {
     onClose() {
         const { contentEl } = this;
         contentEl.empty();
-        console.log('BibliographyModal closed');
     }
 }
