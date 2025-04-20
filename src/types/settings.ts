@@ -67,6 +67,12 @@ export interface BibliographyPluginSettings {
      * Supports variables: {{title}}, {{citekey}}, {{year}}, {{authors}}, {{pdflink}}
      */
     headerTemplate: string;
+    
+    /**
+     * Template for the first header in chapter notes.
+     * Supports variables: {{title}}, {{citekey}}, {{year}}, {{authors}}, {{pdflink}}, {{container-title}}
+     */
+    chapterHeaderTemplate: string;
 }
 
 export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
@@ -82,5 +88,6 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
     includeAttachment: true,
     bibliographyJsonPath: 'biblib/bibliography.json',
     citekeyListPath: 'citekeylist.md',
-    headerTemplate: '# {{pdflink}}{{^pdflink}}{{title}}{{/pdflink}}'
+    headerTemplate: '# {{pdflink}}{{^pdflink}}{{citekey}}{{/pdflink}}',
+    chapterHeaderTemplate: '# {{pdflink}}{{^pdflink}}{{title}}{{/pdflink}} (in {{container-title}})'
 };

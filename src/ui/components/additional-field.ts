@@ -26,20 +26,24 @@ export class AdditionalFieldComponent {
         
         // Type dropdown
         this.typeSelect = fieldDiv.createEl('select', { cls: 'bibliography-input bibliography-field-type' });
-        ['', 'Standard', 'Number', 'Date'].forEach(typeOption => {
+        ['Standard', 'Number', 'Date'].forEach(typeOption => {
             const option = this.typeSelect.createEl('option', { 
                 text: typeOption, 
                 value: typeOption.toLowerCase() 
             });
             
-            // Select the current type
+            // Select the current type or default to standard
+            if (!this.field.type) {
+                this.field.type = 'standard';
+            }
+            
             if (typeOption.toLowerCase() === this.field.type) {
                 option.selected = true;
             }
         });
         
         this.typeSelect.onchange = () => {
-            this.field.type = this.typeSelect.value;
+            this.field.type = this.typeSelect.value || 'standard';
             console.log(`Field type set to: ${this.field.type}`);
             this.updateFieldOptions();
         };
@@ -73,6 +77,11 @@ export class AdditionalFieldComponent {
     private updateFieldOptions(): void {
         // Clear existing options
         this.fieldSelect.empty();
+        
+        // Ensure field type is valid, default to standard if empty or invalid
+        if (!this.field.type || !['standard', 'number', 'date'].includes(this.field.type)) {
+            this.field.type = 'standard';
+        }
         
         // Populate options based on field type
         let fieldOptions: string[] = [];

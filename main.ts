@@ -1,5 +1,6 @@
 import { App, Plugin, Notice } from 'obsidian';
 import { BibliographyModal } from './src/ui/modals/bibliography-modal';
+import { ChapterModal } from './src/ui/modals/chapter-modal';
 import { BibliographySettingTab } from './src/ui/settings-tab';
 import { BibliographyPluginSettings, DEFAULT_SETTINGS } from './src/types/settings';
 import { BibliographyBuilder } from './src/services/bibliography-builder';
@@ -17,6 +18,46 @@ export default class BibliographyPlugin extends Plugin {
             name: 'Create Literature Note',
             callback: () => {
                 new BibliographyModal(this.app, this.settings).open();
+            },
+        });
+        
+        // Add command to create a chapter entry
+        this.addCommand({
+            id: 'create-chapter-entry',
+            name: 'Create Book Chapter Entry',
+            callback: () => {
+                new ChapterModal(this.app, this.settings).open();
+            },
+        });
+        
+        // Add command to create a chapter from current book note
+        this.addCommand({
+            id: 'create-chapter-from-current-book',
+            name: 'Create Chapter From Current Book',
+            checkCallback: (checking) => {
+                const activeFile = this.app.workspace.getActiveFile();
+                if (!activeFile) return false;
+                
+                const cache = this.app.metadataCache.getFileCache(activeFile);
+                if (!cache || !cache.frontmatter) return false;
+                
+                // Check if it's a book type entry
+                const frontmatter = cache.frontmatter;
+                if (!frontmatter.type || !['book', 'collection', 'document'].includes(frontmatter.type)) {
+                    return false;
+                }
+                
+                // Check if it has a literature_note tag
+                const tags = frontmatter.tags;
+                if (!tags || !Array.isArray(tags) || !tags.includes('literature_note')) {
+                    return false;
+                }
+                
+                if (checking) return true;
+                
+                // Open chapter modal with the current book
+                new ChapterModal(this.app, this.settings, activeFile.path).open();
+                return true;
             },
         });
         

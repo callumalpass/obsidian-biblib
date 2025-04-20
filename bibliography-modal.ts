@@ -1228,6 +1228,7 @@ export class BibliographyModal extends Modal {
     // Add horizontal separator
     contentEl.createEl('hr');
 
+
     // Citekey input (required)
     let id = '';
     new Setting(contentEl)

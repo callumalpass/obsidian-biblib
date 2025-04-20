@@ -49,5 +49,25 @@ export interface Citation {
     author?: Array<{ given?: string; family: string }>;
     editor?: Array<{ given?: string; family: string }>;
     translator?: Array<{ given?: string; family: string }>;
+    'container-author'?: Array<{ given?: string; family: string }>;
     [key: string]: any; // For additional fields
+}
+
+/**
+ * Options for attaching files to citations
+ */
+export enum AttachmentType {
+    NONE = 'none',
+    IMPORT = 'import',
+    LINK = 'link'
+}
+
+/**
+ * Attachment data for a citation
+ */
+export interface AttachmentData {
+    type: AttachmentType;
+    file?: File;          // For imported files
+    path?: string;        // For linked files
+    filename?: string;    // For displaying the filename
 }

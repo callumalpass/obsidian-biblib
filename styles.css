@@ -8,6 +8,12 @@
 
 .bibliography-modal h2 {
   margin-bottom: 20px;
+  text-align: center;
+  color: var(--text-normal);
+}
+
+.bibliography-modal h3 {
+  margin-bottom: 20px;
   text-align: left;
   color: var(--text-normal);
 }

@@ -18,14 +18,17 @@ BibLib takes a different approach:
 - **Pandoc-compatible**: Since your references use CSL-compatible structure, they work seamlessly with pandoc citations and bibliographies.
 - **No external dependencies**: Everything stays in your vault, with no reliance on third-party applications.
 
-This approach has proven effective for personal academic workflows over multiple years, offering the perfect balance of simplicity and power. When combined with plugins like [PDF++](https://github.com/RyotaUshio/obsidian-pdf-plus), BibLib creates a comprehensive environment for managing both reference metadata and annotations in a unified, interlinked system.
+This approach has proven effective for my personal academic workflow for several years, offering the perfect balance of simplicity and power. When combined with plugins like [PDF++](https://github.com/RyotaUshio/obsidian-pdf-plus), BibLib creates a comprehensive environment for managing both reference metadata and annotations in a unified, interlinked system.
 
 ## Features
 
 - Create literature notes with complete bibliographic information
 - Support for various publication types (articles, books, chapters, etc.)
+- Create book chapter entries that inherit properties from their container book
 - Add and manage contributors with different roles (authors, editors, translators, etc.)
-- Link to PDF/EPUB attachments with configurable storage options
+- Link to PDF/EPUB attachments with flexible options:
+  - Import files (copy to bibliography folder)
+  - Link to existing files in your vault
 - Full support for Citation Style Language (CSL) fields
 - Customizable note prefixes and file locations
 - Automatic creation of contributor links
@@ -43,8 +46,34 @@ This approach has proven effective for personal academic workflows over multiple
    - Required fields: Citekey, Type, Title, Year
    - Optional fields depend on the publication type
 3. Add contributors (authors, editors, etc.)
-4. Attach PDF or EPUB files if available
+4. Choose an attachment option:
+   - No attachment
+   - Import file (copies PDF/EPUB to your configured attachment folder)
+   - Link to existing file (creates a link to a file already in your vault)
 5. Click "Create Note" to generate a formatted literature note
+
+### Creating Book Chapter Entries
+
+1. There are two ways to create a chapter entry:
+   - Open the command palette and select "Create Book Chapter Entry"
+   - While viewing a book entry, open the command palette and select "Create Chapter From Current Book"
+2. Enter the chapter information:
+   - Required fields: Citekey, Title, Container Book, Year
+   - The container book dropdown shows all book entries in your vault
+3. When you select a container book, relevant information is automatically inherited:
+   - Publisher and publisher place
+   - Book editors (mapped as container-authors)
+   - Publication year
+   - Book's attachment (as a link option)
+4. Add chapter-specific information:
+   - Chapter author(s)
+   - Page range
+   - Chapter-specific metadata
+5. Choose an attachment option:
+   - No attachment
+   - Import a new file
+   - Link to an existing file (the container book's PDF is suggested if available)
+6. Click "Create Chapter Note" to generate a formatted chapter note
 
 ### Building a Bibliography
 
@@ -96,6 +125,8 @@ This workflow keeps your references, PDFs, and annotations all within the same s
   - `{{authors}}` - Formatted author names
   - `{{pdflink}}` - Link to the attached PDF (if available)
   - Supports conditional blocks with `{{^variable}}fallback{{/variable}}`
+- **Chapter Header Template**: Customize the format of the first header in chapter notes with additional variables:
+  - `{{container-title}}` - The title of the container book
 
 ### Bibliography Builder
 - **Bibliography JSON path**: Where to save the bibliography.json file
@@ -104,10 +135,11 @@ This workflow keeps your references, PDFs, and annotations all within the same s
 
 ## Upcoming Features
 
-- Add option to link to a PDF (rather than attach a PDF--useful for book-sections)
-- Autofill information for book sections by pointing to the container
 - Citation export for integration with reference managers
 - Template system for customizing literature note format
+- Bulk import of existing bibliographic data from BibTeX/CSL-JSON
+- Enhanced search through bibliography entries
+- Citation styles preview
 
 ## Important Note About Obsidian's YAML Parser
 

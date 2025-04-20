@@ -1,7 +1,7 @@
-import { App, Notice } from 'obsidian';
+import { App, Notice, TFile } from 'obsidian';
 import * as jsyaml from 'js-yaml';
 import { BibliographyPluginSettings } from '../types';
-import { Citation, Contributor, AdditionalField } from '../types/citation';
+import { Citation, Contributor, AdditionalField, AttachmentData, AttachmentType } from '../types/citation';
 
 export class FileManager {
     private app: App;
@@ -19,7 +19,7 @@ export class FileManager {
         citation: Citation,
         contributors: Contributor[],
         additionalFields: AdditionalField[],
-        attachment: File | null
+        attachmentData: AttachmentData | null
     ): Promise<void> {
         try {
             // Create frontmatter in CSL-compatible format
@@ -118,8 +118,8 @@ export class FileManager {
 
             // Handle attachment if provided
             let attachmentPath = '';
-            if (attachment) {
-                attachmentPath = await this.saveAttachment(citation.id, attachment);
+            if (attachmentData && attachmentData.type !== AttachmentType.NONE) {
+                attachmentPath = await this.handleAttachment(citation.id, attachmentData);
                 // Add attachment link to frontmatter if enabled in settings
                 if (attachmentPath && this.settings.includeAttachment) {
                     frontmatter.attachment = [`[[${attachmentPath}|${citation.id}]]`];
@@ -158,41 +158,52 @@ export class FileManager {
     }
 
     /**
-     * Save an attachment file (PDF or EPUB)
+     * Handle attachment file (PDF or EPUB) either by importing or linking
      */
-    private async saveAttachment(id: string, attachment: File): Promise<string> {
+    private async handleAttachment(id: string, attachmentData: AttachmentData): Promise<string> {
         try {
-            const biblibPath = this.settings.attachmentFolderPath;
-            if (!this.app.vault.getAbstractFileByPath(biblibPath)) {
-                await this.app.vault.createFolder(biblibPath);
-                console.log(`Folder created: ${biblibPath}`);
+            // If it's a link to an existing file
+            if (attachmentData.type === AttachmentType.LINK && attachmentData.path) {
+                console.log(`Using existing file at path: ${attachmentData.path}`);
+                return attachmentData.path;
             }
-
-            const fileExtension = attachment.name.split('.').pop();
-            let attachmentPath = '';
-
-            if (this.settings.createAttachmentSubfolder) {
-                // Create subfolder if enabled
-                const attachmentFolderPath = `${biblibPath}/${id}`;
-                if (!this.app.vault.getAbstractFileByPath(attachmentFolderPath)) {
-                    await this.app.vault.createFolder(attachmentFolderPath);
-                    console.log(`Folder created: ${attachmentFolderPath}`);
-                }
-                attachmentPath = `${attachmentFolderPath}/${id}.${fileExtension}`;
-            } else {
-                // Store directly in attachment folder
-                attachmentPath = `${biblibPath}/${id}.${fileExtension}`;
-            }
-
-            const arrayBuffer = await attachment.arrayBuffer();
-            const data = new Uint8Array(arrayBuffer);
-            await this.app.vault.createBinary(attachmentPath, data);
-            console.log(`Attachment saved: ${attachmentPath}`);
             
-            return attachmentPath;
+            // Otherwise, it's an import - process as before
+            if (attachmentData.type === AttachmentType.IMPORT && attachmentData.file) {
+                const biblibPath = this.settings.attachmentFolderPath;
+                if (!this.app.vault.getAbstractFileByPath(biblibPath)) {
+                    await this.app.vault.createFolder(biblibPath);
+                    console.log(`Folder created: ${biblibPath}`);
+                }
+
+                const fileExtension = attachmentData.file.name.split('.').pop();
+                let attachmentPath = '';
+
+                if (this.settings.createAttachmentSubfolder) {
+                    // Create subfolder if enabled
+                    const attachmentFolderPath = `${biblibPath}/${id}`;
+                    if (!this.app.vault.getAbstractFileByPath(attachmentFolderPath)) {
+                        await this.app.vault.createFolder(attachmentFolderPath);
+                        console.log(`Folder created: ${attachmentFolderPath}`);
+                    }
+                    attachmentPath = `${attachmentFolderPath}/${id}.${fileExtension}`;
+                } else {
+                    // Store directly in attachment folder
+                    attachmentPath = `${biblibPath}/${id}.${fileExtension}`;
+                }
+
+                const arrayBuffer = await attachmentData.file.arrayBuffer();
+                const data = new Uint8Array(arrayBuffer);
+                await this.app.vault.createBinary(attachmentPath, data);
+                console.log(`Attachment saved: ${attachmentPath}`);
+                
+                return attachmentPath;
+            }
+            
+            return '';
         } catch (error) {
-            console.error('Error saving attachment:', error);
-            new Notice('Error saving attachment.');
+            console.error('Error handling attachment:', error);
+            new Notice('Error handling attachment.');
             return '';
         }
     }
@@ -263,5 +274,78 @@ export class FileManager {
             return contributor.family;
         }
         return '';
+    }
+    
+    /**
+     * Get all book entries that can be containers for chapters
+     */
+    async getBookEntries(): Promise<{id: string, title: string, path: string, frontmatter: any}[]> {
+        const bookEntries: {id: string, title: string, path: string, frontmatter: any}[] = [];
+        
+        // Get all markdown files
+        const markdownFiles = this.app.vault.getMarkdownFiles();
+        
+        for (const file of markdownFiles) {
+            try {
+                // Check if it has frontmatter
+                const cache = this.app.metadataCache.getFileCache(file);
+                const frontmatter = cache?.frontmatter;
+                
+                if (!frontmatter) {
+                    continue;
+                }
+                
+                // Check if it has literature_note tag and is a book, collection or similar
+                const tags = frontmatter.tags;
+                if (!tags || !Array.isArray(tags) || !tags.includes('literature_note')) {
+                    continue;
+                }
+                
+                const type = frontmatter.type;
+                if (!type || !['book', 'collection', 'document'].includes(type)) {
+                    continue;
+                }
+                
+                // Add to the list
+                bookEntries.push({
+                    id: frontmatter.id || '',
+                    title: frontmatter.title || file.basename,
+                    path: file.path,
+                    frontmatter
+                });
+            } catch (error) {
+                console.error(`Error processing file ${file.path}:`, error);
+            }
+        }
+        
+        return bookEntries;
+    }
+    
+    /**
+     * Get a single book entry by path
+     */
+    async getBookEntryByPath(path: string): Promise<{id: string, title: string, frontmatter: any} | null> {
+        try {
+            const file = this.app.vault.getAbstractFileByPath(path);
+            if (!(file instanceof TFile)) {
+                return null;
+            }
+            
+            const cache = this.app.metadataCache.getFileCache(file);
+            const frontmatter = cache?.frontmatter;
+            
+            if (!frontmatter || !frontmatter.id || !frontmatter.title) {
+                return null;
+            }
+            
+            return {
+                id: frontmatter.id,
+                title: frontmatter.title,
+                frontmatter
+            };
+        } catch (error) {
+            console.error(`Error getting book entry by path ${path}:`, error);
+            return null;
+        }
     }
 }

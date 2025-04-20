@@ -1,6 +1,6 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
 import { BibliographyPluginSettings } from '../../types/settings';
-import { Contributor, AdditionalField, Citation } from '../../types/citation';
+import { Contributor, AdditionalField, Citation, AttachmentData, AttachmentType } from '../../types/citation';
 import { ContributorField } from '../components/contributor-field';
 import { AdditionalFieldComponent } from '../components/additional-field';
 import { CitoidService } from '../../services/api/citoid';
@@ -38,7 +38,9 @@ export class BibliographyModal extends Modal {
     private abstractInput: HTMLTextAreaElement;
     private contributorsListContainer: HTMLDivElement;
     private additionalFieldsContainer: HTMLDivElement;
-    private attachment: File | null = null;
+    
+    // Attachment data in the new structure
+    private attachmentData: AttachmentData = { type: AttachmentType.NONE };
 
     constructor(app: App, private settings: BibliographyPluginSettings) {
         super(app);
@@ -60,6 +62,9 @@ export class BibliographyModal extends Modal {
         
         // Add horizontal separator
         contentEl.createEl('hr');
+        
+        // Add section title
+        contentEl.createEl('h3', { text: 'Entry Details' });
 
         // Create the main form
         this.createMainForm(contentEl);
@@ -388,9 +393,14 @@ export class BibliographyModal extends Modal {
                 });
             });
 
-        // File attachment
-        new Setting(contentEl)
-            .setName('Attach PDF')
+        // Attachment section
+        const attachmentSection = new Setting(contentEl)
+            .setName('Attachment')
+            .setDesc('Choose how to handle the attachment');
+            
+        // Create import button
+        const importButton = new Setting(contentEl)
+            .setName('Select File to Import')
             .addButton(button => {
                 button.setButtonText('Choose File').onClick(async () => {
                     const fileInput = document.createElement('input');
@@ -398,14 +408,95 @@ export class BibliographyModal extends Modal {
                     fileInput.accept = '.pdf, .epub';
                     fileInput.onchange = () => {
                         if (fileInput.files && fileInput.files.length > 0) {
-                            this.attachment = fileInput.files[0];
-                            button.setButtonText(this.attachment.name);
-                            console.log(`Attachment selected: ${this.attachment.name}`);
+                            this.attachmentData = {
+                                type: AttachmentType.IMPORT,
+                                file: fileInput.files[0],
+                                filename: fileInput.files[0].name
+                            };
+                            button.setButtonText(fileInput.files[0].name);
+                            console.log(`Attachment selected: ${fileInput.files[0].name}`);
                         }
                     };
                     fileInput.click();
                 });
             });
+            
+        // Create link button
+        const linkButton = new Setting(contentEl)
+            .setName('Link to Existing File')
+            .addButton(button => {
+                button.setButtonText('Select File Path').onClick(async () => {
+                    // Create a text input for the file path
+                    const filePathInput = document.createElement('input');
+                    filePathInput.type = 'text';
+                    filePathInput.placeholder = 'Enter file path in vault';
+                    filePathInput.style.width = '100%';
+                    
+                    // Create a temporary modal to get the file path
+                    const modal = new Modal(this.app);
+                    modal.titleEl.textContent = 'Enter Path to File';
+                    
+                    const form = modal.contentEl.createDiv();
+                    form.appendChild(filePathInput);
+                    
+                    const buttonContainer = modal.contentEl.createDiv();
+                    buttonContainer.style.marginTop = '1rem';
+                    
+                    const submitButton = buttonContainer.createEl('button', {
+                        text: 'Link File',
+                        cls: 'mod-cta'
+                    });
+                    submitButton.onclick = () => {
+                        const filePath = filePathInput.value.trim();
+                        if (filePath) {
+                            this.attachmentData = {
+                                type: AttachmentType.LINK,
+                                path: filePath,
+                                filename: filePath.split('/').pop() || filePath
+                            };
+                            button.setButtonText(filePath.split('/').pop() || filePath);
+                            modal.close();
+                        }
+                    };
+                    
+                    const cancelButton = buttonContainer.createEl('button', {
+                        text: 'Cancel'
+                    });
+                    cancelButton.onclick = () => {
+                        modal.close();
+                    };
+                    
+                    modal.open();
+                });
+            });
+            
+        // Initially remove both buttons from DOM
+        importButton.settingEl.detach();
+        linkButton.settingEl.detach();
+        
+        // Add dropdown for attachment type
+        attachmentSection.addDropdown(dropdown => {
+            dropdown.addOptions({
+                'none': 'No Attachment',
+                'import': 'Import File (Copy to biblib folder)',
+                'link': 'Link to Existing File'
+            });
+            dropdown.onChange(value => {
+                // Update attachment data type
+                this.attachmentData.type = value as AttachmentType;
+                
+                // Clear previous buttons
+                importButton.settingEl.detach();
+                linkButton.settingEl.detach();
+                
+                // Add appropriate button based on selection
+                if (value === 'import') {
+                    attachmentSection.settingEl.insertAdjacentElement('afterend', importButton.settingEl);
+                } else if (value === 'link') {
+                    attachmentSection.settingEl.insertAdjacentElement('afterend', linkButton.settingEl);
+                }
+            });
+        });
 
         // Additional CSL fields section
         new Setting(contentEl).setName('Additional Fields');
@@ -417,7 +508,7 @@ export class BibliographyModal extends Modal {
             cls: 'bibliography-add-field-button' 
         });
         addFieldButton.onclick = () => {
-            this.addAdditionalField('', '', '');
+            this.addAdditionalField('standard', '', '');
         };
 
         // Submit button
@@ -459,8 +550,12 @@ export class BibliographyModal extends Modal {
     /**
      * Add an additional field
      */
-    private addAdditionalField(type: string = '', name: string = '', value: any = ''): void {
-        const field: AdditionalField = { type, name, value };
+    private addAdditionalField(type: string = 'standard', name: string = '', value: any = ''): void {
+        // Ensure type is one of the allowed values
+        const validType = ['standard', 'number', 'date'].includes(type.toLowerCase()) ? 
+                          type.toLowerCase() : 'standard';
+                          
+        const field: AdditionalField = { type: validType, name, value };
         this.additionalFields.push(field);
         
         new AdditionalFieldComponent(
@@ -828,7 +923,7 @@ export class BibliographyModal extends Modal {
                 citation,
                 this.contributors,
                 this.additionalFields,
-                this.attachment
+                this.attachmentData.type !== AttachmentType.NONE ? this.attachmentData : null
             );
             this.close();
         } catch (error) {
