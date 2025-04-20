@@ -18,7 +18,7 @@ BibLib takes a different approach:
 - **Pandoc-compatible**: Since your references use CSL-compatible structure, they work seamlessly with pandoc citations and bibliographies.
 - **No external dependencies**: Everything stays in your vault, with no reliance on third-party applications.
 
-This approach has proven effective for my personal academic workflow for several years, offering the perfect balance of simplicity and power. When combined with plugins like [PDF++](https://github.com/RyotaUshio/obsidian-pdf-plus), BibLib creates a comprehensive environment for managing both reference metadata and annotations in a unified, interlinked system.
+This approach has proven effective for my personal academic workflow for several years, offering a good balance of simplicity and power. When combined with plugins like [PDF++](https://github.com/RyotaUshio/obsidian-pdf-plus), BibLib creates a comprehensive environment for managing both reference metadata and annotations in a unified, interlinked system.
 
 ## Features
 
