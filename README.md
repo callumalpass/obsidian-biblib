@@ -8,19 +8,21 @@ BibLib is a streamlined approach to academic reference management that leverages
 
 ![Screenshot of biblib Obsidian plugin](https://github.com/callumalpass/obsidian-biblib/blob/main/screenshots/create-lit-note.gif?raw=true)
 
-
 ## Why BibLib?
 
-Most reference management solutions for Obsidian focus on integrating with external tools like Zotero. While powerful, this approach creates overhead—keeping two separate libraries in sync, handling format conversions, and maintaining complex workflows.
+Most reference management solutions for Obsidian focus on integrating with external tools like Zotero. This often works well, but can sometimes introduce complexity through managing synchronization processes, dealing with different data formats, and working across two distinct applications.
 
-BibLib takes a different approach:
+BibLib helps to implement alternative approach by managing reference information directly within Obsidian. The idea is to treat bibliographic entries fundamentally like any other note in your vault.
 
-- **Plain text first**: Your entire reference library lives in markdown files with YAML frontmatter that closely mirrors CSL-JSON structure.
-- **Fully integrated**: References become first-class citizens in your knowledge graph, linkable and queryable like any other note.
-- **Frictionless capture**: Automatic metadata retrieval through Citoid and CrossRef APIs removes the pain of manual entry.
-- **Seamless annotation**: Leverage Obsidian's native PDF annotation capabilities to create precise citations like `[[paper.pdf#page=1&selection=17,1,21,22|Smith 2023, p. 1]]` directly within your notes.
-- **Pandoc-compatible**: Since your references use CSL-compatible structure, they work seamlessly with pandoc citations and bibliographies.
-- **No external dependencies**: Everything stays in your vault, with no reliance on third-party applications.
+Here's how this workflow functions:
+
+- References as Markdown Notes: Each reference (article, book, chapter, etc.) is stored as a standard .md file. The **bibliographic data is contained within YAML frontmatter, structured to be compatible with the CSL-JSON standard commonly used by citation tools.**
+- Direct Linking within Your Vault: Because references are just notes, you can link to them (and from them) using standard Obsidian [[wikilinks]]. This allows you to connect your ideas, meeting notes, or project plans directly to the relevant source material within the same system.
+- Plain Text Simplicity and Durability: Using markdown and YAML means your reference data is stored in open, human-readable formats. This makes your library easily portable, searchable with standard text tools, manageable with version control (like Git), and less dependent on the future of any single piece of software.
+- Utilizing Obsidian's Tools: Obsidian's built-in features like search, backlinks, tags, and graph view work directly on your reference notes. You can also use community plugins, such as Dataview, to query and organize your reference data in flexible ways (e.g., listing papers by author, year, or tag).
+- Simplified Reference Entry: To ease the process of adding new references, BibLib includes tools to fetch bibliographic metadata automatically using identifiers like DOIs, URLs, or ISBNs via the Citoid and CrossRef APIs.
+- Connecting Notes to Source Texts: The workflow integrates with Obsidian's handling of PDFs. You can link directly from a line in your notes to a specific page and location within a PDF attached to a reference note, keeping your arguments closely tied to the source text.
+- Preparing for Publication: Since the YAML frontmatter is CSL-compatible, BibLib can generate a bibliography.json file from your notes (if you decide you don't like *this* plugin, it is also trivial to write your own script to convert the YAML frontmatter to a CSL file). This file can then be used directly with tools like Pandoc to create formatted citations and bibliographies in your final documents, avoiding manual export steps from external managers.
 
 This approach has proven effective for my personal academic workflow for several years, offering a good balance of simplicity and power. When combined with plugins like [PDF++](https://github.com/RyotaUshio/obsidian-pdf-plus), BibLib creates a comprehensive environment for managing both reference metadata and annotations in a unified, interlinked system.
 
