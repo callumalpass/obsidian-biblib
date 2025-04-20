@@ -135,11 +135,7 @@ This workflow keeps your references, PDFs, and annotations all within the same s
 
 ## Upcoming Features
 
-- Citation export for integration with reference managers
-- Template system for customizing literature note format
 - Bulk import of existing bibliographic data from BibTeX/CSL-JSON
-- Enhanced search through bibliography entries
-- Citation styles preview
 
 ## Important Note About Obsidian's YAML Parser
 
