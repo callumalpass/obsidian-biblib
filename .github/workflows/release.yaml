@@ -19,8 +19,8 @@ jobs:
 
       - name: Build plugin
         run: |
-          pnpm install
-          pnpm build
+          npm install
+          npm build
 
       - name: Create release
         env:
