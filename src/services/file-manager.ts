@@ -212,20 +212,19 @@ export class FileManager {
      * Supports basic Mustache-like syntax: {{variable}} and {{^variable}}fallback{{/variable}}
      */
     private renderTemplate(template: string, variables: { [key: string]: string }): string {
-        // Basic variable replacement {{variable}}
-        let result = template.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
-            // Handle negation/fallback syntax: {{^variable}}fallback{{/variable}}
-            if (key.startsWith('^')) {
-                return ''; // This will be handled in the next step
-            }
-            return variables[key] || '';
-        });
-        
-        // Handle conditional blocks {{^variable}}content{{/variable}}
+        // Process conditional blocks first {{^variable}}content{{/variable}}
         // These show content only if the variable is empty/undefined
-        result = result.replace(/\{\{\^([^}]+)\}\}(.*?)\{\{\/\1\}\}/gs, (match, key, content) => {
+        let result = template.replace(/\{\{\^([^}]+)\}\}(.*?)\{\{\/\1\}\}/gs, (match, key, content) => {
             const value = variables[key];
             return value ? '' : content;
+        });
+        
+        // Then do basic variable replacement {{variable}}
+        result = result.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+            if (key.startsWith('^')) {
+                return ''; // Skip this, it's part of a conditional that was already processed
+            }
+            return variables[key] || '';
         });
         
         return result;
