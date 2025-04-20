@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Add this permissions block
+    permissions:
+      contents: write # Grant permission to write contents (needed for creating releases)
 
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +35,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${GITHUB_REF#refs/tags/}"
+
+          # Ensure the files exist before trying to attach them
+          ls -l main.js manifest.json styles.css || exit 1
 
           gh release create "$tag" \
             --title="$tag" \
