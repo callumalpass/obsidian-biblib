@@ -729,13 +729,25 @@ export class BibliographyModal extends Modal {
             'author', 'editor', 'translator', 'container-author'
         ];
         
+        // List of source fields that get mapped to CSL fields (should be excluded from additional fields)
+        const mappedSourceFields = [
+            'itemType', 'journalAbbreviation', 'shortTitle', 'publicationTitle', 
+            'bookTitle', 'conferenceName', 'proceedingsTitle', 'encyclopediaTitle', 
+            'dictionaryTitle', 'websiteTitle', 'reportNumber', 'billNumber', 
+            'seriesNumber', 'patentNumber', 'numPages', 'numberOfVolumes', 
+            'isbn', 'issn', 'date', 'accessDate', 'dateDecided', 'dateEnacted', 
+            'pages', 'firstPage', 'place', 'archive_location', 'event_place', 
+            'publisher_place', 'abstractNote', 'creators'
+        ];
+        
         // Clear existing additional fields
         this.additionalFieldsContainer.empty();
         this.additionalFields = [];
         
         // Collect additional fields
         Object.keys(citationData).forEach(key => {
-            if (!handledFields.includes(key) && citationData[key]) {
+            // Skip fields that are handled in the main form or are source fields for CSL mapping
+            if ((!handledFields.includes(key) && !mappedSourceFields.includes(key)) && citationData[key]) {
                 // Determine field type and format the value
                 let fieldType = 'standard';
                 let fieldValue = citationData[key];
