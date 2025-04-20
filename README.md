@@ -102,6 +102,7 @@ This workflow keeps your references, PDFs, and annotations all within the same s
 ## Settings
 
 ### File Paths
+
 - **Attachment folder path**: Where PDF and EPUB attachments will be stored
 - **Create subfolder for attachments**: Option to create a subfolder for each citation
 - **Literature note location**: Where literature notes will be stored
@@ -109,15 +110,18 @@ This workflow keeps your references, PDFs, and annotations all within the same s
 - **Literature note prefix**: The prefix to add to literature note filenames
 
 ### API Settings
+
 - **Citoid API URL**: The URL for the Citoid API to fetch bibliographic data (default uses Wikipedia's Citoid API, with CrossRef API fallback for DOIs)
 
 ### Custom Frontmatter Fields
+
 - **Include date created**: Add a dateCreated field with creation timestamp
 - **Include year field**: Add a separate year field for easy filtering
 - **Include author links**: Add authorLink field with Obsidian links to author pages
 - **Include attachment links**: Add attachment field with Obsidian links to attached files
 
 ### Note Templates
+
 - **Header Template**: Customize the format of the first header in literature notes using variables:
   - `{{title}}` - The title of the reference
   - `{{citekey}}` - The citation key
@@ -129,6 +133,7 @@ This workflow keeps your references, PDFs, and annotations all within the same s
   - `{{container-title}}` - The title of the container book
 
 ### Bibliography Builder
+
 - **Bibliography JSON path**: Where to save the bibliography.json file
 - **Citekey list path**: Where to save the citekeylist.md file
 
