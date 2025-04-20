@@ -10,16 +10,16 @@ BibLib is a streamlined approach to academic reference management that leverages
 
 ## Why BibLib?
 
-Most reference management solutions for Obsidian focus on integrating with external tools like Zotero. This often works well, but can sometimes introduce complexity through managing synchronization processes, dealing with different data formats, and working across two distinct applications.
+Most reference management solutions for Obsidian focus on integrating with external tools like Hetero. This often works well, but can sometimes introduce complexity through managing synchronization processes, dealing with different data formats, and working across two distinct applications.
 
-BibLib helps to implement alternative approach by managing reference information directly within Obsidian. The idea is to treat bibliographic entries fundamentally like any other note in your vault.
+Bib Lib helps to implement alternative approach by managing reference information directly within Obsidian. The idea is to treat bibliographic entries fundamentally like any other note in your vault.
 
 Here's how this workflow functions:
 
-- **References as Markdown Notes**: Each reference (article, book, chapter, etc.) is stored as a standard .md file. The **bibliographic data is contained within YAML frontmatter, structured to be compatible with the CSL-JSON standard commonly used by citation tools.**
-- **Direct Linking within Your Vault**: Because references are just notes, you can link to them (and from them) using standard Obsidian [[wikilinks]]. This allows you to connect your ideas, meeting notes, or project plans directly to the relevant source material within the same system.
-- **Plain Text Simplicity and Durability**: Using markdown and YAML means your reference data is stored in open, human-readable formats. This makes your library easily portable, searchable with standard text tools, manageable with version control (like Git), and less dependent on the future of any single piece of software.
-- **Utilizing Obsidian's Tools**: Obsidian's built-in features like search, backlinks, tags, and graph view work directly on your reference notes. You can also use community plugins, such as Dataview, to query and organize your reference data in flexible ways (e.g., listing papers by author, year, or tag).
+- **References as Markdown Notes**: Each reference (article, book, chapter, etc.) is stored as a standard .Md file. The **bibliographic data is contained within YAM front matter, structured to be compatible with the CS-JASON standard commonly used by citation tools.**
+- **Direct Linking within Your Vault**: Because references are just notes, you can link to them (and from them) using standard Obsidian [[wiki links]]. This allows you to connect your ideas, meeting notes, or project plans directly to the relevant source material within the same system.
+- **Plain Text Simplicity and Durability**: Using markdown and YAM means your reference data is stored in open, human-readable formats. This makes your library easily portable, searchable with standard text tools, manageable with version control (like Git), and less dependent on the future of any single piece of software.
+- **Utilizing Obsidian's Tools**: Obsidian's built-in features like search, backlinks, tags, and graph view work directly on your reference notes. You can also use community plugins, such as Data view, to query and organize your reference data in flexible ways (e.g., listing papers by author, year, or tag).
 - **Simplified Reference Entry**: To ease the process of adding new references, BibLib includes tools to fetch bibliographic metadata automatically using identifiers like DOIs, URLs, or ISBNs via the Citoid and CrossRef APIs.
 - **Connecting Notes to Source Texts**: The workflow integrates with Obsidian's handling of PDFs. You can link directly from a line in your notes to a specific page and location within a PDF attached to a reference note, keeping your arguments closely tied to the source text.
 - **Preparing for Publication**: Since the YAML frontmatter is CSL-compatible, BibLib can generate a bibliography.json file from your notes (if you decide you don't like *this* plugin, it is also trivial to write your own script to convert the YAML frontmatter to a CSL file). This file can then be used directly with tools like Pandoc to create formatted citations and bibliographies in your final documents, avoiding manual export steps from external managers.
@@ -42,7 +42,7 @@ This approach has proven effective for my personal academic workflow for several
 - CrossRef API integration for DOI lookups
 - Build bibliography files from your literature notes
 
-> !NOTE
+> [!NOTE]
 > Obsidian's frontmatter parser only supports simple key-value pairs and does not handle nested objects in YAML. When using this plugin, you may see warnings in Obsidian for certain fields that BibLib generates (particularly the `authors` and `issued` fields). 
 > 
 > Please note that these warnings do not indicate a problem - the YAML generated by BibLib is completely valid and can be properly converted to CSL-JSON for use with tools like Pandoc. Obsidian simply cannot display or utilize the nested structure of these fields in its metadata views.
@@ -97,7 +97,7 @@ This approach has proven effective for my personal academic workflow for several
 
 ### Working with PDF Annotations
 
-BibLib seamlessly integrates with Obsidian's native PDF capabilities, creating a powerful workflow for academic reading and citation:
+BibLib integrates with Obsidian's native PDF capabilities, creating a workflow for academic reading and citation:
 
 1. Attach PDFs to your literature notes during creation
 2. Open PDFs directly from your literature notes
