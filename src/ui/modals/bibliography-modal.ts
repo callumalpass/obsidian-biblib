@@ -841,6 +841,14 @@ export class BibliographyModal extends Modal {
         
         // Collect additional fields
         Object.keys(citationData).forEach(key => {
+            // Special handling for tags - preserve them but don't show in additional fields
+            if (key === 'tags' && Array.isArray(citationData.tags)) {
+                // Store tags on the citation object directly
+                // The file manager will ensure 'literature_note' tag is added
+                this.getFormValues().tags = citationData.tags;
+                return;
+            }
+            
             // Skip fields that are handled in the main form or are source fields for CSL mapping
             if ((!handledFields.includes(key) && !mappedSourceFields.includes(key)) && citationData[key]) {
                 // Determine field type and format the value
@@ -868,7 +876,8 @@ export class BibliographyModal extends Modal {
      * Get all form values as a citation object
      */
     private getFormValues(): Citation {
-        return {
+        // Create base citation with core fields
+        const citation: Citation = {
             id: this.idInput.value.trim(),
             type: this.typeDropdown.value,
             title: this.titleInput.value.trim(),
@@ -888,6 +897,11 @@ export class BibliographyModal extends Modal {
             month: this.monthDropdown.value !== '0' ? this.monthDropdown.value : undefined,
             day: this.dayInput.value.trim() || undefined
         };
+        
+        // Citation will be extended with any additional properties like tags
+        // when the Citoid data is processed
+        
+        return citation;
     }
 
     /**

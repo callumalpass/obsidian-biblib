@@ -1,5 +1,5 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import { BibliographyPlugin } from '../main';
+import BibliographyPlugin from '../../main';
 
 export class BibliographySettingTab extends PluginSettingTab {
     plugin: BibliographyPlugin;

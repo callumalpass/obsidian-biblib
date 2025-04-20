@@ -306,7 +306,7 @@ export class BibliographyModal extends Modal {
         console.log('Converting MediaWiki author format to CSL format');
         
         // Convert MediaWiki format to CSL format
-        normalized.author = normalized.author.map((nameArray: string[]) => {
+        normalized.author = normalized.author.map((nameArray: any[]) => {
           if (nameArray.length >= 2) {
             return {
               given: nameArray[0], // First element is the given name
@@ -318,8 +318,8 @@ export class BibliographyModal extends Modal {
               family: nameArray[0]
             };
           }
-          return null;
-        }).filter((name): name is { family: string; given?: string } => name !== null);
+          return null; // Explicitly return null for invalid cases
+        }).filter((name: any): name is { family: string; given?: string } => name !== null);
         
         console.log('Converted authors:', normalized.author);
       }
@@ -347,7 +347,7 @@ export class BibliographyModal extends Modal {
         
         // Convert to CSL date format
         normalized[cslField] = {
-          'date-parts': [dateParts.filter((part): part is number => !isNaN(part))]
+          'date-parts': [dateParts.filter((part: number): part is number => !isNaN(part))]
         };
         
         // Remove the original date field
@@ -361,8 +361,8 @@ export class BibliographyModal extends Modal {
     if (normalized.tags && Array.isArray(normalized.tags) && normalized.tags.length > 0) {
       // Extract tag values
       const tags = normalized.tags
-        .filter((tag): tag is {tag: string} | string => tag && (typeof tag === 'object' ? 'tag' in tag : typeof tag === 'string'))
-        .map((tag): string => typeof tag === 'string' ? tag : tag.tag);
+        .filter((tag: any): tag is {tag: string} | string => tag && (typeof tag === 'object' ? 'tag' in tag : typeof tag === 'string'))
+        .map((tag: {tag: string} | string): string => typeof tag === 'string' ? tag : tag.tag);
       
       if (tags.length > 0) {
         // Join tags into a keyword string (CSL uses a single 'keyword' field)
@@ -758,6 +758,7 @@ export class BibliographyModal extends Modal {
             this.additionalFields = this.additionalFields.filter(f => f !== field);
             fieldDiv.remove();
           };
+            } // Close if (fieldDiv)
         });
       }
       

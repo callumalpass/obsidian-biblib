@@ -30,6 +30,7 @@ export class ChapterModal extends Modal {
     private abstractInput: HTMLTextAreaElement;
     private contributorsListContainer: HTMLDivElement;
     private additionalFieldsContainer: HTMLDivElement;
+    private doiInput: HTMLInputElement;
     
     // Attachment elements
     private attachmentTypeSelect: HTMLSelectElement;
@@ -39,17 +40,28 @@ export class ChapterModal extends Modal {
         super(app);
         this.fileManager = new FileManager(app, settings);
         
-        // If initialBookPath is provided, try to load that book
-        if (initialBookPath) {
-            this.loadBook(initialBookPath);
-        }
+        // If initialBookPath is provided, store it for later loading
+        this.initialBookPath = initialBookPath;
     }
+
+    private initialBookPath?: string;
 
     private async loadBook(bookPath: string) {
         const book = await this.fileManager.getBookEntryByPath(bookPath);
         if (book) {
             this.selectedBook = book;
             console.log('Loaded book:', this.selectedBook);
+            
+            // Only apply the book data after UI elements are created
+            if (this.bookDropdown) {
+                // Set dropdown value
+                const bookPath = this.bookEntries.find(b => b.id === book.id)?.path;
+                if (bookPath) {
+                    this.bookDropdown.value = bookPath;
+                }
+                // Call populateFromBook to set all form fields
+                this.populateFromBook(book);
+            }
         }
     }
     
@@ -70,6 +82,11 @@ export class ChapterModal extends Modal {
         
         // Create the main form
         this.createMainForm(contentEl);
+        
+        // Now that the UI is created, load the initial book if provided
+        if (this.initialBookPath) {
+            await this.loadBook(this.initialBookPath);
+        }
     }
     
     private createMainForm(contentEl: HTMLElement) {
@@ -147,7 +164,8 @@ export class ChapterModal extends Modal {
             
             // Set initial value if book is already selected
             if (this.selectedBook) {
-                const bookPath = this.bookEntries.find(b => b.id === this.selectedBook.id)?.path;
+                // Use non-null assertion assuming selectedBook is non-null inside this block
+                const bookPath = this.bookEntries.find(b => b.id === this.selectedBook!.id)?.path;
                 if (bookPath) {
                     dropdown.setValue(bookPath);
                 }
@@ -228,6 +246,16 @@ export class ChapterModal extends Modal {
                 this.dayInput = text.inputEl;
                 text.setPlaceholder('Enter Day (optional)').onChange(value => {
                     console.log(`Day set to: ${value.trim()}`);
+                });
+            });
+            
+        // DOI input
+        new Setting(contentEl)
+            .setName('DOI')
+            .addText(text => {
+                this.doiInput = text.inputEl;
+                text.setPlaceholder('Enter DOI (optional)').onChange(value => {
+                    console.log(`DOI set to: ${value.trim()}`);
                 });
             });
 
@@ -508,7 +536,7 @@ export class ChapterModal extends Modal {
             // Standard editor format
             book.frontmatter.editor.forEach((editor: any) => {
                 if (editor.family) {
-                    this.addContributor('editor', editor.given || '', editor.family);
+                    this.addContributor('container-author', editor.given || '', editor.family);
                     foundEditors = true;
                 }
             });
@@ -516,15 +544,14 @@ export class ChapterModal extends Modal {
             // Alternative collection editor format
             book.frontmatter.collection_editor.forEach((editor: any) => {
                 if (editor.family) {
-                    this.addContributor('editor', editor.given || '', editor.family);
+                    this.addContributor('container-author', editor.given || '', editor.family);
                     foundEditors = true;
                 }
             });
         }
         
         if (foundEditors) {
-            new Notice('Imported editors from container book as editors');
-        }
+            new Notice('Imported editors from container book as container-authors');
         }
         
         // Offer to use same attachment if available
@@ -564,12 +591,20 @@ export class ChapterModal extends Modal {
             abstract: this.abstractInput.value.trim() || undefined,
             year: this.yearInput.value.trim(),
             month: this.monthDropdown.value !== '0' ? this.monthDropdown.value : undefined,
-            day: this.dayInput.value.trim() || undefined
+            day: this.dayInput.value.trim() || undefined,
+            DOI: this.doiInput?.value.trim() || undefined
         };
         
         // Add container title if a book is selected
         if (this.selectedBook) {
             citation['container-title'] = this.selectedBook.title;
+            
+            // Inherit tags from container book if available
+            if (this.selectedBook.frontmatter.tags && Array.isArray(this.selectedBook.frontmatter.tags)) {
+                // Copy tags but exclude 'literature_note' since FileManager will add it
+                citation.tags = this.selectedBook.frontmatter.tags
+                    .filter((tag: string) => tag !== 'literature_note');
+            }
         }
         
         return citation;

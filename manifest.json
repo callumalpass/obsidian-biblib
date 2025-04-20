@@ -3,7 +3,7 @@
 	"name": "BibLib",
 	"version": "0.1.0",
 	"minAppVersion": "0.15.0",
-	"description": "Create literature notes and manage bibliographic references",
+	"description": "Create literature notes and manage bibliographic references.",
 	"author": "Callum Alpass",
 	"isDesktopOnly": false
 }

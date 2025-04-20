@@ -49,7 +49,10 @@ export class FileManager {
                 ...(citation.DOI && { DOI: citation.DOI }),
                 ...(citation.abstract && { abstract: citation.abstract }),
                 // Add metadata fields (non-CSL)
-                tags: ['literature_note'],
+                // Ensure 'literature_note' tag is always present, while preserving any existing tags
+                tags: citation.tags && Array.isArray(citation.tags) 
+                    ? [...new Set([...citation.tags, 'literature_note'])] 
+                    : ['literature_note'],
             };
             
             // Add configurable non-CSL fields based on settings
