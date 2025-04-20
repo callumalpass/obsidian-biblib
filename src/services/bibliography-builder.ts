@@ -1,4 +1,4 @@
-import { App, Notice, TFile, Vault } from 'obsidian';
+import { App, Notice, TFile, Vault, normalizePath } from 'obsidian';
 import { BibliographyPluginSettings } from '../types';
 
 /**
@@ -14,7 +14,7 @@ export class BibliographyBuilder {
     }
 
     /**
-     * Build a bibliography file containing all literature notes in the vault
+     * Build bibliography files containing all literature notes in the vault
      */
     async buildBibliography(): Promise<void> {
         const literatureNotes = await this.findLiteratureNotes();
@@ -28,10 +28,14 @@ export class BibliographyBuilder {
         // 1. A citekey list (simple list of citation keys)
         // 2. A bibliography JSON (full data for all literature notes)
         
-        await this.createCitekeyList(literatureNotes);
-        await this.createBibliographyJson(literatureNotes);
-        
-        new Notice(`Bibliography files created with ${literatureNotes.length} entries.`);
+        try {
+            await this.createCitekeyList(literatureNotes);
+            await this.createBibliographyJson(literatureNotes);
+            new Notice(`Bibliography files created/updated with ${literatureNotes.length} entries.`);
+        } catch (error) {
+             // Errors are logged within the creation functions
+             // Notice is shown within the creation functions
+        }
     }
     
     /**
@@ -45,25 +49,10 @@ export class BibliographyBuilder {
         
         for (const file of markdownFiles) {
             try {
-                // Read the file
-                const content = await this.app.vault.read(file);
-                
-                // Check if it has frontmatter
-                if (!content.startsWith('---')) {
-                    continue;
-                }
-                
-                // Find the end of frontmatter
-                const endOfFrontmatter = content.indexOf('---', 3);
-                if (endOfFrontmatter === -1) {
-                    continue;
-                }
-                
-                // Extract frontmatter content
-                const frontmatterContent = content.substring(3, endOfFrontmatter).trim();
-                
-                // Parse frontmatter
-                const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+                // Check metadata cache first for efficiency
+                const cache = this.app.metadataCache.getFileCache(file);
+                const frontmatter = cache?.frontmatter;
+
                 if (!frontmatter) {
                     continue;
                 }
@@ -71,6 +60,12 @@ export class BibliographyBuilder {
                 // Check if it has literature_note tag
                 const tags = frontmatter.tags;
                 if (!tags || !Array.isArray(tags) || !tags.includes('literature_note')) {
+                    continue;
+                }
+
+                // Check if it has an ID (citekey)
+                if (!frontmatter.id) {
+                    console.warn(`Literature note ${file.path} is missing an 'id' field in frontmatter.`);
                     continue;
                 }
                 
@@ -88,14 +83,13 @@ export class BibliographyBuilder {
     }
     
     /**
-     * Create a list of citation keys
+     * Create or update a list of citation keys
      */
     private async createCitekeyList(literatureNotes: {file: TFile, frontmatter: any}[]): Promise<void> {
         // Extract citation keys (the ID field from each note)
         const citationKeys = literatureNotes
-            .filter(note => note.frontmatter.id)
             .map(note => note.frontmatter.id)
-            .sort();
+            .sort(); // ID is already validated in findLiteratureNotes
         
         // Create a plaintext file with just the keys
         const rawKeys = citationKeys.join('\n');
@@ -103,24 +97,25 @@ export class BibliographyBuilder {
         // Create a formatted markdown file with @ prefixes
         const formattedKeys = citationKeys.map(key => `@${key}`).join('\n');
         
-        // Determine file paths
-        const biblibPath = this.settings.attachmentFolderPath;
-        const rawFilePath = `${biblibPath}/citekeylist`;
-        const formattedFilePath = this.settings.citekeyListPath;
+        // Determine file paths using normalizePath
+        const biblibPath = normalizePath(this.settings.attachmentFolderPath);
+        // Simple text file, maybe add .txt for clarity?
+        const rawFilePath = normalizePath(`${biblibPath}/citekeylist.txt`); 
+        const formattedFilePath = normalizePath(this.settings.citekeyListPath); 
         
         // Ensure biblib directory exists
         try {
             const biblibFolder = this.app.vault.getAbstractFileByPath(biblibPath);
             if (!biblibFolder) {
                 await this.app.vault.createFolder(biblibPath);
+                console.log(`Created directory: ${biblibPath}`);
             }
         } catch (error) {
-            console.error(`Error ensuring biblib directory exists:`, error);
+            console.error(`Error ensuring biblib directory exists (${biblibPath}):`, error);
         }
         
-        // Write the files
+        // Write the files using modify/create
         try {
-            // Create or update the raw file
             const existingRawFile = this.app.vault.getAbstractFileByPath(rawFilePath);
             if (existingRawFile instanceof TFile) {
                 await this.app.vault.modify(existingRawFile, rawKeys);
@@ -128,72 +123,37 @@ export class BibliographyBuilder {
                 await this.app.vault.create(rawFilePath, rawKeys);
             }
             
-            // Create or update the formatted file
             const existingFormattedFile = this.app.vault.getAbstractFileByPath(formattedFilePath);
             if (existingFormattedFile instanceof TFile) {
                 await this.app.vault.modify(existingFormattedFile, formattedKeys);
             } else {
                 await this.app.vault.create(formattedFilePath, formattedKeys);
             }
+
         } catch (error) {
-            console.error(`Error writing citekey list files:`, error);
-            new Notice('Error creating citekey list files.');
+            console.error(`Error writing citekey list files (${rawFilePath}, ${formattedFilePath}):`, error);
+            new Notice('Error creating citekey list files. Check console.');
+            throw error; // Re-throw to indicate overall build failure
         }
     }
     
     /**
-     * Create a bibliography JSON file with all literature note data
+     * Create or update a bibliography JSON file with all literature note data
      */
     private async createBibliographyJson(literatureNotes: {file: TFile, frontmatter: any}[]): Promise<void> {
         // Prepare the data for each literature note
         const bibliographyData = literatureNotes.map(note => {
             // Extract the relevant data from frontmatter
-            const {
-                id,
-                type,
-                title,
-                year,
-                author,
-                editor,
-                issued,
-                'container-title': containerTitle,
-                publisher,
-                'publisher-place': publisherPlace,
-                URL,
-                DOI,
-                page,
-                volume,
-                number,
-                issue,
-                abstract,
-                tags,
-                ...rest
+            const { 
+                position, // Remove Obsidian-specific metadata
+                tags, 
+                 ...cslData 
             } = note.frontmatter;
             
-            // Create a structured entry
-            return {
-                id,
-                filename: note.file.basename,
-                path: note.file.path,
-                type,
-                title,
-                year,
-                author,
-                editor,
-                issued,
-                'container-title': containerTitle,
-                publisher,
-                'publisher-place': publisherPlace,
-                URL,
-                DOI,
-                page,
-                volume,
-                number,
-                issue,
-                abstract,
-                tags,
-                // Include any other fields that might be useful
-                ...rest
+            // Add file path for reference
+            return { 
+                ...cslData, 
+                obsidianPath: note.file.path 
             };
         });
         
@@ -201,20 +161,20 @@ export class BibliographyBuilder {
         const bibliographyJson = JSON.stringify(bibliographyData, null, 2);
         
         // Determine the output file path
-        const outputFilePath = this.settings.bibliographyJsonPath;
+        const outputFilePath = normalizePath(this.settings.bibliographyJsonPath);
         
-        // Write the file
+        // Write the file using modify/create
         try {
-            // Create or update the bibliography file
-            const existingFile = this.app.vault.getAbstractFileByPath(outputFilePath);
+             const existingFile = this.app.vault.getAbstractFileByPath(outputFilePath);
             if (existingFile instanceof TFile) {
                 await this.app.vault.modify(existingFile, bibliographyJson);
             } else {
                 await this.app.vault.create(outputFilePath, bibliographyJson);
             }
         } catch (error) {
-            console.error(`Error writing bibliography JSON file:`, error);
-            new Notice('Error creating bibliography JSON file.');
+            console.error(`Error writing bibliography JSON file (${outputFilePath}):`, error);
+            new Notice('Error creating bibliography JSON file. Check console.');
+            throw error; // Re-throw to indicate overall build failure
         }
     }
 }

@@ -196,3 +196,14 @@
 .bibliography-modal::-webkit-scrollbar-thumb:hover {
   background-color: var(--background-modifier-hover);
 }
+
+/* Styles for the temporary modal used in linking files */
+.link-path-input {
+  width: 100%; /* Maintain full width */
+}
+
+.link-button-container {
+  margin-top: 1rem; /* Maintain margin */
+  display: flex; /* Optional: Arrange buttons nicely */
+  gap: 0.5rem; /* Optional: Add space between buttons */
+}

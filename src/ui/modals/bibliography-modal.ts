@@ -1,4 +1,4 @@
-import { App, Modal, Notice, Setting } from 'obsidian';
+import { App, Modal, Notice, Setting, ButtonComponent } from 'obsidian'; // Added ButtonComponent
 import { BibliographyPluginSettings } from '../../types/settings';
 import { Contributor, AdditionalField, Citation, AttachmentData, AttachmentType } from '../../types/citation';
 import { ContributorField } from '../components/contributor-field';
@@ -104,7 +104,9 @@ export class BibliographyModal extends Modal {
                 }
                 
                 // Populate the form with the citation data
-                this.populateFormFromCitoid(citationData);
+                 // Ensure data is normalized before populating
+                 const normalizedData = CslMapper.normalizeToCslFormat(citationData);
+                this.populateFormFromCitoid(normalizedData);
             } catch (error) {
                 console.error('Error fetching citation data:', error);
                 new Notice('Error fetching citation data. Please check the identifier and try again.');
@@ -121,8 +123,10 @@ export class BibliographyModal extends Modal {
             .setName('Citekey')
             .addText(text => {
                 this.idInput = text.inputEl;
-                text.setPlaceholder('Enter Citekey').onChange(value => {
-                });
+                text.setPlaceholder('Enter Citekey')
+                  .onChange(value => {
+                     // Potential future validation or auto-generation logic
+                  });
             });
 
         // Type input (dropdown with validation)
@@ -179,6 +183,7 @@ export class BibliographyModal extends Modal {
                 });
 
                 dropdown.onChange(value => {
+                    // Potential future logic based on type change
                 });
             });
 
@@ -188,6 +193,7 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.titleInput = text.inputEl;
                 text.setPlaceholder('Enter Title').onChange(value => {
+                     // Potential future logic
                 });
             });
 
@@ -197,6 +203,7 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.titleShortInput = text.inputEl;
                 text.setPlaceholder('Enter Short Title').onChange(value => {
+                    // Potential future logic
                 });
             });
 
@@ -206,6 +213,7 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.pageInput = text.inputEl;
                 text.setPlaceholder('Enter Page or Page Range').onChange(value => {
+                     // Potential future logic
                 });
             });
 
@@ -215,11 +223,12 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.urlInput = text.inputEl;
                 text.setPlaceholder('Enter URL').onChange(value => {
+                     // Potential future logic
                 });
             });
 
         // Contributors section
-        new Setting(contentEl).setName('Contributors');
+        new Setting(contentEl).setName('Contributors').setHeading(); // Use heading for clarity
         const contributorsContainer = contentEl.createDiv();
         this.contributorsListContainer = contributorsContainer.createDiv({ cls: 'bibliography-contributors-list' });
 
@@ -234,12 +243,15 @@ export class BibliographyModal extends Modal {
         // Add initial contributor field
         this.addContributor('author', '', '');
 
-        // Date of Publication inputs
+        // --- Date of Publication inputs ---
+         new Setting(contentEl).setName('Publication Date').setHeading(); // Use heading for clarity
+
         new Setting(contentEl)
             .setName('Year')
             .addText(text => {
                 this.yearInput = text.inputEl;
                 text.setPlaceholder('Enter Year').onChange(value => {
+                     // Potential future logic
                 });
             });
 
@@ -249,24 +261,14 @@ export class BibliographyModal extends Modal {
                 this.monthDropdown = dropdown.selectEl;
                 dropdown.addOptions({
                     '0': 'Select Month (optional)',
-                    '1': 'January',
-                    '2': 'February',
-                    '3': 'March',
-                    '4': 'April',
-                    '5': 'May',
-                    '6': 'June',
-                    '7': 'July',
-                    '8': 'August',
-                    '9': 'September',
-                    '10': 'October',
-                    '11': 'November',
-                    '12': 'December',
+                    '1': 'January', '2': 'February', '3': 'March', '4': 'April', 
+                    '5': 'May', '6': 'June', '7': 'July', '8': 'August', 
+                    '9': 'September', '10': 'October', '11': 'November', '12': 'December',
                 });
-
+                // Set initial value if needed, maybe based on current month?
                 dropdown.onChange(value => {
-                    // If "select option" is chosen, the value needs to be cleared
-                    if(value == '0') {
-                    }
+                    // If "select option" is chosen, the value needs to be cleared internally
+                    // No explicit action needed here unless dependent logic exists
                 });
             });
 
@@ -275,15 +277,21 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.dayInput = text.inputEl;
                 text.setPlaceholder('Enter Day (optional)').onChange(value => {
+                     // Potential future logic
                 });
             });
+
+        // --- Publication Details --- 
+        new Setting(contentEl).setName('Publication Details').setHeading(); // Use heading for clarity
 
         // Container Title input
         new Setting(contentEl)
             .setName('Container Title')
+            .setDesc('e.g., Journal, Book Title, Website')
             .addText(text => {
                 this.containerTitleInput = text.inputEl;
                 text.setPlaceholder('Enter Container Title').onChange(value => {
+                     // Potential future logic
                 });
             });
 
@@ -293,6 +301,7 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.publisherInput = text.inputEl;
                 text.setPlaceholder('Enter Publisher').onChange(value => {
+                     // Potential future logic
                 });
             });
 
@@ -302,6 +311,7 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.publisherPlaceInput = text.inputEl;
                 text.setPlaceholder('Enter Publisher Place').onChange(value => {
+                     // Potential future logic
                 });
             });
 
@@ -311,6 +321,7 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.editionInput = text.inputEl;
                 text.setPlaceholder('Enter Edition (optional)').onChange(value => {
+                     // Potential future logic
                 });
             });
 
@@ -320,15 +331,18 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.volumeInput = text.inputEl;
                 text.setPlaceholder('Enter Volume (optional)').onChange(value => {
+                     // Potential future logic
                 });
             });
 
-        // Number input
+        // Number input (can mean Issue, Report Number, etc.)
         new Setting(contentEl)
             .setName('Number')
+            .setDesc('e.g., Issue number, Report number')
             .addText(text => {
                 this.numberInput = text.inputEl;
                 text.setPlaceholder('Enter Number (optional)').onChange(value => {
+                     // Potential future logic
                 });
             });
 
@@ -337,19 +351,15 @@ export class BibliographyModal extends Modal {
             .setName('Language')
             .addDropdown(dropdown => {
                 this.languageDropdown = dropdown.selectEl;
+                // Consider adding more languages or making this configurable
                 dropdown.addOptions({
                     '': 'Select Language',
-                    'en': 'English',
-                    'fr': 'French',
-                    'de': 'German',
-                    'es': 'Spanish',
-                    'it': 'Italian',
-                    'zh': 'Chinese',
-                    'ja': 'Japanese',
-                    'ko': 'Korean',
+                    'en': 'English', 'fr': 'French', 'de': 'German', 'es': 'Spanish',
+                    'it': 'Italian', 'zh': 'Chinese', 'ja': 'Japanese', 'ko': 'Korean',
                     'ru': 'Russian',
                 });
                 dropdown.onChange(value => {
+                     // Potential future logic
                 });
             });
 
@@ -359,6 +369,7 @@ export class BibliographyModal extends Modal {
             .addText(text => {
                 this.doiInput = text.inputEl;
                 text.setPlaceholder('Enter DOI').onChange(value => {
+                     // Potential future logic
                 });
             });
 
@@ -366,24 +377,27 @@ export class BibliographyModal extends Modal {
         new Setting(contentEl)
             .setName('Abstract')
             .addTextArea(text => {
-                this.abstractInput = text.inputEl as HTMLTextAreaElement;
+                this.abstractInput = text.inputEl;
                 text.setPlaceholder('Enter Abstract').onChange(value => {
+                     // Potential future logic
                 });
             });
 
-        // Attachment section
+        // --- Attachment Section --- 
+        new Setting(contentEl).setName('Attachment').setHeading();
+
         const attachmentSection = new Setting(contentEl)
-            .setName('Attachment')
+            // .setName('Attachment') // Name moved to heading
             .setDesc('Choose how to handle the attachment');
             
-        // Create import button
-        const importButton = new Setting(contentEl)
+        // Create import button setting (hidden initially)
+        const importSetting = new Setting(contentEl)
             .setName('Select File to Import')
             .addButton(button => {
                 button.setButtonText('Choose File').onClick(async () => {
                     const fileInput = document.createElement('input');
                     fileInput.type = 'file';
-                    fileInput.accept = '.pdf, .epub';
+                    fileInput.accept = '.pdf, .epub'; // Accept common formats
                     fileInput.onchange = () => {
                         if (fileInput.files && fileInput.files.length > 0) {
                             this.attachmentData = {
@@ -391,48 +405,49 @@ export class BibliographyModal extends Modal {
                                 file: fileInput.files[0],
                                 filename: fileInput.files[0].name
                             };
-                            button.setButtonText(fileInput.files[0].name);
+                            // Use || '' as fallback for potentially undefined filename
+                            button.setButtonText(this.attachmentData.filename || 'Choose File'); 
                         }
                     };
                     fileInput.click();
                 });
             });
             
-        // Create link button
-        const linkButton = new Setting(contentEl)
+        // Create link button setting (hidden initially)
+        const linkSetting = new Setting(contentEl)
             .setName('Link to Existing File')
             .addButton(button => {
                 button.setButtonText('Select File Path').onClick(async () => {
-                    // Create a text input for the file path
-                    const filePathInput = document.createElement('input');
-                    filePathInput.type = 'text';
-                    filePathInput.placeholder = 'Enter file path in vault';
-                    filePathInput.style.width = '100%';
-                    
                     // Create a temporary modal to get the file path
-                    const modal = new Modal(this.app);
-                    modal.titleEl.textContent = 'Enter Path to File';
+                    const linkModal = new Modal(this.app);
+                    linkModal.contentEl.addClass('bibliography-link-modal'); // Add class for styling
+                    linkModal.titleEl.textContent = 'Enter Path to File';
                     
-                    const form = modal.contentEl.createDiv();
-                    form.appendChild(filePathInput);
+                    const form = linkModal.contentEl.createDiv();
+                    const filePathInput = form.createEl('input', { 
+                        type: 'text', 
+                        placeholder: 'Enter file path in vault'
+                    });
+                    filePathInput.addClass('link-path-input'); // Use CSS class
                     
-                    const buttonContainer = modal.contentEl.createDiv();
-                    buttonContainer.style.marginTop = '1rem';
+                    const buttonContainer = linkModal.contentEl.createDiv();
+                    buttonContainer.addClass('link-button-container'); // Use CSS class
                     
                     const submitButton = buttonContainer.createEl('button', {
                         text: 'Link File',
-                        cls: 'mod-cta'
+                        cls: 'mod-cta' // Call to action style
                     });
                     submitButton.onclick = () => {
                         const filePath = filePathInput.value.trim();
                         if (filePath) {
                             this.attachmentData = {
                                 type: AttachmentType.LINK,
-                                path: filePath,
+                                path: filePath, // Path will be normalized by FileManager
                                 filename: filePath.split('/').pop() || filePath
                             };
-                            button.setButtonText(filePath.split('/').pop() || filePath);
-                            modal.close();
+                             // Use || '' as fallback for potentially undefined filename
+                            button.setButtonText(this.attachmentData.filename || 'Select File Path'); 
+                            linkModal.close();
                         }
                     };
                     
@@ -440,16 +455,19 @@ export class BibliographyModal extends Modal {
                         text: 'Cancel'
                     });
                     cancelButton.onclick = () => {
-                        modal.close();
+                        linkModal.close();
                     };
                     
-                    modal.open();
+                    linkModal.open();
                 });
             });
             
-        // Initially remove both buttons from DOM
-        importButton.settingEl.detach();
-        linkButton.settingEl.detach();
+        // Initially hide both buttons from DOM
+        importSetting.settingEl.style.display = 'none';
+        linkSetting.settingEl.style.display = 'none';
+        // Add them to the DOM but hidden
+        attachmentSection.settingEl.insertAdjacentElement('afterend', importSetting.settingEl);
+        attachmentSection.settingEl.insertAdjacentElement('afterend', linkSetting.settingEl); 
         
         // Add dropdown for attachment type
         attachmentSection.addDropdown(dropdown => {
@@ -461,22 +479,21 @@ export class BibliographyModal extends Modal {
             dropdown.onChange(value => {
                 // Update attachment data type
                 this.attachmentData.type = value as AttachmentType;
+                this.attachmentData.file = undefined; // Clear file/path when type changes
+                this.attachmentData.path = undefined;
                 
-                // Clear previous buttons
-                importButton.settingEl.detach();
-                linkButton.settingEl.detach();
+                // Show/hide appropriate button setting
+                importSetting.settingEl.style.display = (value === 'import') ? '' : 'none';
+                linkSetting.settingEl.style.display = (value === 'link') ? '' : 'none';
                 
-                // Add appropriate button based on selection
-                if (value === 'import') {
-                    attachmentSection.settingEl.insertAdjacentElement('afterend', importButton.settingEl);
-                } else if (value === 'link') {
-                    attachmentSection.settingEl.insertAdjacentElement('afterend', linkButton.settingEl);
-                }
+                // Reset button texts if needed (Cast to ButtonComponent)
+                (importSetting.components[0] as ButtonComponent).setButtonText('Choose File'); 
+                (linkSetting.components[0] as ButtonComponent).setButtonText('Select File Path');
             });
         });
 
-        // Additional CSL fields section
-        new Setting(contentEl).setName('Additional Fields');
+        // --- Additional CSL fields section --- 
+        new Setting(contentEl).setName('Additional Fields').setHeading();
         this.additionalFieldsContainer = contentEl.createDiv();
 
         // Button to add additional fields
@@ -488,13 +505,13 @@ export class BibliographyModal extends Modal {
             this.addAdditionalField('standard', '', '');
         };
 
-        // Submit button
-        const buttonContainer = contentEl.createDiv();
-        const submitButton = buttonContainer.createEl('button', { 
+        // --- Submit Button --- 
+        const finalButtonContainer = contentEl.createDiv({cls: 'bibliography-submit-container'});
+        const submitButton = finalButtonContainer.createEl('button', { 
             text: 'Create Note', 
-            cls: 'create-button' 
+            cls: 'mod-cta create-button' // Use call to action style
         });
-        submitButton.onclick = () => {
+        submitButton.onclick = async () => { // Make async
             // Get the current form values
             const citation: Citation = this.getFormValues();
             
@@ -503,12 +520,20 @@ export class BibliographyModal extends Modal {
                 return;
             }
             
-            this.handleSubmit(citation);
+            // Disable button during submission
+            submitButton.disabled = true;
+            submitButton.textContent = 'Creating...';
+
+            await this.handleSubmit(citation);
+
+            // Re-enable button after submission (handled in handleSubmit success/error)
+             // submitButton.disabled = false; 
+             // submitButton.textContent = 'Create Note';
         };
     }
 
     /**
-     * Add a contributor field with pre-filled data
+     * Add a contributor field UI component
      */
     private addContributor(role: string = 'author', given: string = '', family: string = ''): void {
         const contributor: Contributor = { role, given, family };
@@ -524,14 +549,10 @@ export class BibliographyModal extends Modal {
     }
 
     /**
-     * Add an additional field
+     * Add an additional field UI component
      */
-    private addAdditionalField(type: string = 'standard', name: string = '', value: any = ''): void {
-        // Ensure type is one of the allowed values
-        const validType = ['standard', 'number', 'date'].includes(type.toLowerCase()) ? 
-                          type.toLowerCase() : 'standard';
-                          
-        const field: AdditionalField = { type: validType, name, value };
+    private addAdditionalField(type: AdditionalField['type'] = 'standard', name: string = '', value: any = ''): void {
+        const field: AdditionalField = { type, name, value };
         this.additionalFields.push(field);
         
         new AdditionalFieldComponent(
@@ -544,120 +565,88 @@ export class BibliographyModal extends Modal {
     }
 
     /**
-     * Populate form fields from Citoid API data
+     * Populate form fields from Citoid API data (normalized CSL)
      */
-    private populateFormFromCitoid(citationData: any): void {
+    private populateFormFromCitoid(normalizedData: any): void {
         try {
-            
-            // Normalize citation data to CSL format
-            const normalizedData = CslMapper.normalizeToCslFormat(citationData);
-            
-            // Map basic fields
+            // --- Populate Basic Fields ---
+            let generatedCitekey = false;
             if (normalizedData.id) {
                 this.idInput.value = normalizedData.id;
-                this.idInput.dispatchEvent(new Event('input'));
-            } else if (normalizedData.key) {
-                // Use Zotero key if present
+            } else if (normalizedData.key) { // Zotero key fallback
                 this.idInput.value = normalizedData.key;
-                this.idInput.dispatchEvent(new Event('input'));
             } else if (normalizedData.title) {
-                // Generate ID from title if not present
-                this.idInput.value = CitekeyGenerator.generate(normalizedData);
-                this.idInput.dispatchEvent(new Event('input'));
+                 // Generate key using potentially available author/year from normalized data
+                this.idInput.value = CitekeyGenerator.generate(normalizedData); 
+                generatedCitekey = true;
             }
+            this.idInput.dispatchEvent(new Event('input'));
+            if (generatedCitekey) new Notice(`Generated citekey: ${this.idInput.value}`, 3000); // Short notice
             
-            // Log the citekey being set
-            
-            // Type - handle both CSL 'type' and Zotero 'itemType'
             if (normalizedData.type) {
-                // Find best match for the type
                 const typeValue = CslMapper.mapCitoidType(normalizedData.type);
                 if (typeValue && this.typeDropdown.querySelector(`option[value="${typeValue}"]`)) {
                     this.typeDropdown.value = typeValue;
-                    // Trigger change event to update any dependent fields
                     this.typeDropdown.dispatchEvent(new Event('change'));
                 }
             }
             
-            // Title fields
             if (normalizedData.title) {
                 this.titleInput.value = normalizedData.title;
                 this.titleInput.dispatchEvent(new Event('input'));
             }
-            
             if (normalizedData['title-short']) {
                 this.titleShortInput.value = normalizedData['title-short'];
                 this.titleShortInput.dispatchEvent(new Event('input'));
             }
-            
-            // URL
             if (normalizedData.URL) {
                 this.urlInput.value = normalizedData.URL;
                 this.urlInput.dispatchEvent(new Event('input'));
             }
-            
-            // DOI
             if (normalizedData.DOI) {
                 this.doiInput.value = normalizedData.DOI;
                 this.doiInput.dispatchEvent(new Event('input'));
             }
-            
-            // Container title (journal, book title, etc.)
             if (normalizedData['container-title']) {
                 this.containerTitleInput.value = normalizedData['container-title'];
                 this.containerTitleInput.dispatchEvent(new Event('input'));
             }
-            
-            // Publisher
             if (normalizedData.publisher) {
                 this.publisherInput.value = normalizedData.publisher;
                 this.publisherInput.dispatchEvent(new Event('input'));
             }
-            
-            // Publisher place
             if (normalizedData['publisher-place']) {
                 this.publisherPlaceInput.value = normalizedData['publisher-place'];
                 this.publisherPlaceInput.dispatchEvent(new Event('input'));
             }
-            
-            // Volume, issue, pages
             if (normalizedData.volume) {
                 this.volumeInput.value = normalizedData.volume.toString();
                 this.volumeInput.dispatchEvent(new Event('input'));
             }
-            
-            if (normalizedData.issue) {
-                this.numberInput.value = normalizedData.issue.toString();
-                this.numberInput.dispatchEvent(new Event('input'));
-            } else if (normalizedData.number) {
-                this.numberInput.value = normalizedData.number.toString();
+            // Handle both issue and number as potential fields for issue number
+            const issueOrNumber = normalizedData.issue || normalizedData.number;
+            if (issueOrNumber) {
+                this.numberInput.value = issueOrNumber.toString();
                 this.numberInput.dispatchEvent(new Event('input'));
             }
-            
             if (normalizedData.page) {
                 this.pageInput.value = normalizedData.page.toString();
                 this.pageInput.dispatchEvent(new Event('input'));
             }
-            
-            // Language
             if (normalizedData.language && this.languageDropdown.querySelector(`option[value="${normalizedData.language}"]`)) {
                 this.languageDropdown.value = normalizedData.language;
                 this.languageDropdown.dispatchEvent(new Event('change'));
             }
-            
-            // Edition
             if (normalizedData.edition) {
                 this.editionInput.value = normalizedData.edition.toString();
                 this.editionInput.dispatchEvent(new Event('input'));
             }
-            
-            // Abstract
             if (normalizedData.abstract) {
                 this.abstractInput.value = normalizedData.abstract;
                 this.abstractInput.dispatchEvent(new Event('input'));
             }
             
-            // Date (issued)
+            // --- Populate Date --- 
             if (normalizedData.issued && normalizedData.issued['date-parts'] && normalizedData.issued['date-parts'][0]) {
                 const dateParts = normalizedData.issued['date-parts'][0];
                 if (dateParts[0]) { // Year
@@ -672,16 +661,15 @@ export class BibliographyModal extends Modal {
                     this.dayInput.value = dateParts[2].toString();
                     this.dayInput.dispatchEvent(new Event('input'));
                 }
-            } else if (normalizedData.year) {
-                // Fallback to year field if issued date-parts not available
+            } else if (normalizedData.year) { // Fallback to year field
                 this.yearInput.value = normalizedData.year.toString();
                 this.yearInput.dispatchEvent(new Event('input'));
             }
             
-            // Contributors (authors, editors, etc.)
+            // --- Populate Contributors --- 
             this.handleContributors(normalizedData);
             
-            // Handle any additional fields that might be present
+            // --- Populate Additional Fields --- 
             this.handleAdditionalFields(normalizedData);
             
             new Notice('Citation data successfully retrieved and filled');
@@ -692,167 +680,132 @@ export class BibliographyModal extends Modal {
     }
 
     /**
-     * Handle contributors from Citoid data
+     * Handle contributors from normalized CSL data
      */
-    private handleContributors(citationData: any): void {
-        // Clear existing contributors first
-        this.contributorsListContainer.innerHTML = '';
+    private handleContributors(normalizedData: any): void {
+        // Clear existing contributor UI elements and internal state
+        this.contributorsListContainer.empty();
         this.contributors = [];
         
-        // Process different contributor types
-        const contributorTypes = [
+        // Process different contributor types defined in CSL
+        const contributorRoles = [
             'author', 'editor', 'translator', 'container-author', 'collection-editor', 
             'composer', 'director', 'interviewer', 'illustrator', 'original-author', 
-            'recipient', 'reviewed-author'
+            'recipient', 'reviewed-author', 'chair', 'compiler', 'contributor', 
+            'curator', 'editorial-director', 'executive-producer', 'guest', 'host', 
+            'narrator', 'organizer', 'performer', 'producer', 'script-writer', 
+            'series-creator'
         ];
         
         let foundContributors = false;
         
-        // Process CSL-format contributors (person objects with family/given)
-        contributorTypes.forEach(role => {
-            if (citationData[role] && Array.isArray(citationData[role])) {
-                citationData[role].forEach((person: any) => {
-                    // Handle array format [firstName, lastName]
-                    if (Array.isArray(person)) {
-                        if (person.length >= 2) {
-                            this.addContributor(role, person[0] || '', person[1] || '');
-                            foundContributors = true;
-                        } else if (person.length === 1) {
-                            this.addContributor(role, '', person[0] || '');
-                            foundContributors = true;
-                        }
-                    }
-                    // Handle literal names (institutions)
-                    else if (person.literal) {
-                        this.addContributor(role, '', person.literal);
-                        foundContributors = true;
-                    } 
-                    // Handle CSL format with family/given
-                    else if (person.family) {
-                        // Add contributor field
-                        this.addContributor(role, person.given || '', person.family);
-                        foundContributors = true;
-                    }
-                    // Try other name formats
-                    else if (typeof person === 'object') {
-                        // Try other field combinations
-                        const lastName = person.lastName || person.family || person.surname || '';
-                        const firstName = person.firstName || person.given || person.forename || '';
-                        
-                        if (lastName || firstName) {
-                            this.addContributor(role, firstName, lastName);
-                            foundContributors = true;
-                        }
-                    }
-                    // Handle string format (just a name)
-                    else if (typeof person === 'string' && person.trim()) {
-                        this.addContributor(role, '', person.trim());
-                        foundContributors = true;
+        contributorRoles.forEach(role => {
+            if (normalizedData[role] && Array.isArray(normalizedData[role])) {
+                normalizedData[role].forEach((person: any) => {
+                    if (person && typeof person === 'object') {
+                         // Handle CSL format {family, given} or {literal}
+                         if (person.literal) {
+                             this.addContributor(role, '', person.literal); // Treat literal as family name
+                             foundContributors = true;
+                         } else if (person.family || person.given) { // Ensure at least one name part exists
+                             this.addContributor(role, person.given || '', person.family || '');
+                             foundContributors = true;
+                         }
                     }
                 });
             }
         });
         
-        // Special handling for Zotero "creators" format
-        if (citationData.creators && Array.isArray(citationData.creators)) {
-            citationData.creators.forEach((creator: any) => {
-                // Map Zotero creator types to standard roles
-                const roleMap: {[key: string]: string} = {
-                    'author': 'author',
-                    'editor': 'editor', 
-                    'bookAuthor': 'container-author',
-                    'seriesEditor': 'collection-editor'
-                };
-                
-                const role = roleMap[creator.creatorType] || creator.creatorType || 'author';
-                
-                if (creator.lastName || creator.family) {
-                    const lastName = creator.lastName || creator.family;
-                    const firstName = creator.firstName || creator.given || '';
-                    this.addContributor(role, firstName, lastName);
-                    foundContributors = true;
-                } else if (creator.name) {
-                    // Institutional author
-                    this.addContributor(role, '', creator.name);
-                    foundContributors = true;
-                }
-            });
-        }
-        
-        // If no contributors were added, add a blank one
+        // If no contributors were added, add a blank 'author' field
         if (!foundContributors) {
             this.addContributor('author', '', '');
         }
     }
 
     /**
-     * Handle additional fields that may be in Citoid data but not in the main form
+     * Handle additional fields from normalized CSL data
      */
-    private handleAdditionalFields(citationData: any): void {
-        // List of fields that are already handled in the main form
-        const handledFields = [
-            'id', 'type', 'title', 'title-short', 'shortTitle', 'URL', 'DOI', 
-            'container-title', 'publisher', 'publisher-place', 'volume', 'issue', 
-            'number', 'page', 'language', 'abstract', 'edition', 'issued', 'year',
-            'author', 'editor', 'translator', 'container-author'
-        ];
-        
-        // List of source fields that get mapped to CSL fields (should be excluded from additional fields)
-        const mappedSourceFields = [
-            'itemType', 'journalAbbreviation', 'shortTitle', 'publicationTitle', 
-            'bookTitle', 'conferenceName', 'proceedingsTitle', 'encyclopediaTitle', 
-            'dictionaryTitle', 'websiteTitle', 'reportNumber', 'billNumber', 
-            'seriesNumber', 'patentNumber', 'numPages', 'numberOfVolumes', 
-            'isbn', 'issn', 'date', 'accessDate', 'dateDecided', 'dateEnacted', 
-            'pages', 'firstPage', 'place', 'archive_location', 'event_place', 
-            'publisher_place', 'abstractNote', 'creators'
-        ];
-        
-        // Clear existing additional fields
+    private handleAdditionalFields(normalizedData: any): void {
+        // List of fields already handled explicitly in the main form
+        const mainFormFields = new Set([
+            'id', 'type', 'title', 'title-short', 'URL', 'DOI', 'container-title', 
+            'publisher', 'publisher-place', 'volume', 'issue', 'number', 'page', 
+            'language', 'abstract', 'edition', 'issued', 'year',
+             // Contributor roles handled separately
+            'author', 'editor', 'translator', 'container-author', 'collection-editor', 
+            'composer', 'director', 'interviewer', 'illustrator', 'original-author', 
+            'recipient', 'reviewed-author', 'chair', 'compiler', 'contributor', 
+            'curator', 'editorial-director', 'executive-producer', 'guest', 'host', 
+            'narrator', 'organizer', 'performer', 'producer', 'script-writer', 
+            'series-creator',
+            // Fields used internally or mapped
+            'key', 'tags' 
+        ]);
+
+        // Clear existing additional field UI elements and internal state
         this.additionalFieldsContainer.empty();
         this.additionalFields = [];
         
-        // Collect additional fields
-        Object.keys(citationData).forEach(key => {
-            // Special handling for tags - preserve them but don't show in additional fields
-            if (key === 'tags' && Array.isArray(citationData.tags)) {
-                // Store tags on the citation object directly
-                // The file manager will ensure 'literature_note' tag is added
-                this.getFormValues().tags = citationData.tags;
-                return;
-            }
-            
-            // Skip fields that are handled in the main form or are source fields for CSL mapping
-            if ((!handledFields.includes(key) && !mappedSourceFields.includes(key)) && citationData[key]) {
-                // Determine field type and format the value
-                let fieldType = 'standard';
-                let fieldValue = citationData[key];
+        Object.keys(normalizedData).forEach(key => {
+             // Ensure the value is not null or undefined before processing
+            if (!mainFormFields.has(key) && normalizedData[key] != null) { 
+                const value = normalizedData[key];
+                let fieldType: AdditionalField['type'] = 'standard';
+                let fieldValue: any = value;
                 
-                // Handle different data types
-                if (typeof fieldValue === 'number') {
+                // Determine type for component rendering
+                if (typeof value === 'number') {
                     fieldType = 'number';
-                } else if (fieldValue && typeof fieldValue === 'object' && fieldValue['date-parts']) {
+                } else if (typeof value === 'object' && value['date-parts']) {
                     fieldType = 'date';
-                } else if (Array.isArray(fieldValue) && fieldValue.length > 0) {
-                    // For arrays (like ISBN, ISSN), take the first value
-                    fieldValue = fieldValue[0];
+                    // Convert CSL date to YYYY-MM-DD for input field, if possible
+                    const dp = value['date-parts'][0];
+                    if (dp && dp.length > 0) {
+                         // Pad month/day with leading zeros if needed
+                         const yearStr = dp[0]?.toString() || '';
+                         const monthStr = dp[1]?.toString().padStart(2, '0') || '';
+                         const dayStr = dp[2]?.toString().padStart(2, '0') || '';
+                         // Construct date string based on available parts
+                         if (yearStr && monthStr && dayStr) fieldValue = `${yearStr}-${monthStr}-${dayStr}`;
+                         else if (yearStr && monthStr) fieldValue = `${yearStr}-${monthStr}`;
+                         else if (yearStr) fieldValue = yearStr;
+                         else fieldValue = ''; // Fallback if no parts
+                    } else {
+                        fieldValue = ''; // Fallback if date-parts are empty
+                    }
+                } else if (Array.isArray(value)) {
+                    // Handle arrays - join with comma or just take first? For now, join.
+                     fieldValue = value.join(', ');
+                } else if (typeof value === 'object') {
+                     // Convert simple objects to string (avoid [object Object])
+                    try {
+                        fieldValue = JSON.stringify(value);
+                    } catch (e) {
+                        fieldValue = '[Object]'; // Fallback for complex/circular objects
+                    }
+                }
+                // Ensure fieldValue is a string or number for input components
+                if (typeof fieldValue !== 'number') {
+                     fieldValue = String(fieldValue); 
                 }
                 
-                // Add the field
                 this.addAdditionalField(fieldType, key, fieldValue);
             }
         });
     }
 
     /**
-     * Get all form values as a citation object
+     * Get all form values as a Citation object (ready for FileManager)
      */
     private getFormValues(): Citation {
         // Create base citation with core fields
         const citation: Citation = {
+            // Required fields
             id: this.idInput.value.trim(),
-            type: this.typeDropdown.value,
+            type: this.typeDropdown.value as any, // Assume value is a valid CSL type
             title: this.titleInput.value.trim(),
+            year: this.yearInput.value.trim(), // Year is required by validation
+            // Optional fields from main form
             'title-short': this.titleShortInput.value.trim() || undefined,
             URL: this.urlInput.value.trim() || undefined,
             DOI: this.doiInput.value.trim() || undefined,
@@ -865,13 +818,14 @@ export class BibliographyModal extends Modal {
             page: this.pageInput.value.trim() || undefined,
             language: this.languageDropdown.value || undefined,
             abstract: this.abstractInput.value.trim() || undefined,
-            year: this.yearInput.value.trim(),
             month: this.monthDropdown.value !== '0' ? this.monthDropdown.value : undefined,
-            day: this.dayInput.value.trim() || undefined
+            day: this.dayInput.value.trim() || undefined,
+            // Tags might have been added during populateForm
+            tags: this.additionalFields.find(f => f.name === 'tags')?.value || [] 
         };
         
-        // Citation will be extended with any additional properties like tags
-        // when the Citoid data is processed
+        // Remove tags field from additional fields if it exists, as it's handled separately
+         this.additionalFields = this.additionalFields.filter(f => f.name !== 'tags');
         
         return citation;
     }
@@ -880,45 +834,63 @@ export class BibliographyModal extends Modal {
      * Validate the form before submission
      */
     private validateForm(citation: Citation): boolean {
-        if (!citation.id) {
-            new Notice('Citekey is required.');
-            return false;
+        let isValid = true;
+        let message = '';
+
+        // Helper to add/remove invalid class
+        const validateField = (inputEl: HTMLElement | null, condition: boolean, errorMsg: string) => {
+            if (!inputEl) return condition; // Skip if element doesn't exist, assume valid
+            if (!condition) {
+                isValid = false;
+                message = message || errorMsg;
+                inputEl.addClass('invalid');
+            } else {
+                inputEl.removeClass('invalid');
+            }
+            return condition; // Return condition for chaining checks
+        };
+
+        validateField(this.idInput, !!citation.id, 'Citekey is required.');
+        validateField(this.titleInput, !!citation.title, 'Title is required.');
+        validateField(this.typeDropdown, !!citation.type, 'Type is required.');
+
+        if (validateField(this.yearInput, !!citation.year, 'Year is required.')) {
+             validateField(this.yearInput, !isNaN(Number(citation.year)), 'Year must be a number.');
         }
-        if (!citation.title) {
-            new Notice('Title is required.');
-            return false;
+
+        if (!isValid) {
+            new Notice(message);
         }
-        if (!citation.type) {
-            new Notice('Type is required.');
-            return false;
-        }
-        if (!citation.year) {
-            new Notice('Year is required.');
-            return false;
-        }
-        return true;
+        return isValid;
     }
 
     /**
-     * Handle form submission
+     * Handle form submission: call FileManager to create the note
      */
     private async handleSubmit(citation: Citation): Promise<void> {
         try {
             await this.fileManager.createLiteratureNote(
                 citation,
-                this.contributors,
-                this.additionalFields,
+                this.contributors, // Pass current state of contributors
+                this.additionalFields, // Pass current state of additional fields
                 this.attachmentData.type !== AttachmentType.NONE ? this.attachmentData : null
             );
-            this.close();
+            this.close(); // Close modal on success
         } catch (error) {
+            // Error notice is shown by FileManager
             console.error('Error creating literature note:', error);
-            new Notice('Error creating literature note.');
+            // Re-enable the submit button if it exists
+             const submitButton = this.contentEl.querySelector('.create-button') as HTMLButtonElement | null;
+             if (submitButton) {
+                 submitButton.disabled = false;
+                 submitButton.textContent = 'Create Note';
+             }
         }
     }
 
     onClose() {
         const { contentEl } = this;
+        // Clean up DOM elements to prevent memory leaks
         contentEl.empty();
     }
 }

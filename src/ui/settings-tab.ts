@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, PluginSettingTab, Setting, normalizePath } from 'obsidian';
 import BibliographyPlugin from '../../main';
 
 export class BibliographySettingTab extends PluginSettingTab {
@@ -13,10 +13,10 @@ export class BibliographySettingTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        containerEl.createEl('h2', { text: 'BibLib Settings' });
+        new Setting(containerEl).setName('BibLib Settings').setHeading();
 
         // File Path Settings
-        containerEl.createEl('h3', { text: 'File Paths' });
+        new Setting(containerEl).setName('File Paths').setHeading();
 
         new Setting(containerEl)
             .setName('Attachment folder path')
@@ -25,8 +25,7 @@ export class BibliographySettingTab extends PluginSettingTab {
                 .setPlaceholder('biblib')
                 .setValue(this.plugin.settings.attachmentFolderPath)
                 .onChange(async (value) => {
-                    // Remove leading and trailing slashes
-                    value = value.replace(/^\/+|\/+$/g, '');
+                    value = normalizePath(value.trim());
                     this.plugin.settings.attachmentFolderPath = value;
                     await this.plugin.saveSettings();
                 }));
@@ -48,9 +47,9 @@ export class BibliographySettingTab extends PluginSettingTab {
                 .setPlaceholder('/')
                 .setValue(this.plugin.settings.literatureNotePath)
                 .onChange(async (value) => {
-                    // Ensure path starts and ends with a slash
-                    if (!value.startsWith('/')) value = '/' + value;
-                    if (!value.endsWith('/')) value = value + '/';
+                    // Normalize path, ensure it ends with a slash for directory
+                    value = normalizePath(value.trim());
+                    if (value !== '/' && !value.endsWith('/')) value += '/';
                     this.plugin.settings.literatureNotePath = value;
                     await this.plugin.saveSettings();
                 }));
@@ -78,7 +77,7 @@ export class BibliographySettingTab extends PluginSettingTab {
                 }));
                 
         // API Settings
-        containerEl.createEl('h3', { text: 'API Settings' });
+        new Setting(containerEl).setName('API Settings').setHeading();
         
         new Setting(containerEl)
             .setName('Citoid API URL')
@@ -92,7 +91,7 @@ export class BibliographySettingTab extends PluginSettingTab {
                 }));
                 
         // Frontmatter Field Settings
-        containerEl.createEl('h3', { text: 'Custom Frontmatter Fields' });
+        new Setting(containerEl).setName('Custom Frontmatter Fields').setHeading();
         containerEl.createEl('p', { 
             text: 'Configure which additional non-CSL fields to include in your literature notes.',
             cls: 'setting-item-description'
@@ -139,7 +138,7 @@ export class BibliographySettingTab extends PluginSettingTab {
                 }));
                 
         // Bibliography Builder Settings
-        containerEl.createEl('h3', { text: 'Bibliography Builder' });
+        new Setting(containerEl).setName('Bibliography Builder').setHeading();
         containerEl.createEl('p', { 
             text: 'Configure settings for the bibliography builder command.',
             cls: 'setting-item-description'
@@ -152,7 +151,7 @@ export class BibliographySettingTab extends PluginSettingTab {
                 .setPlaceholder('biblib/bibliography.json')
                 .setValue(this.plugin.settings.bibliographyJsonPath)
                 .onChange(async (value) => {
-                    this.plugin.settings.bibliographyJsonPath = value;
+                    this.plugin.settings.bibliographyJsonPath = normalizePath(value.trim());
                     await this.plugin.saveSettings();
                 }));
                 
@@ -163,12 +162,12 @@ export class BibliographySettingTab extends PluginSettingTab {
                 .setPlaceholder('citekeylist.md')
                 .setValue(this.plugin.settings.citekeyListPath)
                 .onChange(async (value) => {
-                    this.plugin.settings.citekeyListPath = value;
+                    this.plugin.settings.citekeyListPath = normalizePath(value.trim());
                     await this.plugin.saveSettings();
                 }));
                 
         // Note Template Settings
-        containerEl.createEl('h3', { text: 'Note Templates' });
+        new Setting(containerEl).setName('Note Templates').setHeading();
         containerEl.createEl('p', { 
             text: 'Configure the format of your literature notes.',
             cls: 'setting-item-description'

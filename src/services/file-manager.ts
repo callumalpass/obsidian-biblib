@@ -1,4 +1,4 @@
-import { App, Notice, TFile } from 'obsidian';
+import { App, Notice, TFile, normalizePath } from 'obsidian';
 import * as jsyaml from 'js-yaml';
 import { BibliographyPluginSettings } from '../types';
 import { Citation, Contributor, AdditionalField, AttachmentData, AttachmentType } from '../types/citation';
@@ -30,10 +30,10 @@ export class FileManager {
                 // Use CSL date format for issued date
                 issued: {
                     'date-parts': [[
-                        Number(citation.year), 
-                        citation.month ? Number(citation.month) : '', 
-                        citation.day ? Number(citation.day) : ''
-                    ].filter((v) => v !== '')],
+                        citation.year ? Number(citation.year) : undefined,
+                        citation.month ? Number(citation.month) : undefined, 
+                        citation.day ? Number(citation.day) : undefined
+                    ].filter(v => v !== undefined)], // Filter out undefined parts
                 },
                 // Add standard CSL fields (only if they have values)
                 ...(citation['title-short'] && { 'title-short': citation['title-short'] }),
@@ -56,12 +56,12 @@ export class FileManager {
             };
             
             // Add configurable non-CSL fields based on settings
-            if (this.settings.includeYear) {
+            if (this.settings.includeYear && citation.year) {
                 frontmatter.year = Number(citation.year);
             }
             
             if (this.settings.includeDateCreated) {
-                frontmatter.dateCreated = new Date().toISOString();
+                frontmatter.dateCreated = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
             }
 
             // Add contributors to frontmatter
@@ -70,10 +70,12 @@ export class FileManager {
                     if (!frontmatter[contributor.role]) {
                         frontmatter[contributor.role] = [];
                     }
-                    frontmatter[contributor.role].push({
-                        family: contributor.family,
-                        ...(contributor.given && { given: contributor.given }),
-                    });
+                    // Ensure structure is { family: string, given?: string }
+                    const person = {
+                        family: contributor.family || '', // Ensure family is string
+                        ...(contributor.given && { given: contributor.given })
+                    };
+                    frontmatter[contributor.role].push(person);
                 }
             });
 
@@ -83,7 +85,8 @@ export class FileManager {
                     .filter(contributor => contributor.role === 'author' && contributor.family)
                     .map(contributor => {
                         const fullName = `${contributor.given ? `${contributor.given} ` : ''}${contributor.family}`;
-                        return `[[Author/${fullName}|${fullName}]]`;
+                        // Simple link for now, assumes Author/ folder exists
+                        return `[[Author/${fullName}]]`; 
                     });
 
                 if (authorLinks.length > 0) {
@@ -93,26 +96,31 @@ export class FileManager {
 
             // Add additional fields to frontmatter
             additionalFields.forEach((field) => {
-                if (field.name && field.value !== '') {
+                if (field.name && field.value != null && field.value !== '') { // Check for null/undefined too
+                    let valueToAdd = field.value; // Keep track of the potentially modified value
                     // Assign based on type
                     if (field.type === 'date') {
                         // For date type fields, ensure they have the proper CSL date-parts structure
                         if (typeof field.value === 'object' && field.value['date-parts']) {
                             // It's already in CSL format
-                            frontmatter[field.name] = field.value;
+                            valueToAdd = field.value;
                         } else if (typeof field.value === 'string') {
-                            // Parse date string (YYYY-MM-DD)
+                            // Try parsing date string (YYYY-MM-DD or YYYY)
                             const dateParts = field.value.split('-').map(Number).filter(part => !isNaN(part));
-                            frontmatter[field.name] = { 'date-parts': [dateParts] };
+                            if (dateParts.length > 0) {
+                                valueToAdd = { 'date-parts': [dateParts] };
+                            } else {
+                                // If parsing fails, store as string
+                                valueToAdd = field.value;
+                            }
                         }
                     } else if (field.type === 'number') {
                         // Ensure numbers are stored as numbers, not strings
                         const numValue = parseFloat(field.value);
-                        frontmatter[field.name] = isNaN(numValue) ? field.value : numValue;
-                    } else {
-                        // For standard fields, use the value as is
-                        frontmatter[field.name] = field.value;
+                        valueToAdd = isNaN(numValue) ? field.value : numValue;
                     }
+                    // Add the potentially modified value to frontmatter
+                    frontmatter[field.name] = valueToAdd;
                 }
             });
 
@@ -122,36 +130,62 @@ export class FileManager {
                 attachmentPath = await this.handleAttachment(citation.id, attachmentData);
                 // Add attachment link to frontmatter if enabled in settings
                 if (attachmentPath && this.settings.includeAttachment) {
-                    frontmatter.attachment = [`[[${attachmentPath}|${citation.id}]]`];
+                    // Use Obsidian link format, ensuring path is relative if possible
+                    const file = this.app.vault.getAbstractFileByPath(attachmentPath);
+                    if (file instanceof TFile) {
+                        // Generate a relative path if possible, otherwise use the full path
+                        const relativePath = this.app.metadataCache.fileToLinktext(file, '', true);
+                         frontmatter.attachment = [`[[${relativePath}]]`];
+                    } else {
+                        // Fallback if file not found (e.g., external link? unlikely here)
+                         frontmatter.attachment = [`[[${attachmentPath}]]`];
+                    }
                 }
             }
 
-            const yaml = jsyaml.dump(frontmatter);
-            let content = `---\n${yaml}---\n\n`;
+            const yaml = jsyaml.dump(frontmatter, { noRefs: true, sortKeys: true }); // Use js-yaml options for cleaner output
+            let content = `---
+${yaml}---
+
+`;
             
             // Render header template with variable replacement
             const headerContent = this.renderTemplate(
                 this.settings.headerTemplate,
                 {
-                    title: citation.title,
-                    citekey: citation.id,
+                    title: citation.title || '',
+                    citekey: citation.id || '',
                     year: citation.year?.toString() || '',
                     authors: this.formatAuthorsForTemplate(contributors),
-                    pdflink: attachmentPath ? `[[${attachmentPath}|${citation.id}]]` : ''
+                    // Provide the raw path for pdflink template variable
+                    pdflink: attachmentPath ? `[[${attachmentPath}]]` : '' 
                 }
             );
             
-            content += `${headerContent}\n\n`;
+            content += `${headerContent}\n\n`; // Add newline after header
 
             // Save the note
             const notePath = this.getLiteratureNotePath(citation.id);
-            await this.app.vault.create(notePath, content);
-            new Notice(`Literature note "${citation.title}" created.`);
+            const existingFile = this.app.vault.getAbstractFileByPath(notePath);
+
+            if (existingFile instanceof TFile) {
+                // Handle existing file - potentially merge or overwrite based on settings (not implemented)
+                // For now, log a warning and skip creation to avoid data loss.
+                console.warn(`Literature note already exists at ${notePath}. Skipping creation.`);
+                new Notice(`Note already exists: ${notePath}`);
+                // Alternatively, overwrite:
+                // await this.app.vault.modify(existingFile, content);
+                // new Notice(`Literature note "${citation.title}" updated.`);
+                return; 
+            } else {
+                await this.app.vault.create(notePath, content);
+                new Notice(`Literature note "${citation.title}" created at ${notePath}.`);
+            }
             
             return;
         } catch (error) {
             console.error('Error creating literature note:', error);
-            new Notice('Error creating literature note.');
+            new Notice('Error creating literature note. Check console.');
             throw error;
         }
     }
@@ -161,83 +195,121 @@ export class FileManager {
      */
     private async handleAttachment(id: string, attachmentData: AttachmentData): Promise<string> {
         try {
-            // If it's a link to an existing file
+            // If it's a link to an existing file, normalize the path
             if (attachmentData.type === AttachmentType.LINK && attachmentData.path) {
-                return attachmentData.path;
+                return normalizePath(attachmentData.path);
             }
             
-            // Otherwise, it's an import - process as before
+            // Otherwise, it's an import
             if (attachmentData.type === AttachmentType.IMPORT && attachmentData.file) {
-                const biblibPath = this.settings.attachmentFolderPath;
-                if (!this.app.vault.getAbstractFileByPath(biblibPath)) {
-                    await this.app.vault.createFolder(biblibPath);
+                const biblibPath = normalizePath(this.settings.attachmentFolderPath); 
+                // Ensure the base attachment directory exists
+                try {
+                    const biblibFolder = this.app.vault.getAbstractFileByPath(biblibPath);
+                    if (!biblibFolder) {
+                         await this.app.vault.createFolder(biblibPath);
+                    }
+                } catch (folderError) {
+                     console.error(`Error creating attachment folder ${biblibPath}:`, folderError);
+                     new Notice(`Error creating attachment folder: ${biblibPath}`);
+                     return ''; // Cannot proceed without folder
                 }
 
-                const fileExtension = attachmentData.file.name.split('.').pop();
-                let attachmentPath = '';
+                const fileExtension = attachmentData.file.name.split('.').pop() || 'file'; // Fallback extension
+                let targetFolderPath = biblibPath;
 
                 if (this.settings.createAttachmentSubfolder) {
                     // Create subfolder if enabled
-                    const attachmentFolderPath = `${biblibPath}/${id}`;
-                    if (!this.app.vault.getAbstractFileByPath(attachmentFolderPath)) {
-                        await this.app.vault.createFolder(attachmentFolderPath);
+                    targetFolderPath = normalizePath(`${biblibPath}/${id}`);
+                    try {
+                        const subFolder = this.app.vault.getAbstractFileByPath(targetFolderPath);
+                         if (!subFolder) {
+                              await this.app.vault.createFolder(targetFolderPath);
+                         }
+                    } catch (subFolderError) {
+                         console.error(`Error creating attachment subfolder ${targetFolderPath}:`, subFolderError);
+                         new Notice(`Error creating attachment subfolder: ${targetFolderPath}`);
+                         return ''; // Cannot proceed without subfolder
                     }
-                    attachmentPath = `${attachmentFolderPath}/${id}.${fileExtension}`;
-                } else {
-                    // Store directly in attachment folder
-                    attachmentPath = `${biblibPath}/${id}.${fileExtension}`;
+                }
+                
+                // Sanitize citekey for use in filename
+                const sanitizedId = id.replace(/[^a-zA-Z0-9_\-]+/g, '_');
+                const attachmentFilename = `${sanitizedId}.${fileExtension}`;
+                const attachmentPath = normalizePath(`${targetFolderPath}/${attachmentFilename}`);
+
+                // Check if file already exists
+                const existingAttachment = this.app.vault.getAbstractFileByPath(attachmentPath);
+                if (existingAttachment instanceof TFile) {
+                     console.warn(`Attachment file already exists at ${attachmentPath}. Skipping import.`);
+                     new Notice(`Attachment already exists: ${attachmentPath}`);
+                     return attachmentPath; // Return existing path
                 }
 
                 const arrayBuffer = await attachmentData.file.arrayBuffer();
-                const data = new Uint8Array(arrayBuffer);
-                await this.app.vault.createBinary(attachmentPath, data);
-                
+                // Use createBinary with ArrayBuffer directly
+                await this.app.vault.createBinary(attachmentPath, arrayBuffer);
+                new Notice(`Attachment imported to ${attachmentPath}`);
                 return attachmentPath;
             }
             
-            return '';
+            return ''; // No attachment handled
         } catch (error) {
             console.error('Error handling attachment:', error);
-            new Notice('Error handling attachment.');
-            return '';
+            new Notice('Error handling attachment. Check console.');
+            return ''; // Return empty path on error
         }
     }
 
     /**
-     * Get the full path for a literature note
+     * Get the full, normalized path for a literature note
      */
     private getLiteratureNotePath(id: string): string {
         // Use settings for note filename and path
         const prefix = this.settings.usePrefix ? this.settings.notePrefix : '';
-        const fileName = `${prefix}${id}.md`;
-        return `${this.settings.literatureNotePath}${fileName}`.replace(/\/+/g, '/');
+        // Sanitize citekey for use in filename
+        const sanitizedId = id.replace(/[^a-zA-Z0-9_\-]+/g, '_');
+        const fileName = `${prefix}${sanitizedId}.md`;
+        // Ensure base path ends with slash if it's not root
+        let basePath = normalizePath(this.settings.literatureNotePath);
+        if (basePath !== '/' && !basePath.endsWith('/')) {
+             basePath += '/';
+        }
+        // Handle root path case
+        if (basePath === '/') basePath = ''; 
+        
+        return normalizePath(`${basePath}${fileName}`);
     }
     
     /**
      * Render a template string with variable replacements
      * Supports basic Mustache-like syntax: {{variable}} and {{^variable}}fallback{{/variable}}
      */
-    private renderTemplate(template: string, variables: { [key: string]: string }): string {
+    private renderTemplate(template: string, variables: { [key: string]: string | undefined }): string {
         // Process conditional blocks first {{^variable}}content{{/variable}}
-        // These show content only if the variable is empty/undefined
+        // These show content only if the variable is empty/undefined/falsy
         let result = template.replace(/\{\{\^([^}]+)\}\}(.*?)\{\{\/\1\}\}/gs, (match, key, content) => {
-            const value = variables[key];
-            return value ? '' : content;
+            const value = variables[key.trim()]; // Trim whitespace from key
+            // Consider empty string as falsy for conditionals
+            return !value ? content : ''; 
         });
         
         // Then do basic variable replacement {{variable}}
         result = result.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
-            if (key.startsWith('^')) {
+             // Trim whitespace from key
+            const trimmedKey = key.trim();
+            if (trimmedKey.startsWith('^')) {
                 return ''; // Skip this, it's part of a conditional that was already processed
             }
-            return variables[key] || '';
+            // Return the variable value or an empty string if undefined/null
+            return variables[trimmedKey] ?? ''; 
         });
         
         return result;
     }
     
     /**
-     * Format contributors list for template usage
+     * Format contributors list for template usage (e.g., "A. Smith", "A. Smith and B. Jones", "A. Smith et al.")
      */
     private formatAuthorsForTemplate(contributors: Contributor[]): string {
         const authors = contributors.filter(c => c.role === 'author');
@@ -246,96 +318,106 @@ export class FileManager {
             return '';
         }
         
-        if (authors.length === 1) {
-            return this.formatContributorName(authors[0]);
-        }
-        
-        if (authors.length === 2) {
-            return `${this.formatContributorName(authors[0])} and ${this.formatContributorName(authors[1])}`;
-        }
-        
-        return `${this.formatContributorName(authors[0])} et al.`;
+        const formattedNames = authors.map(this.formatContributorName).filter(name => !!name); // Format and remove empty names
+
+        if (formattedNames.length === 0) return '';
+        if (formattedNames.length === 1) return formattedNames[0];
+        if (formattedNames.length === 2) return `${formattedNames[0]} and ${formattedNames[1]}`;
+        return `${formattedNames[0]} et al.`;
     }
     
     /**
-     * Format a single contributor's name
+     * Format a single contributor's name (e.g., "J. Doe" or "Institution Name")
      */
     private formatContributorName(contributor: Contributor): string {
-        if (contributor.family) {
-            if (contributor.given) {
+        // Trim inputs
+        const family = contributor.family?.trim();
+        const given = contributor.given?.trim();
+
+        if (family) {
+            if (given) {
                 // Use first initial + family name
-                return `${contributor.given.charAt(0)}. ${contributor.family}`;
+                const initial = given.charAt(0).toUpperCase();
+                return `${initial}. ${family}`;
+            } else {
+                // Only family name (might be institution)
+                return family; 
             }
-            return contributor.family;
+        } else if (given) {
+             // Only given name? Unlikely but handle.
+             return given;
         }
-        return '';
+        return ''; // No name parts found
     }
     
     /**
-     * Get all book entries that can be containers for chapters
+     * Get all book entries (notes tagged literature_note with type book/collection/document)
      */
     async getBookEntries(): Promise<{id: string, title: string, path: string, frontmatter: any}[]> {
         const bookEntries: {id: string, title: string, path: string, frontmatter: any}[] = [];
         
-        // Get all markdown files
         const markdownFiles = this.app.vault.getMarkdownFiles();
         
         for (const file of markdownFiles) {
             try {
-                // Check if it has frontmatter
                 const cache = this.app.metadataCache.getFileCache(file);
                 const frontmatter = cache?.frontmatter;
                 
-                if (!frontmatter) {
-                    continue;
-                }
+                if (!frontmatter) continue;
                 
-                // Check if it has literature_note tag and is a book, collection or similar
                 const tags = frontmatter.tags;
-                if (!tags || !Array.isArray(tags) || !tags.includes('literature_note')) {
-                    continue;
-                }
+                if (!tags || !Array.isArray(tags) || !tags.includes('literature_note')) continue;
                 
                 const type = frontmatter.type;
-                if (!type || !['book', 'collection', 'document'].includes(type)) {
-                    continue;
+                if (!type || !['book', 'collection', 'document'].includes(type)) continue;
+
+                // Ensure required fields exist for a book entry
+                if (!frontmatter.id || !frontmatter.title) {
+                     console.warn(`Book-like entry ${file.path} missing ID or Title.`);
+                     continue;
                 }
                 
-                // Add to the list
                 bookEntries.push({
-                    id: frontmatter.id || '',
-                    title: frontmatter.title || file.basename,
-                    path: file.path,
-                    frontmatter
+                    id: frontmatter.id,
+                    title: frontmatter.title,
+                    path: file.path, // Include the path here
+                    frontmatter // Include full frontmatter for potential use
                 });
             } catch (error) {
-                console.error(`Error processing file ${file.path}:`, error);
+                console.error(`Error processing potential book entry ${file.path}:`, error);
             }
         }
         
+        // Sort books by title
+        bookEntries.sort((a, b) => a.title.localeCompare(b.title));
         return bookEntries;
     }
     
     /**
-     * Get a single book entry by path
+     * Get a single book entry by path, validating its structure
      */
-    async getBookEntryByPath(path: string): Promise<{id: string, title: string, frontmatter: any} | null> {
+    async getBookEntryByPath(path: string): Promise<{id: string, title: string, path: string, frontmatter: any} | null> {
         try {
-            const file = this.app.vault.getAbstractFileByPath(path);
+            const file = this.app.vault.getAbstractFileByPath(normalizePath(path));
             if (!(file instanceof TFile)) {
+                console.warn(`Book entry path not found or not a file: ${path}`);
                 return null;
             }
             
             const cache = this.app.metadataCache.getFileCache(file);
             const frontmatter = cache?.frontmatter;
             
-            if (!frontmatter || !frontmatter.id || !frontmatter.title) {
+            // Validate essential fields for a book entry
+            if (!frontmatter || !frontmatter.id || !frontmatter.title || !frontmatter.type || !['book', 'collection', 'document'].includes(frontmatter.type)) {
+                 console.warn(`File at ${path} is not a valid book entry (missing id, title, or wrong type).`);
                 return null;
             }
             
+            // Return object now includes path
             return {
                 id: frontmatter.id,
                 title: frontmatter.title,
+                path: file.path, // Include the path
                 frontmatter
             };
         } catch (error) {
