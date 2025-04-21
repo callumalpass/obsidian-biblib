@@ -1,5 +1,7 @@
 import { App, Notice, TFile, Vault, normalizePath } from 'obsidian';
 import { BibliographyPluginSettings } from '../types';
+import Cite from 'citation-js';
+import '@citation-js/plugin-bibtex';
 
 /**
  * Service for building bibliography files from literature notes
@@ -181,6 +183,35 @@ export class BibliographyBuilder {
             console.error(`Error writing bibliography JSON file (${outputFilePath}):`, error);
             new Notice('Error creating bibliography JSON file. Check console.');
             throw error; // Re-throw to indicate overall build failure
+        }
+    }
+
+    /**
+     * Export all literature notes into a single BibTeX file
+     */
+    async exportBibTeX(): Promise<void> {
+        const literatureNotes = await this.findLiteratureNotes();
+        if (literatureNotes.length === 0) {
+            new Notice('No literature notes found to export BibTeX.');
+            return;
+        }
+        try {
+            const dataArray = literatureNotes.map(note => note.frontmatter);
+            const bib = new Cite(dataArray).get({ style: 'bibtex', type: 'string' });
+            // Use the configured BibTeX file path directly
+            let bibtexPath = this.settings.bibtexFilePath;
+            bibtexPath = normalizePath(bibtexPath);
+            const existing = this.app.vault.getAbstractFileByPath(bibtexPath);
+            if (existing instanceof TFile) {
+                await this.app.vault.modify(existing, bib);
+            } else {
+                if (existing) await this.app.vault.delete(existing);
+                await this.app.vault.create(bibtexPath, bib);
+            }
+            new Notice(`BibTeX file exported to ${bibtexPath}`);
+        } catch (error) {
+            console.error('Error exporting BibTeX file:', error);
+            new Notice('Error exporting BibTeX file. See console for details.');
         }
     }
 }

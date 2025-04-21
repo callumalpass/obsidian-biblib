@@ -94,6 +94,7 @@ This approach has proven effective for my personal academic workflow for several
    - Generate a `citekeylist.md` file with all citation keys
    - Create a comprehensive `bibliography.json` file with full citation data
 4. These files can be used with external tools or referenced in your notes
+5. To export a unified BibTeX file from all your literature notes, open the command palette and select "Export Bibliography as BibTeX" (path configurable in Settings).
 
 ### Working with PDF Annotations
 
@@ -147,6 +148,7 @@ This workflow keeps your references, PDFs, and annotations all within the same s
 
 - **Bibliography JSON path**: Where to save the bibliography.json file
 - **Citekey list path**: Where to save the citekeylist.md file
+- **BibTeX file path**: Where to save the exported BibTeX file
 
 
 ## Upcoming Features

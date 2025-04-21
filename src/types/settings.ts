@@ -53,10 +53,14 @@ export interface BibliographyPluginSettings {
     bibliographyJsonPath: string;
     
     /**
-     * The path where to save the citekeylist.md file
-     * (relative to vault or absolute)
+     * The path where to save the citekey list file (relative to vault or absolute)
      */
     citekeyListPath: string;
+    
+    /**
+     * The path where to save the exported BibTeX file (relative to vault or absolute)
+     */
+    bibtexFilePath: string;
     
     /**
      * Template for the first header in literature notes.
@@ -92,6 +96,8 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
     includeAttachment: true,
     bibliographyJsonPath: 'biblib/bibliography.json',
     citekeyListPath: 'citekeylist.md',
+    // Default path for exported BibTeX
+    bibtexFilePath: 'biblib/bibliography.bib',
     headerTemplate: '# {{pdflink}}{{^pdflink}}{{citekey}}{{/pdflink}}',
     chapterHeaderTemplate: '# {{pdflink}}{{^pdflink}}{{title}}{{/pdflink}} (in {{container-title}})',
     literatureNoteTag: 'literature_note',

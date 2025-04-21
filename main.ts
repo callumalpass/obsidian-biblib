@@ -76,6 +76,21 @@ export default class BibliographyPlugin extends Plugin {
                 }
             },
         });
+        
+        // Add command to export all references as BibTeX
+        this.addCommand({
+            id: 'export-bibtex',
+            name: 'Export Bibliography as BibTeX',
+            callback: async () => {
+                try {
+                    new Notice('Exporting BibTeX file...');
+                    const builder = new BibliographyBuilder(this.app, this.settings);
+                    await builder.exportBibTeX();
+                } catch (_error) {
+                    // Errors are logged by BibliographyBuilder
+                }
+            },
+        });
 
         this.addSettingTab(new BibliographySettingTab(this.app, this));
     }

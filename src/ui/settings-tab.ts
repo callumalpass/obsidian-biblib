@@ -173,6 +173,17 @@ export class BibliographySettingTab extends PluginSettingTab {
                     this.plugin.settings.citekeyListPath = normalizePath(value.trim());
                     await this.plugin.saveSettings();
                 }));
+        
+        new Setting(containerEl)
+            .setName('BibTeX file path')
+            .setDesc('Path where to save the exported BibTeX file (relative to vault)')
+            .addText(text => text
+                .setPlaceholder('biblib/bibliography.bib')
+                .setValue(this.plugin.settings.bibtexFilePath)
+                .onChange(async (value) => {
+                    this.plugin.settings.bibtexFilePath = normalizePath(value.trim());
+                    await this.plugin.saveSettings();
+                }));
                 
         // Note Template Settings
         new Setting(containerEl).setName('Note Templates').setHeading();
