@@ -201,18 +201,20 @@ export class ChapterModal extends Modal {
         this.bookPathDisplay.style.display = this.selectedBook ? 'block' : 'none'; 
         this.bookPathDisplay.textContent = this.selectedBook ? `Selected book path: ${this.selectedBook.path}` : '';
 
-        // --- Chapter Contributors --- 
+        // --- Chapter Contributors ---
         new Setting(contentEl).setName('Chapter Contributors').setHeading();
-        const contributorsContainer = contentEl.createDiv();
+        // Container for contributor fields
+        const contributorsContainer = contentEl.createDiv({ cls: 'bibliography-contributors-container' });
         this.contributorsListContainer = contributorsContainer.createDiv({ cls: 'bibliography-contributors-list' });
-
-        const addContributorButton = contentEl.createEl('button', { 
-            text: 'Add Contributor', 
-            cls: 'bibliography-add-contributor-button' 
-        });
-        addContributorButton.onclick = () => {
-            this.addContributor('author', '', ''); // Default to author
-        };
+        // Add Contributor button (uses Obsidian Setting for consistent styling)
+        // Add Contributor button
+        new Setting(contributorsContainer)
+            .addButton(button => {
+                button.setButtonText('Add Contributor')
+                    .onClick(() => {
+                        this.addContributor('author', '', '');
+                    });
+            });
 
         // Add initial contributor field if none populated from book
         if (this.contributors.length === 0) {
@@ -444,12 +446,13 @@ export class ChapterModal extends Modal {
      */
     private addContributor(role: string = 'author', given: string = '', family: string = ''): ContributorField | null {
         const contributor: Contributor = { role, given, family };
-        // Only add if we don't already have this exact contributor (simple check)
-        if (!this.contributors.some(c => c.role === role && c.given === given && c.family === family)) {
-             this.contributors.push(contributor);
-        } else {
-             return null; // Don't add duplicate UI
+        // Allow multiple blank contributor entries; only prevent duplicates when both given and family are non-empty
+        const isDuplicate = this.contributors.some(c => c.role === role && c.given === given && c.family === family);
+        if ((given || family) && isDuplicate) {
+            // Only block duplicates for entries where user has filled in a name
+            return null;
         }
+        this.contributors.push(contributor);
         
        return new ContributorField(
             this.contributorsListContainer, 

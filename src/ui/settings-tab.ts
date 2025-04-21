@@ -24,6 +24,16 @@ export class BibliographySettingTab extends PluginSettingTab {
                     this.plugin.settings.literatureNoteTag = value.trim();
                     await this.plugin.saveSettings();
                 }));
+        
+        new Setting(containerEl)
+            .setName('Open note on create')
+            .setDesc('Automatically open a newly created literature note in the workspace')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.openNoteOnCreate)
+                .onChange(async (value) => {
+                    this.plugin.settings.openNoteOnCreate = value;
+                    await this.plugin.saveSettings();
+                }));
 
         // File Path Settings
         new Setting(containerEl).setName('File Paths').setHeading();

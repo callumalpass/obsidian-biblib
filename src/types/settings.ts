@@ -77,6 +77,10 @@ export interface BibliographyPluginSettings {
      * Tag used to identify literature notes
      */
     literatureNoteTag: string;
+    /**
+     * Whether to automatically open a newly created literature note
+     */
+    openNoteOnCreate: boolean;
 }
 
 export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
@@ -94,5 +98,6 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
     citekeyListPath: 'citekeylist.md',
     headerTemplate: '# {{pdflink}}{{^pdflink}}{{citekey}}{{/pdflink}}',
     chapterHeaderTemplate: '# {{pdflink}}{{^pdflink}}{{title}}{{/pdflink}} (in {{container-title}})',
-    literatureNoteTag: 'literature_note'
+    literatureNoteTag: 'literature_note',
+    openNoteOnCreate: true
 };

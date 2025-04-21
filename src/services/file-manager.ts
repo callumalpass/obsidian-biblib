@@ -175,6 +175,14 @@ ${yaml}---
             // Create new literature note
             await this.app.vault.create(notePath, content);
             new Notice(`Literature note "${citation.title}" created at ${notePath}.`);
+            // Optionally open the newly created note
+            if (this.settings.openNoteOnCreate) {
+                const newFile = this.app.vault.getAbstractFileByPath(notePath);
+                if (newFile instanceof TFile) {
+                    const leaf = this.app.workspace.getLeaf(false);
+                    await leaf.openFile(newFile);
+                }
+            }
             
             return;
         } catch (error) {
