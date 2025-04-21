@@ -167,20 +167,14 @@ ${yaml}---
             // Save the note
             const notePath = this.getLiteratureNotePath(citation.id);
             const existingFile = this.app.vault.getAbstractFileByPath(notePath);
-
             if (existingFile instanceof TFile) {
-                // Handle existing file - potentially merge or overwrite based on settings (not implemented)
-                // For now, log a warning and skip creation to avoid data loss.
-                console.warn(`Literature note already exists at ${notePath}. Skipping creation.`);
-                new Notice(`Note already exists: ${notePath}`);
-                // Alternatively, overwrite:
-                // await this.app.vault.modify(existingFile, content);
-                // new Notice(`Literature note "${citation.title}" updated.`);
-                return; 
-            } else {
-                await this.app.vault.create(notePath, content);
-                new Notice(`Literature note "${citation.title}" created at ${notePath}.`);
+                // Notify the user and prevent note creation if it already exists
+                new Notice(`Literature note already exists at ${notePath}`);
+                throw new Error(`Literature note already exists at ${notePath}`);
             }
+            // Create new literature note
+            await this.app.vault.create(notePath, content);
+            new Notice(`Literature note "${citation.title}" created at ${notePath}.`);
             
             return;
         } catch (error) {

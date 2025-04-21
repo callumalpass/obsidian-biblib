@@ -1,22 +1,10 @@
 import { AdditionalField } from '../../types/citation';
-
-// Define standard CSL fields based on CSL v1.0.1/1.0.2 Appendix IV (all lowercase)
-const CSL_STANDARD_VARIABLES = new Set([
-  '', // Handle empty selection
-  'abstract', 'annote', 'archive', 'archive_location', 'authority', 'call-number',
-  'chapter-number', 'citation-key', 'citation-label', 'collection-number', 'collection-title',
-  'container-title', 'dimensions', 'doi', 'edition', 'event', 'event-date', 'event-place',
-  'first-reference-note-number', 'genre', 'isbn', 'issn', 'issue', 'jurisdiction',
-  'keyword', 'language', 'license', 'locator', 'medium', 'note', 'number',
-  'number-of-pages', 'number-of-volumes', 'original-author', 'original-date',
-  'original-publisher', 'original-publisher-place', 'original-title', 'page',
-  'page-first', 'part', 'pmcid', 'pmid', 'publisher', 'publisher-place',
-  'references', 'reviewed-author', 'reviewed-title', 'scale', 'section',
-  'source', 'status', 'supplement', 'title', 'title-short', 'url', 'version',
-  'volume', 'year-suffix',
-  // Date Variables also included above
-  'accessed', 'available-date', 'issued', 'submitted'
-]);
+import {
+  CSL_STANDARD_FIELDS,
+  CSL_NUMBER_FIELDS,
+  CSL_DATE_FIELDS,
+  CSL_ALL_CSL_FIELDS,
+} from '../../utils/csl-variables';
 
 export class AdditionalFieldComponent {
     private containerEl: HTMLDivElement;
@@ -102,29 +90,19 @@ export class AdditionalFieldComponent {
             this.field.type = 'standard';
         }
         
-        // Populate options based on field type
-        let fieldOptions: string[] = [];
-        if (this.field.type === 'standard') {
-            fieldOptions = [
-                '', 'abstract', 'annote', 'archive', 'archive_collection', 'archive_location', 'archive-place',
-                'authority', 'call-number', 'citation-key', 'citation-label', 'collection-title',
-                'container-title', 'dimensions', 'division', 'DOI', 'event-title', 'event-place',
-                'genre', 'ISBN', 'ISSN', 'jurisdiction', 'keyword', 'language', 'license', 'medium',
-                'note', 'original-publisher', 'original-publisher-place', 'original-title', 'part-title',
-                'PMCID', 'PMID', 'publisher', 'publisher-place', 'references', 'reviewed-genre',
-                'reviewed-title', 'scale', 'source', 'status', 'title-short', 'URL', 'volume-title',
-                'year-suffix'
-            ];
-        } else if (this.field.type === 'number') {
-            fieldOptions = [
-                '', 'chapter-number', 'citation-number', 'collection-number', 'edition', 'issue', 'locator',
-                'number', 'number-of-pages', 'number-of-volumes', 'page', 'page-first', 'part-number',
-                'printing-number', 'section', 'supplement-number', 'version', 'volume'
-            ];
-        } else if (this.field.type === 'date') {
-            fieldOptions = [
-                '', 'accessed', 'available-date', 'event-date', 'issued', 'original-date', 'submitted'
-            ];
+        // Populate options based on field type using centralized CSL field lists
+        const fieldOptions: string[] = [];
+        switch (this.field.type) {
+            case 'number':
+                fieldOptions.push(...CSL_NUMBER_FIELDS);
+                break;
+            case 'date':
+                fieldOptions.push(...CSL_DATE_FIELDS);
+                break;
+            case 'standard':
+            default:
+                fieldOptions.push(...CSL_STANDARD_FIELDS);
+                break;
         }
         
         // Add the current key if it's not in the standard options
@@ -188,7 +166,7 @@ export class AdditionalFieldComponent {
      */
     private updateHighlight(): void {
 		const fieldNameLower = this.field.name?.toLowerCase() || ''; // Ensure lowercase and handle null/undefined
-		const isNonStandard = fieldNameLower !== '' && !CSL_STANDARD_VARIABLES.has(fieldNameLower);
+		const isNonStandard = fieldNameLower !== '' && !CSL_ALL_CSL_FIELDS.has(fieldNameLower);
 		if (isNonStandard) {
 			this.fieldDiv.addClass('non-csl-field');
 		} else {
