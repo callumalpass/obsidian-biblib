@@ -56,7 +56,7 @@ export class BibliographyModal extends Modal {
         contentEl.addClass('bibliography-modal');
 
         // Modal title
-        contentEl.createEl('h2', { text: 'Enter Bibliographic Information' });
+        contentEl.createEl('h2', { text: 'Enter bibliographic information' });
         
         // Add Citoid lookup fields
         this.createCitoidLookupSection(contentEl);
@@ -65,7 +65,7 @@ export class BibliographyModal extends Modal {
         contentEl.createEl('hr');
         
         // Add section title
-        contentEl.createEl('h3', { text: 'Entry Details' });
+        contentEl.createEl('h3', { text: 'Entry details' });
 
         // Create the main form
         this.createMainForm(contentEl);
@@ -135,9 +135,9 @@ export class BibliographyModal extends Modal {
                 this.typeDropdown = dropdown.selectEl;
                 dropdown.addOptions({
                     article: 'Article',
-                    'article-journal': 'Journal Article',
-                    'article-magazine': 'Magazine Article',
-                    'article-newspaper': 'Newspaper Article',
+                    'article-journal': 'Journal article',
+                    'article-magazine': 'Magazine article',
+                    'article-newspaper': 'Newspaper article',
                     bill: 'Bill',
                     book: 'Book',
                     broadcast: 'Broadcast',
@@ -147,31 +147,31 @@ export class BibliographyModal extends Modal {
                     dataset: 'Dataset',
                     document: 'Document',
                     entry: 'Entry',
-                    'entry-dictionary': 'Dictionary Entry',
-                    'entry-encyclopedia': 'Encyclopedia Entry',
+                    'entry-dictionary': 'Dictionary entry',
+                    'entry-encyclopedia': 'Encyclopedia entry',
                     event: 'Event',
                     figure: 'Figure',
                     graphic: 'Graphic',
                     hearing: 'Hearing',
                     interview: 'Interview',
-                    legal_case: 'Legal Case',
+                    legal_case: 'Legal case',
                     legislation: 'Legislation',
                     manuscript: 'Manuscript',
                     map: 'Map',
-                    motion_picture: 'Motion Picture',
-                    musical_score: 'Musical Score',
+                    motion_picture: 'Motion picture',
+                    musical_score: 'Musical score',
                     pamphlet: 'Pamphlet',
-                    'paper-conference': 'Conference Paper',
+                    'paper-conference': 'Conference paper',
                     patent: 'Patent',
                     performance: 'Performance',
                     periodical: 'Periodical',
-                    personal_communication: 'Personal Communication',
+                    personal_communication: 'Personal communication',
                     post: 'Post',
-                    'post-weblog': 'Weblog Post',
+                    'post-weblog': 'Weblog post',
                     regulation: 'Regulation',
                     report: 'Report',
                     review: 'Review',
-                    'review-book': 'Book Review',
+                    'review-book': 'Book review',
                     software: 'Software',
                     song: 'Song',
                     speech: 'Speech',
@@ -232,7 +232,7 @@ export class BibliographyModal extends Modal {
         this.contributorsListContainer = contributorsContainer.createDiv({ cls: 'bibliography-contributors-list' });
 
         const addContributorButton = contentEl.createEl('button', { 
-            text: 'Add Contributor', 
+            text: 'Add contributor', 
             cls: 'bibliography-add-contributor-button' 
         });
         addContributorButton.onclick = () => {
@@ -243,7 +243,7 @@ export class BibliographyModal extends Modal {
         this.addContributor('author', '', '');
 
         // --- Date of Publication inputs ---
-         new Setting(contentEl).setName('Publication Date').setHeading(); // Use heading for clarity
+         new Setting(contentEl).setName('Publication date').setHeading(); // Use heading for clarity
 
         new Setting(contentEl)
             .setName('Year')
@@ -259,7 +259,7 @@ export class BibliographyModal extends Modal {
             .addDropdown(dropdown => {
                 this.monthDropdown = dropdown.selectEl;
                 dropdown.addOptions({
-                    '0': 'Select Month (optional)',
+                    '0': 'Select month (optional)',
                     '1': 'January', '2': 'February', '3': 'March', '4': 'April', 
                     '5': 'May', '6': 'June', '7': 'July', '8': 'August', 
                     '9': 'September', '10': 'October', '11': 'November', '12': 'December',
@@ -281,7 +281,7 @@ export class BibliographyModal extends Modal {
             });
 
         // --- Publication Details --- 
-        new Setting(contentEl).setName('Publication Details').setHeading(); // Use heading for clarity
+        new Setting(contentEl).setName('Publication details').setHeading(); // Use heading for clarity
 
         // Container Title input
         new Setting(contentEl)

@@ -167,7 +167,7 @@ ${yaml}---
             const existingFile = this.app.vault.getAbstractFileByPath(notePath);
             if (existingFile instanceof TFile) {
                 // Notify the user and prevent note creation if it already exists
-                new Notice(`Literature note already exists at ${notePath}`);
+                new Notice(`Literature note already exists at ${notePath}.`);
                 throw new Error(`Literature note already exists at ${notePath}`);
             }
             // Create new literature note

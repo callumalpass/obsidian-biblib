@@ -13,7 +13,6 @@ export class BibliographySettingTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        // new Setting(containerEl).setName('BibLib Settings').setHeading();
         // Allow customization of the tag used for literature notes
         new Setting(containerEl)
             .setName('Literature note tag')
@@ -36,7 +35,7 @@ export class BibliographySettingTab extends PluginSettingTab {
                 }));
 
         // File Path Settings
-        new Setting(containerEl).setName('File Paths').setHeading();
+        new Setting(containerEl).setName('File paths').setHeading();
 
         new Setting(containerEl)
             .setName('Attachment folder path')
@@ -99,7 +98,7 @@ export class BibliographySettingTab extends PluginSettingTab {
         // (Removed Citoid API URL setting – endpoint now fixed)
                 
         // Frontmatter Field Settings
-        new Setting(containerEl).setName('Custom Frontmatter Fields').setHeading();
+        new Setting(containerEl).setName('Custom frontmatter fields').setHeading();
         containerEl.createEl('p', { 
             text: 'Configure which additional non-CSL fields to include in your literature notes.',
             cls: 'setting-item-description'
@@ -146,7 +145,7 @@ export class BibliographySettingTab extends PluginSettingTab {
                 }));
                 
         // Bibliography Builder Settings
-        new Setting(containerEl).setName('Bibliography Builder').setHeading();
+        new Setting(containerEl).setName('Bibliography builder').setHeading();
         containerEl.createEl('p', { 
             text: 'Configure settings for the bibliography builder command.',
             cls: 'setting-item-description'
@@ -186,14 +185,14 @@ export class BibliographySettingTab extends PluginSettingTab {
                 }));
                 
         // Note Template Settings
-        new Setting(containerEl).setName('Note Templates').setHeading();
+        new Setting(containerEl).setName('Note templates').setHeading();
         containerEl.createEl('p', { 
             text: 'Configure the format of your literature notes.',
             cls: 'setting-item-description'
         });
         
         new Setting(containerEl)
-            .setName('Header Template')
+            .setName('Header template')
             .setDesc('Template for the first header in literature notes. Supports variables: {{title}}, {{citekey}}, {{year}}, {{authors}}, {{pdflink}}')
             .addTextArea(text => text
                 .setPlaceholder('# {{pdflink}}{{^pdflink}}{{title}}{{/pdflink}}')

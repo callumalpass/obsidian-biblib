@@ -19,7 +19,7 @@ export default class BibliographyPlugin extends Plugin {
         // Add command to create a literature note
         this.addCommand({
             id: 'create-literature-note',
-            name: 'Create Literature Note',
+            name: 'Create literature note',
             callback: () => {
                 new BibliographyModal(this.app, this.settings).open();
             },
@@ -28,7 +28,7 @@ export default class BibliographyPlugin extends Plugin {
         // Add command to create a chapter entry
         this.addCommand({
             id: 'create-chapter-entry',
-            name: 'Create Book Chapter Entry',
+            name: 'Create book chapter entry',
             callback: () => {
                 new ChapterModal(this.app, this.settings).open();
             },
@@ -37,7 +37,7 @@ export default class BibliographyPlugin extends Plugin {
         // Add command to create a chapter from current book note
         this.addCommand({
             id: 'create-chapter-from-current-book',
-            name: 'Create Chapter From Current Book',
+            name: 'Create chapter from current book',
             checkCallback: (checking) => {
                 const activeFile = this.app.workspace.getActiveFile();
                 if (!activeFile) return false;
@@ -68,7 +68,7 @@ export default class BibliographyPlugin extends Plugin {
         // Add command to build bibliography
         this.addCommand({
             id: 'build-bibliography',
-            name: 'Build Bibliography',
+            name: 'Build bibliography',
             callback: async () => {
                 try {
                     new Notice('Building bibliography files...');
@@ -84,7 +84,7 @@ export default class BibliographyPlugin extends Plugin {
         // Add command to export all references as BibTeX
         this.addCommand({
             id: 'export-bibtex',
-            name: 'Export Bibliography as BibTeX',
+            name: 'Export bibliography as BibTeX',
             callback: async () => {
                 try {
                     new Notice('Exporting BibTeX file...');
