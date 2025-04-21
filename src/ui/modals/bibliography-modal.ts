@@ -554,7 +554,6 @@ export class BibliographyModal extends Modal {
             contributor = { role, given: dataOrGiven || '', family: family || '' };
         }
         this.contributors.push(contributor);
-        console.log('[BibModal] addContributor:', contributor);
         
         new ContributorField(
             this.contributorsListContainer,
@@ -698,8 +697,6 @@ export class BibliographyModal extends Modal {
             
             // --- Populate Contributors --- 
             // Debug: inspect full normalizedData
-            console.log('[BibModal] populateFormFromCitoid: normalizedData =', normalizedData);
-            console.log('[BibModal] populateFormFromCitoid: keys =', Object.keys(normalizedData));
             this.handleContributors(normalizedData);
             
             // --- Populate Additional Fields --- 

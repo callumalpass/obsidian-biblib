@@ -181,10 +181,10 @@ export class ChapterModal extends Modal {
                         this.bookPathDisplay.textContent = `Selected book path: ${selectedPath}`;
                         this.bookPathDisplay.style.display = 'block'; // Show the path display
                     } else {
-                         console.warn('Selected book path not found in loaded entries:', selectedPath);
-                         this.selectedBook = null; 
-                         this.bookPathDisplay.textContent = 'Error: Could not load selected book.';
-                         this.bookPathDisplay.style.display = 'block';
+                        // Selected path not found: show error state
+                        this.selectedBook = null;
+                        this.bookPathDisplay.textContent = 'Error: Could not load selected book.';
+                        this.bookPathDisplay.style.display = 'block';
                     }
                 } else {
                     this.selectedBook = null;
@@ -475,14 +475,11 @@ export class ChapterModal extends Modal {
              field = { type, name, value };
              this.additionalFields.push(field);
         } else {
-             // Update existing field value and type
-             this.additionalFields[existingFieldIndex].value = value;
-             this.additionalFields[existingFieldIndex].type = type;
-             // Don't add a new UI component if one already exists for this field name
-             console.warn(`Field ${name} already exists. Updating value.`);
-             // Find and update existing component if possible (requires storing component refs)
-             // TODO: Implement component update if needed, instead of just returning null
-             return null; 
+            // Update existing field value and type
+            this.additionalFields[existingFieldIndex].value = value;
+            this.additionalFields[existingFieldIndex].type = type;
+            // Don't add a duplicate UI component
+            return null;
         }
 
         return new AdditionalFieldComponent(

@@ -6,6 +6,10 @@ import { BibliographyPluginSettings, DEFAULT_SETTINGS } from './src/types/settin
 import { BibliographyBuilder } from './src/services/bibliography-builder';
 import './styles.css';
 
+// Suppress non-error console logging
+console.log = () => {};
+console.warn = () => {};
+
 export default class BibliographyPlugin extends Plugin {
     settings: BibliographyPluginSettings;
 

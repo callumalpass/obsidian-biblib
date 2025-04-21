@@ -67,7 +67,7 @@ export class BibliographyBuilder {
 
                 // Check if it has an ID (citekey)
                 if (!frontmatter.id) {
-                    console.warn(`Literature note ${file.path} is missing an 'id' field in frontmatter.`);
+                    // Skip entries without an ID
                     continue;
                 }
                 
@@ -110,7 +110,6 @@ export class BibliographyBuilder {
             const biblibFolder = this.app.vault.getAbstractFileByPath(biblibPath);
             if (!biblibFolder) {
                 await this.app.vault.createFolder(biblibPath);
-                console.log(`Created directory: ${biblibPath}`);
             }
         } catch (error) {
             console.error(`Error ensuring biblib directory exists (${biblibPath}):`, error);

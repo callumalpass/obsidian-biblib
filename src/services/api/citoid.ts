@@ -36,7 +36,7 @@ export class CitoidService {
             let text = await fetchBib(this.apiUrl);
             // If the response is not valid BibTeX (doesn't start with '@'), try fallback to '/bibtex/' path
             if (!text.trim().startsWith('@')) {
-                console.warn('Citoid returned non-BibTeX content; attempting bibtex endpoint fallback');
+                // Fallback to try retrieving valid BibTeX
                 // Derive fallback base URL: replace 'mediawiki/' with 'bibtex/', or append 'bibtex/'
                 let fallbackBase = this.apiUrl;
                 if (fallbackBase.includes('/mediawiki/')) {

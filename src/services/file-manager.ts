@@ -241,9 +241,9 @@ ${yaml}---
                 // Check if file already exists
                 const existingAttachment = this.app.vault.getAbstractFileByPath(attachmentPath);
                 if (existingAttachment instanceof TFile) {
-                     console.warn(`Attachment file already exists at ${attachmentPath}. Skipping import.`);
-                     new Notice(`Attachment already exists: ${attachmentPath}`);
-                     return attachmentPath; // Return existing path
+                    // Skip import if attachment already exists
+                    new Notice(`Attachment already exists: ${attachmentPath}`);
+                    return attachmentPath;
                 }
 
                 const arrayBuffer = await attachmentData.file.arrayBuffer();
@@ -373,8 +373,8 @@ ${yaml}---
 
                 // Ensure required fields exist for a book entry
                 if (!frontmatter.id || !frontmatter.title) {
-                     console.warn(`Book-like entry ${file.path} missing ID or Title.`);
-                     continue;
+                    // Skip invalid book entries without required fields
+                    continue;
                 }
                 
                 bookEntries.push({
@@ -400,7 +400,7 @@ ${yaml}---
         try {
             const file = this.app.vault.getAbstractFileByPath(normalizePath(path));
             if (!(file instanceof TFile)) {
-                console.warn(`Book entry path not found or not a file: ${path}`);
+                // Invalid path: not a file
                 return null;
             }
             
@@ -409,7 +409,7 @@ ${yaml}---
             
             // Validate essential fields for a book entry
             if (!frontmatter || !frontmatter.id || !frontmatter.title || !frontmatter.type || !['book', 'collection', 'document'].includes(frontmatter.type)) {
-                 console.warn(`File at ${path} is not a valid book entry (missing id, title, or wrong type).`);
+                // Not a valid book entry
                 return null;
             }
             
