@@ -73,6 +73,10 @@ export interface BibliographyPluginSettings {
      * Supports variables: {{title}}, {{citekey}}, {{year}}, {{authors}}, {{pdflink}}, {{container-title}}
      */
     chapterHeaderTemplate: string;
+    /**
+     * Tag used to identify literature notes
+     */
+    literatureNoteTag: string;
 }
 
 export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
@@ -89,5 +93,6 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
     bibliographyJsonPath: 'biblib/bibliography.json',
     citekeyListPath: 'citekeylist.md',
     headerTemplate: '# {{pdflink}}{{^pdflink}}{{citekey}}{{/pdflink}}',
-    chapterHeaderTemplate: '# {{pdflink}}{{^pdflink}}{{title}}{{/pdflink}} (in {{container-title}})'
+    chapterHeaderTemplate: '# {{pdflink}}{{^pdflink}}{{title}}{{/pdflink}} (in {{container-title}})',
+    literatureNoteTag: 'literature_note'
 };

@@ -49,10 +49,10 @@ export class FileManager {
                 ...(citation.DOI && { DOI: citation.DOI }),
                 ...(citation.abstract && { abstract: citation.abstract }),
                 // Add metadata fields (non-CSL)
-                // Ensure 'literature_note' tag is always present, while preserving any existing tags
-                tags: citation.tags && Array.isArray(citation.tags) 
-                    ? [...new Set([...citation.tags, 'literature_note'])] 
-                    : ['literature_note'],
+                // Ensure literature note tag is always present, while preserving any existing tags
+                tags: citation.tags && Array.isArray(citation.tags)
+                    ? [...new Set([...citation.tags, this.settings.literatureNoteTag])]
+                    : [this.settings.literatureNoteTag],
             };
             
             // Add configurable non-CSL fields based on settings
@@ -345,7 +345,7 @@ ${yaml}---
     }
     
     /**
-     * Get all book entries (notes tagged literature_note with type book/collection/document)
+     * Get all book entries (notes tagged with the configured literatureNoteTag and type book/collection/document)
      */
     async getBookEntries(): Promise<{id: string, title: string, path: string, frontmatter: any}[]> {
         const bookEntries: {id: string, title: string, path: string, frontmatter: any}[] = [];
@@ -360,7 +360,7 @@ ${yaml}---
                 if (!frontmatter) continue;
                 
                 const tags = frontmatter.tags;
-                if (!tags || !Array.isArray(tags) || !tags.includes('literature_note')) continue;
+                if (!tags || !Array.isArray(tags) || !tags.includes(this.settings.literatureNoteTag)) continue;
                 
                 const type = frontmatter.type;
                 if (!type || !['book', 'collection', 'document'].includes(type)) continue;

@@ -57,9 +57,9 @@ export class BibliographyBuilder {
                     continue;
                 }
                 
-                // Check if it has literature_note tag
+                // Check if it has the configured literature note tag
                 const tags = frontmatter.tags;
-                if (!tags || !Array.isArray(tags) || !tags.includes('literature_note')) {
+                if (!tags || !Array.isArray(tags) || !tags.includes(this.settings.literatureNoteTag)) {
                     continue;
                 }
 

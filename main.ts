@@ -47,9 +47,9 @@ export default class BibliographyPlugin extends Plugin {
                     return false;
                 }
                 
-                // Check if it has a literature_note tag
+                // Check if it has the configured literature note tag
                 const tags = frontmatter.tags;
-                if (!tags || !Array.isArray(tags) || !tags.includes('literature_note')) {
+                if (!tags || !Array.isArray(tags) || !tags.includes(this.settings.literatureNoteTag)) {
                     return false;
                 }
                 

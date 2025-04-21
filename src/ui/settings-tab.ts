@@ -13,7 +13,17 @@ export class BibliographySettingTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        new Setting(containerEl).setName('BibLib Settings').setHeading();
+        // new Setting(containerEl).setName('BibLib Settings').setHeading();
+        // Allow customization of the tag used for literature notes
+        new Setting(containerEl)
+            .setName('Literature note tag')
+            .setDesc('Tag used to identify literature notes in frontmatter')
+            .addText(text => text
+                .setValue(this.plugin.settings.literatureNoteTag)
+                .onChange(async (value) => {
+                    this.plugin.settings.literatureNoteTag = value.trim();
+                    await this.plugin.saveSettings();
+                }));
 
         // File Path Settings
         new Setting(containerEl).setName('File Paths').setHeading();

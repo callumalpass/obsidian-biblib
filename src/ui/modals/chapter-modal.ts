@@ -624,10 +624,13 @@ export class ChapterModal extends Modal {
             DOI: this.doiInput.value.trim() || undefined,
              // Container info (conditionally added)
             'container-title': this.selectedBook?.title || undefined, 
-             // Inherit tags from container book if available 
-             tags: this.selectedBook?.frontmatter?.tags && Array.isArray(this.selectedBook.frontmatter.tags)
-                 ? [...new Set([...this.selectedBook.frontmatter.tags.filter((tag: string) => tag !== 'literature_note')])]
-                 : []
+            // Inherit tags from container book, excluding the literature note tag
+            tags: this.selectedBook?.frontmatter?.tags && Array.isArray(this.selectedBook.frontmatter.tags)
+                ? [...new Set(
+                    this.selectedBook.frontmatter.tags
+                        .filter((tag: string) => tag !== this.settings.literatureNoteTag)
+                )]
+                : []
         };
         
         // Ensure container-title is present if a book is selected
