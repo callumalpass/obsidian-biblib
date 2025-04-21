@@ -4,13 +4,14 @@ import { Contributor, AdditionalField, Citation, AttachmentData, AttachmentType 
 import { ContributorField } from '../components/contributor-field';
 import { AdditionalFieldComponent } from '../components/additional-field';
 import { CitoidService } from '../../services/api/citoid';
-import { CslMapper } from '../../utils/csl-mapper';
+import { CitationService } from '../../services/citation-service';
 import { CitekeyGenerator } from '../../utils/citekey-generator';
 import { FileManager } from '../../services/file-manager';
 
 export class BibliographyModal extends Modal {
     // Services
     private citoidService: CitoidService;
+    private citationService: CitationService;
     private fileManager: FileManager;
     
     // Data state
@@ -44,7 +45,9 @@ export class BibliographyModal extends Modal {
 
     constructor(app: App, private settings: BibliographyPluginSettings) {
         super(app);
-        this.citoidService = new CitoidService(settings.citoidApiUrl);
+        // Initialize services with fixed BibTeX endpoint
+        this.citoidService = new CitoidService();
+        this.citationService = new CitationService();
         this.fileManager = new FileManager(app, settings);
     }
 
@@ -96,16 +99,12 @@ export class BibliographyModal extends Modal {
             citoidButton.textContent = 'Looking up...';
             
             try {
-                const citationData = await this.citoidService.fetch(identifier);
-                
-                if (!citationData) {
+                // Fetch normalized CSL via Citation.js (tries JSON then BibTeX)
+                const normalizedData = await this.citationService.fetchNormalized(identifier);
+                if (!normalizedData) {
                     new Notice('No citation data found for the provided identifier');
                     return;
                 }
-                
-                // Populate the form with the citation data
-                 // Ensure data is normalized before populating
-                 const normalizedData = CslMapper.normalizeToCslFormat(citationData);
                 this.populateFormFromCitoid(normalizedData);
             } catch (error) {
                 console.error('Error fetching citation data:', error);
@@ -541,13 +540,24 @@ export class BibliographyModal extends Modal {
 
     /**
      * Add a contributor field UI component
+     * @param role - CSL role (e.g., 'author')
+     * @param dataOrGiven - raw CSL contributor object or given name string
+     * @param family - family name (used when dataOrGiven is a given name)
      */
-    private addContributor(role: string = 'author', given: string = '', family: string = ''): void {
-        const contributor: Contributor = { role, given, family };
+    private addContributor(role: string = 'author', dataOrGiven: any = '', family?: string): void {
+        let contributor: Contributor;
+        // If provided a raw CSL contributor object, merge all its properties
+        if (dataOrGiven && typeof dataOrGiven === 'object') {
+            contributor = { role, ...dataOrGiven };
+        } else {
+            // Otherwise treat dataOrGiven as the given name and family as the family name
+            contributor = { role, given: dataOrGiven || '', family: family || '' };
+        }
         this.contributors.push(contributor);
+        console.log('[BibModal] addContributor:', contributor);
         
         new ContributorField(
-            this.contributorsListContainer, 
+            this.contributorsListContainer,
             contributor,
             (contributorToRemove) => {
                 this.contributors = this.contributors.filter(c => c !== contributorToRemove);
@@ -576,6 +586,18 @@ export class BibliographyModal extends Modal {
      */
     private populateFormFromCitoid(normalizedData: any): void {
         try {
+            // Map common camelCase keys from Citoid/Citation.js into hyphen-case for form fields
+            // (e.g., containerTitle -> container-title, publisherPlace -> publisher-place, titleShort -> title-short)
+            const remap: [string, string][] = [
+                ['titleShort', 'title-short'],
+                ['containerTitle', 'container-title'],
+                ['publisherPlace', 'publisher-place'],
+            ];
+            for (const [camel, dash] of remap) {
+                if (normalizedData[camel] !== undefined && normalizedData[dash] === undefined) {
+                    normalizedData[dash] = normalizedData[camel];
+                }
+            }
             // --- Populate Basic Fields ---
             let generatedCitekey = false;
             if (normalizedData.id) {
@@ -591,9 +613,10 @@ export class BibliographyModal extends Modal {
             if (generatedCitekey) new Notice(`Generated citekey: ${this.idInput.value}`, 3000); // Short notice
             
             if (normalizedData.type) {
-                const typeValue = CslMapper.mapCitoidType(normalizedData.type);
-                if (typeValue && this.typeDropdown.querySelector(`option[value="${typeValue}"]`)) {
-                    this.typeDropdown.value = typeValue;
+                // Set the type dropdown if the value matches one of the options
+                const val = normalizedData.type;
+                if (this.typeDropdown.querySelector(`option[value="${val}"]`)) {
+                    this.typeDropdown.value = val;
                     this.typeDropdown.dispatchEvent(new Event('change'));
                 }
             }
@@ -674,6 +697,9 @@ export class BibliographyModal extends Modal {
             }
             
             // --- Populate Contributors --- 
+            // Debug: inspect full normalizedData
+            console.log('[BibModal] populateFormFromCitoid: normalizedData =', normalizedData);
+            console.log('[BibModal] populateFormFromCitoid: keys =', Object.keys(normalizedData));
             this.handleContributors(normalizedData);
             
             // --- Populate Additional Fields --- 
@@ -688,43 +714,31 @@ export class BibliographyModal extends Modal {
 
     /**
      * Handle contributors from normalized CSL data
+     * Supports raw CSL contributor objects (with arbitrary properties) and plain string names
      */
     private handleContributors(normalizedData: any): void {
         // Clear existing contributor UI elements and internal state
         this.contributorsListContainer.empty();
         this.contributors = [];
         
-        // Process different contributor types defined in CSL
-        const contributorRoles = [
-            'author', 'editor', 'translator', 'container-author', 'collection-editor', 
-            'composer', 'director', 'interviewer', 'illustrator', 'original-author', 
-            'recipient', 'reviewed-author', 'chair', 'compiler', 'contributor', 
-            'curator', 'editorial-director', 'executive-producer', 'guest', 'host', 
-            'narrator', 'organizer', 'performer', 'producer', 'script-writer', 
-            'series-creator'
-        ];
-        
-        let foundContributors = false;
-        
-        contributorRoles.forEach(role => {
-            if (normalizedData[role] && Array.isArray(normalizedData[role])) {
-                normalizedData[role].forEach((person: any) => {
-                    if (person && typeof person === 'object') {
-                         // Handle CSL format {family, given} or {literal}
-                         if (person.literal) {
-                             this.addContributor(role, '', person.literal); // Treat literal as family name
-                             foundContributors = true;
-                         } else if (person.family || person.given) { // Ensure at least one name part exists
-                             this.addContributor(role, person.given || '', person.family || '');
-                             foundContributors = true;
-                         }
-                    }
-                });
-            }
-        });
-        
-        // If no contributors were added, add a blank 'author' field
-        if (!foundContributors) {
+        // Populate primary contributors: authors and editors
+        let added = false;
+        // Authors
+        if (Array.isArray(normalizedData.author) && normalizedData.author.length) {
+            normalizedData.author.forEach((person: any) => {
+                this.addContributor('author', person);
+                added = true;
+            });
+        }
+        // Editors
+        if (Array.isArray(normalizedData.editor) && normalizedData.editor.length) {
+            normalizedData.editor.forEach((person: any) => {
+                this.addContributor('editor', person);
+                added = true;
+            });
+        }
+        // Fallback: one empty author field if none found
+        if (!added) {
             this.addContributor('author', '', '');
         }
     }

@@ -64,18 +64,16 @@ export class FileManager {
                 frontmatter.dateCreated = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
             }
 
-            // Add contributors to frontmatter
+            // Add contributors to frontmatter, preserving all CSL contributor properties
             contributors.forEach(contributor => {
-                if (contributor.given || contributor.family) {
+                // Only include entries with at least one name or other identifier
+                if (contributor.family || contributor.given || contributor.literal) {
                     if (!frontmatter[contributor.role]) {
                         frontmatter[contributor.role] = [];
                     }
-                    // Ensure structure is { family: string, given?: string }
-                    const person = {
-                        family: contributor.family || '', // Ensure family is string
-                        ...(contributor.given && { given: contributor.given })
-                    };
-                    frontmatter[contributor.role].push(person);
+                    // Copy all contributor properties except the role
+                    const { role, ...personData } = contributor;
+                    frontmatter[contributor.role].push(personData);
                 }
             });
 

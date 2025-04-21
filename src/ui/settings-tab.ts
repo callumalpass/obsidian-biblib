@@ -96,19 +96,7 @@ export class BibliographySettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
                 
-        // API Settings
-        new Setting(containerEl).setName('API Settings').setHeading();
-        
-        new Setting(containerEl)
-            .setName('Citoid API URL')
-            .setDesc('The URL for the Citoid API to fetch bibliographic data. For DOIs, the plugin will also try CrossRef API as a fallback.')
-            .addText(text => text
-                .setPlaceholder('https://en.wikipedia.org/api/rest_v1/data/citation/mediawiki/')
-                .setValue(this.plugin.settings.citoidApiUrl)
-                .onChange(async (value) => {
-                    this.plugin.settings.citoidApiUrl = value;
-                    await this.plugin.saveSettings();
-                }));
+        // (Removed Citoid API URL setting – endpoint now fixed)
                 
         // Frontmatter Field Settings
         new Setting(containerEl).setName('Custom Frontmatter Fields').setHeading();

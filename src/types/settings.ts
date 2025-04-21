@@ -24,10 +24,6 @@ export interface BibliographyPluginSettings {
      */
     createAttachmentSubfolder: boolean;
     
-    /**
-     * The URL for the Citoid API to fetch bibliographic data
-     */
-    citoidApiUrl: string;
     
     /**
      * Whether to include the dateCreated field in literature notes
@@ -89,7 +85,7 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
     usePrefix: true,
     notePrefix: '@',
     createAttachmentSubfolder: true,
-    citoidApiUrl: 'https://en.wikipedia.org/api/rest_v1/data/citation/mediawiki/',
+    // The Citoid API endpoint to fetch BibTeX (should point to the 'bibtex' path)
     includeDateCreated: true,
     includeYear: true,
     includeAuthorLink: true,

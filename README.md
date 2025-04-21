@@ -12,7 +12,7 @@ BibLib is a streamlined approach to academic reference management that leverages
 
 Most reference management solutions for Obsidian focus on integrating with external tools like Zotero. This often works well, but can sometimes introduce complexity through managing synchronization processes, dealing with different data formats, and working across two distinct applications.
 
-Bib Lib helps to implement alternative approach by managing reference information directly within Obsidian. The idea is to treat bibliographic entries fundamentally like any other note in your vault.
+BibLib helps to implement alternative approach by managing reference information directly within Obsidian. The idea is to treat bibliographic entries fundamentally like any other note in your vault.
 
 Here's how this workflow functions:
 
@@ -20,7 +20,7 @@ Here's how this workflow functions:
 - **Direct Linking within Your Vault**: Because references are just notes, you can link to them (and from them) using standard Obsidian [[wiki links]]. This allows you to connect your ideas, meeting notes, or project plans directly to the relevant source material within the same system.
 - **Plain Text Simplicity and Durability**: Using markdown and YAML means your reference data is stored in open, human-readable formats. This makes your library easily portable, searchable with standard text tools, manageable with version control (like Git), and less dependent on the future of any single piece of software.
 - **Utilizing Obsidian's Tools**: Obsidian's built-in features like search, backlinks, tags, and graph view work directly on your reference notes. You can also use community plugins, such as Dataview, to query and organize your reference data in flexible ways (e.g., listing papers by author, year, or tag).
-- **Simplified Reference Entry**: To ease the process of adding new references, BibLib includes tools to fetch bibliographic metadata automatically using identifiers like DOIs, URLs, or ISBNs via the Citoid and CrossRef APIs.
+- **Simplified Reference Entry**: To ease the process of adding new references, BibLib fetches BibTeX from the Citoid API (using DOIs, URLs, or ISBNs) and uses Citation.js to parse it into true CSL-JSON.
 - **Connecting Notes to Source Texts**: The workflow integrates with Obsidian's handling of PDFs. You can link directly from a line in your notes to a specific page and location within a PDF attached to a reference note, keeping your arguments closely tied to the source text.
 - **Preparing for Publication**: Since the YAML frontmatter is CSL-compatible, BibLib can generate a bibliography.json file from your notes (if you decide you don't like *this* plugin, it is also trivial to write your own script to convert the YAML frontmatter to a CSL file). This file can then be used directly with tools like Pandoc to create formatted citations and bibliographies in your final documents, avoiding manual export steps from external managers.
 
@@ -39,7 +39,7 @@ This approach has proven effective for my personal academic workflow for several
 - Customizable note prefixes and file locations
 - Automatic creation of contributor links
 - Auto-fill citation data using DOI, URL, or ISBN via Citoid API
-- CrossRef API integration for DOI lookups
+ - Citation.js parsing of BibTeX into CSL-JSON for seamless DOI, URL, and ISBN support
 - Build bibliography files from your literature notes
 
 > [!NOTE]
@@ -122,7 +122,7 @@ This workflow keeps your references, PDFs, and annotations all within the same s
 
 ### API Settings
 
-- **Citoid API URL**: The URL for the Citoid API to fetch bibliographic data (default uses Wikipedia's Citoid API, with CrossRef API fallback for DOIs)
+- **Citoid API URL**: Fixed to Wikipedia's `/citation/bibtex/` endpoint; BibTeX is parsed via Citation.js into CSL-JSON
 
 ### Custom Frontmatter Fields
 

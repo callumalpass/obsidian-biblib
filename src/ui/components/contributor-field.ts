@@ -68,7 +68,7 @@ export class ContributorField {
             placeholder: 'Given Name', 
             cls: 'bibliography-input bibliography-contributor-given' 
         });
-        this.givenInput.value = this.contributor.given;
+        this.givenInput.value = this.contributor.given ?? '';
         this.givenInput.oninput = () => {
             this.contributor.given = this.givenInput.value.trim();
         };
@@ -79,7 +79,7 @@ export class ContributorField {
             placeholder: 'Family Name', 
             cls: 'bibliography-input bibliography-contributor-family' 
         });
-        this.familyInput.value = this.contributor.family;
+        this.familyInput.value = this.contributor.family ?? '';
         this.familyInput.oninput = () => {
             this.contributor.family = this.familyInput.value.trim();
         };

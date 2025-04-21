@@ -3,8 +3,14 @@
  */
 export interface Contributor {
     role: string;
-    given: string;
-    family: string;
+    /** Given name of the contributor, if available */
+    given?: string;
+    /** Family name of the contributor, if available */
+    family?: string;
+    /** Literal form of the contributor name, if provided */
+    literal?: string;
+    /** Any additional CSL contributor properties (e.g., affiliation, sequence, ORCID) */
+    [key: string]: any;
 }
 
 /**
