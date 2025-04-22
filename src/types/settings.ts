@@ -1,143 +1,143 @@
-import { CitekeyOptions } from "../utils/citekey-generator";
+// --- Interface for Citekey Generation Options ---
+// Moved here from citekey-generator.ts to avoid circular dependency issues
+// and keep settings-related types together.
 
-export interface BibliographyPluginSettings {
-    /**
-     * The folder where PDF and EPUB attachments will be stored
-     */
-    attachmentFolderPath: string;
-    
-    /**
-     * The folder where literature notes will be stored
-     */
-    literatureNotePath: string;
-    
-    /**
-     * Whether to add a prefix to literature note filenames
-     */
-    usePrefix: boolean;
-    
-    /**
-     * The prefix to add to literature note filenames
-     */
-    notePrefix: string;
-    
-    /**
-     * Whether to create a subfolder for each citation
-     */
-    createAttachmentSubfolder: boolean;
-    
-    
-    /**
-     * Whether to include the dateCreated field in literature notes
-     */
-    includeDateCreated: boolean;
-    
-    /**
-     * Whether to include the year field in literature notes 
-     * (separate from the CSL-issued field)
-     */
-    includeYear: boolean;
-    
-    /**
-     * Whether to include the authorLink field in literature notes
-     */
-    includeAuthorLink: boolean;
-    
-    /**
-     * Whether to include the attachment field in literature notes
-     */
-    includeAttachment: boolean;
-    
-    /**
-     * The path where to save the bibliography.json file
-     * (relative to vault or absolute)
-     */
-    bibliographyJsonPath: string;
-    
-    /**
-     * The path where to save the citekey list file (relative to vault or absolute)
-     */
-    citekeyListPath: string;
-    
-    /**
-     * The path where to save the exported BibTeX file (relative to vault or absolute)
-     */
-    bibtexFilePath: string;
-    
-    /**
-     * Template for the first header in literature notes.
-     * Supports variables: {{title}}, {{citekey}}, {{year}}, {{authors}}, {{pdflink}}
-     */
-    headerTemplate: string;
-    
-    /**
-     * Template for the first header in chapter notes.
-     * Supports variables: {{title}}, {{citekey}}, {{year}}, {{authors}}, {{pdflink}}, {{container-title}}
-     */
-    chapterHeaderTemplate: string;
-    /**
-     * Tag used to identify literature notes
-     */
-    literatureNoteTag: string;
-    /**
-     * Whether to automatically open a newly created literature note
-     */
-    openNoteOnCreate: boolean;
-    
-    /**
-     * Whether to enable the Zotero Connector server
-     */
-    enableZoteroConnector: boolean;
-    
-    /**
-     * The port to use for the Zotero Connector server
-     */
-    zoteroConnectorPort: number;
-    
-    /**
-     * Temporary folder path for downloaded PDFs from Zotero
-     */
-    tempPdfPath: string;
-    
-    /**
-     * Options for citekey generation
-     */
-    citekeyOptions: CitekeyOptions;
+/**
+ * Options for citekey generation
+ */
+export interface CitekeyOptions {
+        /**
+         * User-defined template for citekey generation.
+         * If provided, overrides other formatting options below.
+         * Example: '[auth:lower][year][shorttitle:capitalize]'
+         * Default: '' (use legacy options)
+         */
+        citekeyTemplate: string;
+
+        /**
+         * Whether to use Zotero keys when available
+         * Default: true
+         */
+        useZoteroKeys: boolean;
+
+        // --- Legacy Options (used only if citekeyTemplate is empty) ---
+
+        /**
+         * Style for author name abbreviation
+         * - 'full': Use full author last name (e.g., "smith")
+         * - 'firstThree': Use first three letters (e.g., "smi")
+         * - 'firstFour': Use first four letters (e.g., "smit")
+         * Default: 'full'
+         */
+        authorAbbreviationStyle: 'full' | 'firstThree' | 'firstFour';
+
+        /**
+         * Whether to include multiple authors in the citekey
+         * Default: false
+         */
+        includeMultipleAuthors: boolean;
+
+        /**
+         * Maximum number of authors to include if includeMultipleAuthors is true
+         * Default: 3
+         */
+        maxAuthors: number;
+
+        /**
+         * Style to use when there are exactly two authors
+         * - 'and': Include both authors with "And" (e.g., "smithAndJones")
+         * - 'initial': Include just the initial of second author (e.g., "smithJ")
+         * Default: 'and'
+         */
+        useTwoAuthorStyle: 'and' | 'initial';
+
+        /**
+         * Whether to add "EtAl" when there are more authors than maxAuthors
+         * Default: true
+         */
+        useEtAl: boolean;
+
+        /**
+         * Delimiter to use between author and year parts
+         * Example: '_' for "smith_2023"
+         * Default: '' (no delimiter)
+         */
+        authorYearDelimiter: string;
+
+        /**
+         * Delimiter to use before random suffix for short citekeys
+         * Example: '_' for "sm_123"
+         * Default: '' (no delimiter)
+         */
+        shortCitekeyDelimiter: string;
+
+        /**
+         * Minimum length for a citekey before adding a random suffix
+         * Default: 6
+         */
+        minCitekeyLength: number;
 }
 
+
+// --- Interface for Overall Plugin Settings ---
+
+export interface BibliographyPluginSettings {
+        attachmentFolderPath: string;
+        literatureNotePath: string;
+        usePrefix: boolean;
+        notePrefix: string;
+        createAttachmentSubfolder: boolean;
+        includeDateCreated: boolean;
+        includeYear: boolean;
+        includeAuthorLink: boolean;
+        includeAttachment: boolean;
+        bibliographyJsonPath: string;
+        citekeyListPath: string;
+        bibtexFilePath: string;
+        headerTemplate: string;
+        chapterHeaderTemplate: string;
+        literatureNoteTag: string;
+        openNoteOnCreate: boolean;
+        enableZoteroConnector: boolean;
+        zoteroConnectorPort: number;
+        tempPdfPath: string;
+        citekeyOptions: CitekeyOptions; // Uses the interface defined above
+}
+
+// --- Default Plugin Settings ---
+
 export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
-    attachmentFolderPath: 'biblib',
-    literatureNotePath: '/',
-    usePrefix: true,
-    notePrefix: '@',
-    createAttachmentSubfolder: true,
-    // The Citoid API endpoint to fetch BibTeX (should point to the 'bibtex' path)
-    includeDateCreated: true,
-    includeYear: true,
-    includeAuthorLink: true,
-    includeAttachment: true,
-    bibliographyJsonPath: 'biblib/bibliography.json',
-    citekeyListPath: 'citekeylist.md',
-    // Default path for exported BibTeX
-    bibtexFilePath: 'biblib/bibliography.bib',
-    headerTemplate: '# {{pdflink}}{{^pdflink}}{{citekey}}{{/pdflink}}',
-    chapterHeaderTemplate: '# {{pdflink}}{{^pdflink}}{{title}}{{/pdflink}} (in {{container-title}})',
-    literatureNoteTag: 'literature_note',
-    openNoteOnCreate: true,
-    // Zotero Connector settings
-    enableZoteroConnector: false,
-    zoteroConnectorPort: 23119,
-    tempPdfPath: '',
-    // Default citekey options
-    citekeyOptions: {
-        useZoteroKeys: true,
-        authorAbbreviationStyle: 'full',
-        includeMultipleAuthors: false,
-        maxAuthors: 3,
-        useTwoAuthorStyle: 'and',
-        useEtAl: true,
-        authorYearDelimiter: '',
-        shortCitekeyDelimiter: '',
-        minCitekeyLength: 6
-    }
+        attachmentFolderPath: 'biblib',
+        literatureNotePath: '/',
+        usePrefix: true,
+        notePrefix: '@',
+        createAttachmentSubfolder: true,
+        includeDateCreated: true,
+        includeYear: true,
+        includeAuthorLink: true,
+        includeAttachment: true,
+        bibliographyJsonPath: 'biblib/bibliography.json',
+        citekeyListPath: 'citekeylist.md',
+        bibtexFilePath: 'biblib/bibliography.bib',
+        headerTemplate: '# {{pdflink}}{{^pdflink}}{{citekey}}{{/pdflink}}',
+        chapterHeaderTemplate: '# {{pdflink}}{{^pdflink}}{{title}}{{/pdflink}} (in {{container-title}})',
+        literatureNoteTag: 'literature_note',
+        openNoteOnCreate: true,
+        enableZoteroConnector: false,
+        zoteroConnectorPort: 23119,
+        tempPdfPath: '',
+        // Default citekey options
+        citekeyOptions: {
+                citekeyTemplate: '', // Default to empty string, signifying use of legacy options below
+                useZoteroKeys: true,
+                authorAbbreviationStyle: 'full',
+                includeMultipleAuthors: false,
+                maxAuthors: 3,
+                useTwoAuthorStyle: 'and',
+                useEtAl: true,
+                authorYearDelimiter: '',
+                shortCitekeyDelimiter: '',
+                minCitekeyLength: 6
+        }
 };
+
