@@ -21,7 +21,7 @@ export default class BibliographyPlugin extends Plugin {
     async onload() {
         await this.loadSettings();
         
-        this.citationService = new CitationService();
+        this.citationService = new CitationService(this.settings.citekeyOptions);
 
         // Add command to create a literature note
         this.addCommand({
@@ -268,9 +268,24 @@ export default class BibliographyPlugin extends Plugin {
 
     async loadSettings() {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        
+        // Ensure citekeyOptions is properly initialized with defaults
+        if (!this.settings.citekeyOptions) {
+            this.settings.citekeyOptions = DEFAULT_SETTINGS.citekeyOptions;
+        } else {
+            // Make sure all required properties exist
+            this.settings.citekeyOptions = Object.assign({}, 
+                DEFAULT_SETTINGS.citekeyOptions, 
+                this.settings.citekeyOptions);
+        }
     }
 
     async saveSettings() {
         await this.saveData(this.settings);
+        
+        // Update citation service with new options if it exists
+        if (this.citationService) {
+            this.citationService = new CitationService(this.settings.citekeyOptions);
+        }
     }
 }

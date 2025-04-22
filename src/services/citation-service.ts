@@ -4,6 +4,7 @@ import '@citation-js/plugin-bibtex';
 // We're handling Zotero data with our custom mapping as a fallback
 import { CitoidService } from './api/citoid';
 import { Notice } from 'obsidian';
+import { CitekeyGenerator } from '../utils/citekey-generator';
 
 /**
  * Service to fetch and normalize citation data via Citation.js
@@ -11,10 +12,13 @@ import { Notice } from 'obsidian';
  */
 export class CitationService {
     private citoid: CitoidService;
+    private citekeyOptions: any;
 
-    constructor() {
+    constructor(citekeyOptions?: any) {
         // Use default CitoidService (fixed BibTeX endpoint)
         this.citoid = new CitoidService();
+        // Use provided citekey options or default
+        this.citekeyOptions = citekeyOptions || CitekeyGenerator.defaultOptions;
     }
 
     /**
@@ -398,40 +402,7 @@ export class CitationService {
      * Generate a basic cite key from Zotero data
      */
     private generateCiteKey(item: any): string {
-        let key = '';
-        
-        // Try to get last name of first author
-        if (item.creators && item.creators.length > 0) {
-            const firstAuthor = item.creators[0];
-            if (firstAuthor.lastName) {
-                key = firstAuthor.lastName.toLowerCase().replace(/\s+/g, '');
-            } else if (firstAuthor.name) {
-                const nameParts = firstAuthor.name.split(' ');
-                key = nameParts[nameParts.length - 1].toLowerCase().replace(/\s+/g, '');
-            }
-        }
-        
-        // Add year if available
-        let year = '';
-        if (item.date) {
-            try {
-                const date = new Date(item.date);
-                if (!isNaN(date.getTime())) {
-                    year = date.getFullYear().toString();
-                }
-            } catch (e) {
-                // Ignore date parsing errors
-            }
-        }
-        
-        if (key && year) {
-            return `${key}${year}`;
-        } else if (key) {
-            return `${key}nodate`;
-        } else if (year) {
-            return `cite${year}`;
-        } else {
-            return 'cite' + Math.floor(Math.random() * 9999).toString();
-        }
+        // Use the enhanced CitekeyGenerator class with our options
+        return CitekeyGenerator.generate(item, this.citekeyOptions);
     }
 }

@@ -100,10 +100,10 @@ export class BibliographyModal extends Modal {
                 // Create a visual indicator for Zotero attachment
                 const indicatorEl = document.createElement('span');
                 indicatorEl.className = 'zotero-attachment-indicator';
-                indicatorEl.textContent = 'From Zotero';
+                indicatorEl.textContent = 'From Zotero Connector';
                 
                 // Add tooltip
-                indicatorEl.setAttribute('aria-label', 'This attachment was imported from Zotero');
+                indicatorEl.setAttribute('aria-label', 'This attachment was imported from Zotero Connector');
                 
                 // Add to heading
                 attachmentHeading.appendChild(indicatorEl);
@@ -752,7 +752,7 @@ export class BibliographyModal extends Modal {
                 this.idInput.value = normalizedData.key;
             } else if (normalizedData.title) {
                  // Generate key using potentially available author/year from normalized data
-                this.idInput.value = CitekeyGenerator.generate(normalizedData); 
+                this.idInput.value = CitekeyGenerator.generate(normalizedData, this.settings.citekeyOptions); 
                 generatedCitekey = true;
             }
             this.idInput.dispatchEvent(new Event('input'));

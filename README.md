@@ -193,6 +193,19 @@ This workflow keeps your references, PDFs, and annotations all within the same s
 
 - Bulk import of existing bibliographic data from BibTeX/CSL-JSON
 
+## Citekey Generation
+
+BibLib provides flexible citekey generation with customizable options:
+
+- Author name formats: full, first three, or first four letters
+- Multiple author handling: include information from co-authors
+- Two-author styles: Author1AndAuthor2 or Author1J (initial)
+- Style options for three or more authors: Author1JK or Author1EtAl
+- Customizable delimiters between author and year: smith_2023
+- Length validation with random suffixes for short citekeys
+- Special handling for Zotero keys
+
+You can configure all citekey options in the settings tab under "Citekey generation".
 
 ## License
 

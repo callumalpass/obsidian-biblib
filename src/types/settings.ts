@@ -1,3 +1,5 @@
+import { CitekeyOptions } from "../utils/citekey-generator";
+
 export interface BibliographyPluginSettings {
     /**
      * The folder where PDF and EPUB attachments will be stored
@@ -96,6 +98,11 @@ export interface BibliographyPluginSettings {
      * Temporary folder path for downloaded PDFs from Zotero
      */
     tempPdfPath: string;
+    
+    /**
+     * Options for citekey generation
+     */
+    citekeyOptions: CitekeyOptions;
 }
 
 export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
@@ -120,5 +127,17 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
     // Zotero Connector settings
     enableZoteroConnector: false,
     zoteroConnectorPort: 23119,
-    tempPdfPath: ''
+    tempPdfPath: '',
+    // Default citekey options
+    citekeyOptions: {
+        useZoteroKeys: true,
+        authorAbbreviationStyle: 'full',
+        includeMultipleAuthors: false,
+        maxAuthors: 3,
+        useTwoAuthorStyle: 'and',
+        useEtAl: true,
+        authorYearDelimiter: '',
+        shortCitekeyDelimiter: '',
+        minCitekeyLength: 6
+    }
 };

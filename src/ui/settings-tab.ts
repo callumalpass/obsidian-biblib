@@ -282,5 +282,139 @@ export class BibliographySettingTab extends PluginSettingTab {
                     this.display(); // Refresh the settings page
                 })
             );
+            
+        // Citekey Generation Settings
+        new Setting(containerEl).setName('Citekey generation').setHeading();
+        containerEl.createEl('p', { 
+            text: 'Configure how citekeys are generated for new literature notes.',
+            cls: 'setting-item-description'
+        });
+        
+        // Author format options
+        new Setting(containerEl)
+            .setName('Author name format')
+            .setDesc('Choose how author names are formatted in citekeys')
+            .addDropdown(dropdown => dropdown
+                .addOptions({
+                    'full': 'Full last name (e.g., "smith2023")',
+                    'firstThree': 'First three letters (e.g., "smi2023")',
+                    'firstFour': 'First four letters (e.g., "smit2023")'
+                })
+                .setValue(this.plugin.settings.citekeyOptions.authorAbbreviationStyle)
+                .onChange(async (value: any) => {
+                    this.plugin.settings.citekeyOptions.authorAbbreviationStyle = value;
+                    await this.plugin.saveSettings();
+                })
+            );
+            
+        // Multiple authors options
+        new Setting(containerEl)
+            .setName('Include multiple authors')
+            .setDesc('Include information from multiple authors in the citekey')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.citekeyOptions.includeMultipleAuthors)
+                .onChange(async (value) => {
+                    this.plugin.settings.citekeyOptions.includeMultipleAuthors = value;
+                    await this.plugin.saveSettings();
+                    this.display(); // Refresh to show/hide dependent settings
+                })
+            );
+            
+        if (this.plugin.settings.citekeyOptions.includeMultipleAuthors) {
+            // Two-author style
+            new Setting(containerEl)
+                .setName('Two-author style')
+                .setDesc('How to format citekeys with exactly two authors')
+                .setClass('setting-indent')
+                .addDropdown(dropdown => dropdown
+                    .addOptions({
+                        'and': 'Use "And" (e.g., "smithAndJones2023")',
+                        'initial': 'Use initial (e.g., "smithJ2023")'
+                    })
+                    .setValue(this.plugin.settings.citekeyOptions.useTwoAuthorStyle)
+                    .onChange(async (value: any) => {
+                        this.plugin.settings.citekeyOptions.useTwoAuthorStyle = value;
+                        await this.plugin.saveSettings();
+                    })
+                );
+                
+            // Max authors
+            new Setting(containerEl)
+                .setName('Maximum authors')
+                .setDesc('Maximum number of authors to include in the citekey')
+                .setClass('setting-indent')
+                .addSlider(slider => slider
+                    .setLimits(1, 5, 1)
+                    .setValue(this.plugin.settings.citekeyOptions.maxAuthors)
+                    .setDynamicTooltip()
+                    .onChange(async (value) => {
+                        this.plugin.settings.citekeyOptions.maxAuthors = value;
+                        await this.plugin.saveSettings();
+                    })
+                );
+                
+            // Et al option
+            new Setting(containerEl)
+                .setName('Use "EtAl" suffix')
+                .setDesc('Add "EtAl" when there are more authors than the maximum (e.g., "smithEtAl2023")')
+                .setClass('setting-indent')
+                .addToggle(toggle => toggle
+                    .setValue(this.plugin.settings.citekeyOptions.useEtAl)
+                    .onChange(async (value) => {
+                        this.plugin.settings.citekeyOptions.useEtAl = value;
+                        await this.plugin.saveSettings();
+                    })
+                );
+        }
+        
+        // Delimiter settings
+        new Setting(containerEl)
+            .setName('Author-year delimiter')
+            .setDesc('Character to place between author and year (e.g., "_" for "smith_2023")')
+            .addText(text => text
+                .setPlaceholder('')
+                .setValue(this.plugin.settings.citekeyOptions.authorYearDelimiter)
+                .onChange(async (value) => {
+                    this.plugin.settings.citekeyOptions.authorYearDelimiter = value;
+                    await this.plugin.saveSettings();
+                })
+            );
+            
+        new Setting(containerEl)
+            .setName('Use Zotero keys')
+            .setDesc('When importing from Zotero, use their citekey instead of generating a new one')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.citekeyOptions.useZoteroKeys)
+                .onChange(async (value) => {
+                    this.plugin.settings.citekeyOptions.useZoteroKeys = value;
+                    await this.plugin.saveSettings();
+                })
+            );
+            
+        // Advanced options
+        new Setting(containerEl)
+            .setName('Minimum citekey length')
+            .setDesc('Add a random suffix to citekeys shorter than this length')
+            .addSlider(slider => slider
+                .setLimits(3, 10, 1)
+                .setValue(this.plugin.settings.citekeyOptions.minCitekeyLength)
+                .setDynamicTooltip()
+                .onChange(async (value) => {
+                    this.plugin.settings.citekeyOptions.minCitekeyLength = value;
+                    await this.plugin.saveSettings();
+                })
+            );
+            
+        new Setting(containerEl)
+            .setName('Short citekey delimiter')
+            .setDesc('Character to place before random suffix for short citekeys (e.g., "_" for "sm_123")')
+            .addText(text => text
+                .setPlaceholder('')
+                .setValue(this.plugin.settings.citekeyOptions.shortCitekeyDelimiter)
+                .onChange(async (value) => {
+                    this.plugin.settings.citekeyOptions.shortCitekeyDelimiter = value;
+                    await this.plugin.saveSettings();
+                })
+            );
     }
 }
