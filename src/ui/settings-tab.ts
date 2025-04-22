@@ -275,9 +275,37 @@ export class BibliographySettingTab extends PluginSettingTab {
 
                 new Setting(containerEl)
                         .setName('Header template')
-                        .setDesc('Template for the first header in literature notes. Supports variables: {{title}}, {{citekey}}, {{year}}, {{authors}}, {{pdflink}}')
+                        .setDesc(this.createFragment((frag: DocumentFragment) => {
+                            frag.appendText('Template for the first header in literature notes. Supports variables:');
+                            frag.createEl('ul', {}, (ul) => {
+                                ul.createEl('li', {}, (li) => {
+                                    li.createEl('code', { text: '{{title}}' });
+                                    li.appendText(' - The document title');
+                                });
+                                ul.createEl('li', {}, (li) => {
+                                    li.createEl('code', { text: '{{citekey}}' });
+                                    li.appendText(' - The citation key/ID');
+                                });
+                                ul.createEl('li', {}, (li) => {
+                                    li.createEl('code', { text: '{{year}}' });
+                                    li.appendText(' - The publication year');
+                                });
+                                ul.createEl('li', {}, (li) => {
+                                    li.createEl('code', { text: '{{authors}}' });
+                                    li.appendText(' - Formatted author list');
+                                });
+                                ul.createEl('li', {}, (li) => {
+                                    li.createEl('code', { text: '{{pdflink}}' });
+                                    li.appendText(' - The raw attachment path (without braces, so you can use ');
+                                    li.createEl('code', { text: '[[{{pdflink}}]]' });
+                                    li.appendText(' to create a link)');
+                                });
+                            });
+                            frag.appendText('You can also use conditionals like ');
+                            frag.createEl('code', { text: '{{^pdflink}}Title if no PDF{{/pdflink}}' });
+                        }))
                         .addTextArea(text => text
-                                .setPlaceholder('# {{pdflink}}{{^pdflink}}{{title}}{{/pdflink}}')
+                                .setPlaceholder('# [[{{pdflink}}]]{{^pdflink}}{{title}}{{/pdflink}}')
                                 .setValue(this.plugin.settings.headerTemplate)
                                 .onChange(async (value) => {
                                         this.plugin.settings.headerTemplate = value;
@@ -288,7 +316,7 @@ export class BibliographySettingTab extends PluginSettingTab {
                                 .setIcon('reset')
                                 .setTooltip('Reset to default')
                                 .onClick(async () => {
-                                        this.plugin.settings.headerTemplate = '# {{pdflink}}{{^pdflink}}{{title}}{{/pdflink}}';
+                                        this.plugin.settings.headerTemplate = '# [[{{pdflink}}]]{{^pdflink}}{{title}}{{/pdflink}}';
                                         await this.plugin.saveSettings();
                                         this.display(); // Refresh the settings page
                                 })

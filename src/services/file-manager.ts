@@ -155,8 +155,8 @@ ${yaml}---
                     citekey: citation.id || '',
                     year: citation.year?.toString() || '',
                     authors: this.formatAuthorsForTemplate(contributors),
-                    // Provide the raw path for pdflink template variable
-                    pdflink: attachmentPath ? `[[${attachmentPath}]]` : '' 
+                    // Provide the raw path without any braces for pdflink template variable
+                    pdflink: attachmentPath || '' 
                 }
             );
             
