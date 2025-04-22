@@ -115,6 +115,50 @@ export class BibliographyModal extends Modal {
                 citoidButton.textContent = 'Lookup';
             }
         };
+
+        // Add BibTeX paste section
+        citoidContainer.createEl('h3', { text: 'Auto-fill from BibTeX' });
+        const bibtexContainer = citoidContainer.createDiv({ cls: 'bibliography-bibtex-container' });
+        
+        const bibtexInput = bibtexContainer.createEl('textarea', {
+            placeholder: 'Paste BibTeX entry here...',
+            cls: 'bibliography-bibtex-input'
+        });
+        bibtexInput.style.width = '100%';
+        bibtexInput.style.minHeight = '100px';
+        
+        const bibtexButton = bibtexContainer.createEl('button', {
+            text: 'Parse BibTeX',
+            cls: 'bibliography-bibtex-button'
+        });
+        
+        bibtexButton.onclick = () => {
+            const bibtexText = bibtexInput.value.trim();
+            if (!bibtexText) {
+                new Notice('Please paste a BibTeX entry');
+                return;
+            }
+            
+            new Notice('Parsing BibTeX data...');
+            bibtexButton.setAttr('disabled', 'true');
+            bibtexButton.textContent = 'Parsing...';
+            
+            try {
+                const normalizedData = this.citationService.parseBibTeX(bibtexText);
+                if (!normalizedData) {
+                    new Notice('No valid citation data found in the BibTeX entry');
+                    return;
+                }
+                this.populateFormFromCitoid(normalizedData);
+                new Notice('BibTeX data successfully parsed and filled');
+            } catch (error) {
+                console.error('Error parsing BibTeX data:', error);
+                new Notice('Error parsing BibTeX data. Please check the format and try again.');
+            } finally {
+                bibtexButton.removeAttribute('disabled');
+                bibtexButton.textContent = 'Parse BibTeX';
+            }
+        };
     }
 
     private createMainForm(contentEl: HTMLElement) {
@@ -782,7 +826,9 @@ export class BibliographyModal extends Modal {
 			// Source-specific fields whose values are mapped elsewhere or should be ignored
 			// 'publisherTitle', 'itemType',
             // Fields used internally or mapped
-            'key', 'tags' 
+            'key', 'tags',
+            // Citation.js internal fields we don't want to display
+            '_graph'
         ]);
 
         // Clear existing additional field UI elements and internal state
@@ -820,11 +866,24 @@ export class BibliographyModal extends Modal {
                     // Handle arrays - join with comma or just take first? For now, join.
                      fieldValue = value.join(', ');
                 } else if (typeof value === 'object') {
-                     // Convert simple objects to string (avoid [object Object])
+                    // Skip complex objects that would just display as "[object Object]"
+                    // or produce overly complex JSON strings
+                    if (Object.keys(value).length === 0) {
+                        // Skip empty objects entirely
+                        return;
+                    }
+                    
                     try {
-                        fieldValue = JSON.stringify(value);
+                        // Try to get a meaningful string representation
+                        if (Object.keys(value).length <= 3) {
+                            // For simpler objects, stringify with formatting
+                            fieldValue = JSON.stringify(value, null, 2);
+                        } else {
+                            // For more complex objects, show a summary
+                            fieldValue = `Object with keys: ${Object.keys(value).join(', ')}`;
+                        }
                     } catch (e) {
-                        fieldValue = '[Object]'; // Fallback for complex/circular objects
+                        fieldValue = '[Complex Object]'; // Fallback for complex/circular objects
                     }
                 }
                 // Ensure fieldValue is a string or number for input components

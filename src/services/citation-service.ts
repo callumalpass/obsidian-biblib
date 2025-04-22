@@ -38,4 +38,26 @@ export class CitationService {
             throw e;
         }
     }
+    
+    /**
+     * Parse BibTeX string directly using Citation.js
+     * @param bibtex Raw BibTeX string
+     */
+    parseBibTeX(bibtex: string): any {
+        try {
+            const cite = new Cite(bibtex);
+            // Get hyphen-case CSL-JSON as a string
+            const jsonString = cite.get({
+                style: 'csl',
+                type: 'string',
+            });
+            const data = JSON.parse(jsonString);
+            // Return first entry if it's an array
+            return Array.isArray(data) ? data[0] : data;
+        } catch (e) {
+            console.error('Error parsing BibTeX:', e);
+            new Notice('Error parsing BibTeX. Please check the format and try again.');
+            throw e;
+        }
+    }
 }
