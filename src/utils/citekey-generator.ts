@@ -2,8 +2,9 @@
  * Utility for generating citation keys
  */
 import { CitekeyOptions } from '../types/settings';
-export class CitekeyGenerator {
+import { TemplateEngine } from './template-engine';
 
+export class CitekeyGenerator {
        /**
         * Generates a citekey based on available data and configuration.
         * Priority: Zotero Key > Template > Legacy Options > Fallback
@@ -26,11 +27,8 @@ export class CitekeyGenerator {
 
                try {
                        // Priority 1: Use Zotero key if requested and available
-                       // Zotero keys often look like 'AuthorYearTitle', check common patterns or specific fields if known
-                       const zoteroKey = citationData.key || citationData.id; // Adjust if Zotero key field name is different
+                       const zoteroKey = citationData.key || citationData.id;
                        if (config.useZoteroKeys && zoteroKey) {
-                               // Basic validation/cleaning for Zotero key might be needed
-                               // For now, return it as is if it looks reasonable (e.g., contains non-whitespace)
                                if (typeof zoteroKey === 'string' && zoteroKey.trim().length > 0) {
                                        return zoteroKey.trim();
                                }
@@ -38,7 +36,22 @@ export class CitekeyGenerator {
 
                        // Priority 2: Use template if provided
                        if (config.citekeyTemplate && config.citekeyTemplate.trim()) {
-                               return this.generateFromTemplate(citationData, config);
+                               // Convert square bracket template to mustache template
+                               const mustacheTemplate = this.convertToMustacheTemplate(config.citekeyTemplate);
+                               
+                               // Prepare variables for rendering
+                               const variables = this.prepareCitekeyVariables(citationData, config);
+                               
+                               // Render template and sanitize for citekey usage
+                               let citekey = TemplateEngine.render(mustacheTemplate, variables, { sanitizeForCitekey: true });
+                               
+                               // Handle minimum length with random suffix if needed
+                               if (citekey.length < config.minCitekeyLength) {
+                                       const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+                                       citekey += randomSuffix;
+                               }
+                               
+                               return citekey || 'error_generating_citekey';
                        }
 
                        // Priority 3: Use legacy options
@@ -46,195 +59,87 @@ export class CitekeyGenerator {
 
                } catch (error) {
                        console.error('Error generating citekey:', error);
-                       // Fallback citekey in case of unexpected errors during generation
+                       // Fallback citekey in case of unexpected errors
                        const authorFallback = this.extractAuthorPart(citationData, config) || 'unknown';
                        const yearFallback = this.extractYearPart(citationData) || new Date().getFullYear().toString();
-                       return (authorFallback + yearFallback).replace(/[^a-zA-Z0-9]/g, ''); // Basic cleanup for fallback
+                       return (authorFallback + yearFallback).replace(/[^a-zA-Z0-9]/g, '');
                }
        }
-
+       
        /**
-        * Generates a citekey based on a user-defined template.
+        * Convert a square bracket template to a mustache template
+        * [auth:lower] -> {{auth|lowercase}}
         */
-       private static generateFromTemplate(citationData: any, config: CitekeyOptions): string {
-               let processedTemplate = config.citekeyTemplate;
-               // Regex to find placeholders like [field:mod1:mod2(arg)]
-               const placeholderRegex = /\[([a-zA-Z0-9_]+)((?::[a-zA-Z0-9(),]+)*)\]/g;
-               // Group 1: field (e.g., 'auth')
-               // Group 2: modifiers (e.g., ':lower:abbr(3)') - includes leading colon
-
-               let match;
-               // Use a Set to avoid infinite loops with replace if a placeholder evaluates to itself
-               const alreadyReplaced = new Set<string>();
-
-               // Limit iterations to prevent potential infinite loops with complex replacements
-               let iterations = 0;
-               const maxIterations = 100; // Safety break
-
-               // Create a temporary string to build replacements
-               let resultString = processedTemplate;
-
-               while ((match = placeholderRegex.exec(processedTemplate)) !== null && iterations < maxIterations) {
-                       iterations++;
-                       const fullPlaceholder = match[0]; // e.g., '[auth:lower]'
-
-                       // Avoid reprocessing if the placeholder was already processed in this cycle
-                       // or if its evaluation resulted in the placeholder itself
-                       if (alreadyReplaced.has(fullPlaceholder)) {
-                               continue;
-                       }
-
-                       const field = match[1];           // e.g., 'auth'
-                       const modifierString = match[2] ? match[2].slice(1) : ''; // Remove leading colon, e.g., 'lower:abbr(3)'
-
-                       let value = '';
-                       switch (field.toLowerCase()) { // Use lowercase field for case-insensitivity
-                               case 'auth':
-                               case 'author':
-                                       // Currently simple: first author's last name
-                                       value = this.extractAuthorPart(citationData, config);
-                                       break;
-                               case 'year':
-                                       value = this.extractYearPart(citationData);
-                                       break;
-                               case 'title':
-                                       // Use first significant word by default
-                                       value = this.extractTitlePart(citationData, 1);
-                                       break;
-                               case 'shorttitle': {
-                                       // Default to 3 words for shorttitle if not specified by a 'words' modifier
-                                       const wordsModifierMatch = modifierString.match(/words\((\d+)\)/);
-                                       const wordCount = wordsModifierMatch ? parseInt(wordsModifierMatch[1], 10) : 3;
-                                       value = this.extractTitlePart(citationData, wordCount);
-                                       break;
+       private static convertToMustacheTemplate(template: string): string {
+           // Replace [field:mod1:mod2] with {{field|mod1|mod2}}
+           return template.replace(/\[([a-zA-Z0-9_]+)((?::[a-zA-Z0-9(),]+)*)\]/g, 
+               (match, field, modifiers) => {
+                   // Handle common citekey field names
+                   let mustacheVar = field.toLowerCase();
+                   
+                   // Map common abbreviations
+                   if (mustacheVar === 'auth') mustacheVar = 'author';
+                   
+                   // Process modifiers if any (remove leading colon)
+                   let mustacheMods = '';
+                   if (modifiers) {
+                       // Split modifiers, remove empty ones, convert to pipe syntax
+                       mustacheMods = modifiers.slice(1) // Remove leading colon
+                           .split(':')
+                           .filter((m: string) => m)
+                           .map((mod: string) => {
+                               // Convert modifier syntax
+                               const abbrMatch = mod.match(/^abbr\((\d+)\)$/);
+                               if (abbrMatch) {
+                                   return `abbr${abbrMatch[1]}`; // abbr(3) -> abbr3
                                }
-                               // Add more cases for other fields: journal, editor, firstpage etc.
-                               default:
-                                       console.warn(`Unknown citekey placeholder field: ${field}`);
-                                       value = ''; // Replace unknown fields with empty string or placeholder?
+                               
+                               const wordsMatch = mod.match(/^words\((\d+)\)$/);
+                               if (wordsMatch && field.toLowerCase() === 'title') {
+                                   return 'titleword'; // words(1) on title -> titleword
+                               }
+                               if (wordsMatch && field.toLowerCase() === 'shorttitle') {
+                                   return 'shorttitle'; // words(N) on shorttitle -> shorttitle
+                               }
+                               
+                               // Keep other modifiers as is
+                               return mod;
+                           })
+                           .join('|');
+                       
+                       if (mustacheMods) {
+                           mustacheMods = `|${mustacheMods}`;
                        }
-
-                       if (modifierString) {
-                               // Pass citationData for context-aware modifiers (like etal)
-                               value = this.applyModifiers(value, modifierString, citationData, config);
-                       }
-
-                       // Replace *first* occurrence of the placeholder in the current result string
-                       // This helps avoid issues if a placeholder evaluates to something containing another placeholder
-                       if (resultString.includes(fullPlaceholder)) {
-                               resultString = resultString.replace(fullPlaceholder, value);
-                               alreadyReplaced.add(fullPlaceholder); // Mark as processed for this outer loop pass
-                               placeholderRegex.lastIndex = 0; // Reset regex index after replacement
-                       } else {
-                               // Placeholder might have been consumed by an earlier replacement, stop processing it
-                               alreadyReplaced.add(fullPlaceholder);
-                       }
+                   }
+                   
+                   return `{{${mustacheVar}${mustacheMods}}}`;
                }
-
-               if (iterations >= maxIterations) {
-                       console.warn('Citekey generation reached max iterations, potential loop in template:', config.citekeyTemplate);
-               }
-
-               // Final cleanup: remove remaining brackets (if any invalid placeholders), ensure basic validity
-               let citekey = resultString.replace(/\[.*?\]/g, ''); // Remove unparsed placeholders
-               citekey = citekey.replace(/[^a-zA-Z0-9]/g, ''); // Basic sanitize: allow only alphanumeric
-
-               // Handle minimum length (use delimiters from config)
-               if (citekey.length < config.minCitekeyLength) {
-                       const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-                       citekey += config.shortCitekeyDelimiter + randomSuffix;
-                       // Re-sanitize after adding delimiter and suffix
-                       citekey = citekey.replace(/[^a-zA-Z0-9]/g, '');
-               }
-
-               return citekey || 'error_generating_citekey'; // Provide a fallback if all else fails
+           );
        }
-
+       
        /**
-        * Applies modifiers to a citekey part.
+        * Prepare variables for template rendering
         */
-       private static applyModifiers(value: string, modifierString: string, citationData: any, config: CitekeyOptions): string {
-               const modifiers = modifierString.split(':'); // e.g., ['lower', 'abbr(3)']
-               let modifiedValue = value;
-
-               modifiers.forEach(mod => {
-                       if (!mod) return; // Skip empty modifiers if splitting results in them (e.g., "::")
-
-                       const abbrMatch = mod.match(/^abbr\((\d+)\)$/);
-                       const wordsMatch = mod.match(/^words\((\d+)\)$/); // Used by shorttitle logic, ignored here
-                       const etalMatch = mod.match(/^etal(?:\((\d+)\))?$/); // Optional author count for etal
-
-                       if (mod === 'lower') {
-                               modifiedValue = modifiedValue.toLowerCase();
-                       } else if (mod === 'upper') {
-                               modifiedValue = modifiedValue.toUpperCase();
-                       } else if (mod === 'capitalize') {
-                               // Capitalize first letter, leave rest as is (or lowercase rest?)
-                               // Let's lowercase the rest for consistency.
-                               modifiedValue = modifiedValue.charAt(0).toUpperCase() + modifiedValue.slice(1).toLowerCase();
-                       } else if (abbrMatch) {
-                               const len = parseInt(abbrMatch[1], 10);
-                               if (!isNaN(len) && len > 0) {
-                                       modifiedValue = modifiedValue.substring(0, len);
-                               }
-                       } else if (etalMatch) {
-                               // This modifier only makes sense applied to the 'auth' field implicitly.
-                               // It requires access to the full author list.
-                               // We'll apply EtAl logic *if* this modifier is present *and* the original field was 'auth'.
-                               // Note: This assumes 'modifiedValue' currently holds the *first* author part.
-                               const maxAuthors = etalMatch[1] ? parseInt(etalMatch[1], 10) : (config.maxAuthors || 1); // Use config default if no number in etal()
-                               const authors = citationData.author || citationData.creators?.filter((c: any) => c.creatorType === 'author');
-
-                               if (Array.isArray(authors) && authors.length > maxAuthors) {
-                                      // Check if we need to handle the two-author case specially based on maxAuthors
-                                      if (maxAuthors === 2 && config.useTwoAuthorStyle === 'and' && authors.length === 2) {
-                                           const secondAuthor = this.extractLastNameFromAuthor(authors[1]);
-                                           if (secondAuthor) {
-                                               let secondPart = this.applyModifiers(secondAuthor, modifierString.replace(/:etal(?:\(\d+\))?/,''), citationData, config); // Apply other mods to second author
-                                               modifiedValue += 'And' + secondPart.charAt(0).toUpperCase() + secondPart.slice(1); // Ensure second part is capitalized
-                                           }
-                                      } else if (maxAuthors > 1 && authors.length > 1) {
-                                           // Append initials or parts of subsequent authors up to maxAuthors
-                                           for (let i = 1; i < maxAuthors; i++) {
-                                               const nextAuthor = this.extractLastNameFromAuthor(authors[i]);
-                                               if (nextAuthor) {
-                                                   // Apply other modifiers (like abbr) to the initial/part? For now, just take the initial.
-                                                   const initial = this.applyModifiers(nextAuthor, modifierString.replace(/:etal(?:\(\d+\))?/,''), citationData, config);
-                                                   modifiedValue += initial.charAt(0).toUpperCase(); // Add capitalized initial
-                                               }
-                                           }
-                                            // Add EtAl if needed (authors > maxAuthors)
-                                           if (authors.length > maxAuthors) {
-                                               modifiedValue += 'EtAl';
-                                           }
-                                      } else if (authors.length > 1) { // If maxAuthors is 1 but we have more authors
-                                            modifiedValue += 'EtAl';
-                                      }
-                               } else if (Array.isArray(authors) && authors.length === 2 && maxAuthors >= 2) {
-                                     // Handle exactly two authors when maxAuthors >= 2 and no etal needed
-                                      if (config.useTwoAuthorStyle === 'and') {
-                                         const secondAuthor = this.extractLastNameFromAuthor(authors[1]);
-                                          if (secondAuthor) {
-                                              let secondPart = this.applyModifiers(secondAuthor, modifierString.replace(/:etal(?:\(\d+\))?/,''), citationData, config); // Apply other mods to second author
-                                              modifiedValue += 'And' + secondPart.charAt(0).toUpperCase() + secondPart.slice(1); // Ensure second part is capitalized
-                                          }
-                                      } else if (config.useTwoAuthorStyle === 'initial') {
-                                           const secondAuthor = this.extractLastNameFromAuthor(authors[1]);
-                                          if (secondAuthor) {
-                                               const initial = this.applyModifiers(secondAuthor, modifierString.replace(/:etal(?:\(\d+\))?/,''), citationData, config);
-                                                  modifiedValue += initial.charAt(0).toUpperCase(); // Add capitalized initial
-                                          }
-                                      }
-                                }
-                       } 
-                       // Add more modifiers: replace(from,to), etc.
-                       // Ignore 'words(N)' here as it's handled during field extraction
-                       else if (!wordsMatch) {
-                               console.warn(`Unknown citekey modifier: ${mod}`);
-                       }
-               });
-
-               return modifiedValue;
+       private static prepareCitekeyVariables(citationData: any, config: CitekeyOptions): { [key: string]: any } {
+           const variables: { [key: string]: any } = {
+               // Include the full citation data
+               ...citationData,
+               
+               // Add convenience fields for templates
+               author: this.extractAuthorPart(citationData, config),
+               year: this.extractYearPart(citationData),
+               title: citationData.title || '',
+               
+               // Add processed fields commonly used in citekeys
+               shorttitle: this.extractTitlePart(citationData, 3),
+               
+               // Include authors array for iteration, etc.
+               authors: citationData.author || 
+                       (citationData.creators?.filter((c: any) => c.creatorType === 'author')) || 
+                       [],
+           };
+           
+           return variables;
        }
 
        /**

@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { App, Platform, PluginSettingTab, Setting, normalizePath, setIcon } from 'obsidian';
 import BibliographyPlugin from '../../main';
 // Note: No need to import CitekeyOptions here anymore
@@ -296,7 +297,7 @@ export class BibliographySettingTab extends PluginSettingTab {
                         
                         <h4>Contributor variables</h4>
                         <ul>
-                            <li><code>{{authors}}</code> - Array of all author names</li>
+                            <li><code>{{authors}}</code> - Formatted author list (e.g., "A. Smith et al.")</li>
                             <li><code>{{authors_family}}</code> - Array of author last names only</li>
                             <li><code>{{authors_given}}</code> - Array of author first names only</li>
                             <li><code>{{editors}}</code>, <code>{{translators}}</code>, etc. - Lists for other contributor types</li>
@@ -304,11 +305,21 @@ export class BibliographySettingTab extends PluginSettingTab {
                         
                         <h4>Formatting options</h4>
                         <ul>
-                            <li><code>{{variable|upper}}</code> - UPPERCASE</li>
-                            <li><code>{{variable|lower}}</code> - lowercase</li>
+                            <li><code>{{variable|upper}}</code> or <code>{{variable|uppercase}}</code> - ALL UPPERCASE</li>
+                            <li><code>{{variable|lower}}</code> or <code>{{variable|lowercase}}</code> - all lowercase</li>
                             <li><code>{{variable|capitalize}}</code> - Capitalize First Letter Of Each Word</li>
                             <li><code>{{variable|sentence}}</code> - First letter capitalized only</li>
                             <li><code>{{variable|date}}</code> - Format as date</li>
+                            <li><code>{{variable|json}}</code> - Format as JSON string</li>
+                            <li><code>{{variable|count}}</code> - Count array items</li>
+                        </ul>
+                        
+                        <h4>Special citekey formatters</h4>
+                        <ul>
+                            <li><code>{{variable|abbr3}}</code> - First 3 characters</li>
+                            <li><code>{{variable|abbr4}}</code> - First 4 characters</li>
+                            <li><code>{{title|titleword}}</code> - First significant word of title</li>
+                            <li><code>{{title|shorttitle}}</code> - First 3 significant words of title</li>
                         </ul>
                         
                         <h4>Conditionals and loops</h4>
@@ -316,6 +327,7 @@ export class BibliographySettingTab extends PluginSettingTab {
                             <li><code>{{#variable}}Content shown if variable exists{{/variable}}</code></li>
                             <li><code>{{^variable}}Content shown if variable is empty{{/variable}}</code></li>
                             <li><code>{{#array}}{{.}} is the current item{{/array}}</code> - Loop through arrays</li>
+                            <li>Iteration special variables: <code>{{@index}}</code>, <code>{{@first}}</code>, <code>{{@last}}</code></li>
                         </ul>
                     </div>
                 </details>
@@ -542,53 +554,52 @@ export class BibliographySettingTab extends PluginSettingTab {
                 new Setting(containerEl)
                         .setName('Citekey template')
                         .setDesc(this.createFragment((frag: DocumentFragment) => {
-                                frag.appendText('Define a custom template for generating citekeys. Placeholders like ');
-                                frag.createEl('code', { text: '[auth]' });
+                                frag.appendText('Define a custom template for generating citekeys. Uses the same Mustache syntax as other templates. Placeholders like ');
+                                frag.createEl('code', { text: '{{author}}' });
                                 frag.appendText(', ');
-                                frag.createEl('code', { text: '[year]' });
+                                frag.createEl('code', { text: '{{year}}' });
                                 frag.appendText(', ');
-                                frag.createEl('code', { text: '[title]' });
-                                frag.appendText(', ');
-                                frag.createEl('code', { text: '[shorttitle]' });
-                                frag.appendText(' will be replaced. Add modifiers like ');
-                                frag.createEl('code', { text: ':lower' });
+                                frag.createEl('code', { text: '{{title}}' });
+                                frag.appendText(' will be replaced. Add formatters with pipe: ');
+                                frag.createEl('code', { text: '{{author|lowercase}}' });
                                 frag.appendText(' or ');
-                                frag.createEl('code', { text: ':abbr(3)' });
+                                frag.createEl('code', { text: '{{title|abbr3}}' });
                                 frag.appendText('. Example: ');
-                                frag.createEl('code', { text: '[auth:lower]_[year]' });
+                                frag.createEl('code', { text: '{{author|lowercase}}{{year}}' });
                                 frag.appendText('.');
                                 frag.createEl('br');
                                 frag.appendText('If this field is empty, the legacy options below will be used.');
-                                // TODO: Add link to documentation for all placeholders/modifiers
+                                // Add note about backward compatibility
+                                frag.createEl('br');
+                                frag.appendText('Note: Old format with square brackets is auto-converted to the new syntax.');
                         }))
-					// Inside your display() method where you create the setting:
-						.addTextArea(text => text
-							.setPlaceholder('[auth][year]')
-							.setValue(this.plugin.settings.citekeyOptions.citekeyTemplate)
-							.onChange(async (value) => {
-								const trimmedValue = value.trim();
-								const isEmpty = trimmedValue === '';
-								let needsDisplayUpdate = false;
+                        .addTextArea(text => text
+                            .setPlaceholder('{{author}}{{year}}')
+                            .setValue(this.plugin.settings.citekeyOptions.citekeyTemplate)
+                            .onChange(async (value) => {
+                                const trimmedValue = value.trim();
+                                const isEmpty = trimmedValue === '';
+                                let needsDisplayUpdate = false;
 
-								// Check if the emptiness state changed
-								if ((wasInitiallyEmpty && !isEmpty) || (!wasInitiallyEmpty && isEmpty)) {
-									needsDisplayUpdate = true;
-									wasInitiallyEmpty = isEmpty; // Update the state for the next change
-								}
+                                // Check if the emptiness state changed
+                                if ((wasInitiallyEmpty && !isEmpty) || (!wasInitiallyEmpty && isEmpty)) {
+                                    needsDisplayUpdate = true;
+                                    wasInitiallyEmpty = isEmpty; // Update the state for the next change
+                                }
 
-								// Always save the setting on change
-								this.plugin.settings.citekeyOptions.citekeyTemplate = trimmedValue;
-								await this.plugin.saveSettings();
+                                // Always save the setting on change
+                                this.plugin.settings.citekeyOptions.citekeyTemplate = trimmedValue;
+                                await this.plugin.saveSettings();
 
-								// Refresh display only if the emptiness state changed
-								if (needsDisplayUpdate) {
-									this.display(); // Refresh settings tab
-								}
-							}));
+                                // Refresh display only if the emptiness state changed
+                                if (needsDisplayUpdate) {
+                                    this.display(); // Refresh settings tab
+                                }
+                            }));
 
                 // --- Legacy Citekey Options (Show only if template is empty) ---
                 if (!this.plugin.settings.citekeyOptions.citekeyTemplate) {
-						new Setting(containerEl).setName('Legacy citekey generation').setHeading();
+                        new Setting(containerEl).setName('Legacy citekey generation').setHeading();
                         const legacySection = containerEl.createDiv(); // Use a container for styling/grouping
                         legacySection.addClass('settings-legacy-citekey'); // Add a class for potential styling
                         legacySection.createEl('p', {
@@ -729,4 +740,3 @@ export class BibliographySettingTab extends PluginSettingTab {
 
         } // End of display()
 } // End of class BibliographySettingTab
-

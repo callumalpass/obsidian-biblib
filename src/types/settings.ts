@@ -9,8 +9,9 @@ export interface CitekeyOptions {
         /**
          * User-defined template for citekey generation.
          * If provided, overrides other formatting options below.
-         * Example: '[auth:lower][year][shorttitle:capitalize]'
-         * Default: '' (use legacy options)
+         * Example: '{{author|lowercase}}{{year}}{{title|titleword}}'
+         * Uses the same Mustache syntax as other templates.
+         * Default: '{{author|lowercase}}{{year}}'
          */
         citekeyTemplate: string;
 
@@ -166,7 +167,7 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         ],
         // Default citekey options
         citekeyOptions: {
-                citekeyTemplate: '', // Default to empty string, signifying use of legacy options below
+                citekeyTemplate: '{{author|lowercase}}{{year}}', // Default to mustache template
                 useZoteroKeys: false,
                 authorAbbreviationStyle: 'full',
                 includeMultipleAuthors: false,
