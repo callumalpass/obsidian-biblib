@@ -209,7 +209,19 @@ export class BibliographySettingTab extends PluginSettingTab {
 
                 new Setting(containerEl)
                         .setName('Include author links')
-                        .setDesc('Add authorLink field with Obsidian links to author pages')
+                        .setDesc(this.createFragment((frag: DocumentFragment) => {
+                            frag.appendText('Add authorLink field with Obsidian links to author pages');
+                            frag.createEl('br');
+                            frag.createEl('span', {
+                                text: 'Legacy option: Consider using a custom frontmatter field instead with template:',
+                                cls: 'setting-item-description'
+                            });
+                            frag.createEl('br');
+                            frag.createEl('code', {
+                                text: '[{{#authors_family}}{{^@first}},{{/@first}}"[[Author/{{.}}]]"{{/authors_family}}]',
+                                cls: 'template-example'
+                            });
+                        }))
                         .addToggle(toggle => toggle
                                 .setValue(this.plugin.settings.includeAuthorLink)
                                 .onChange(async (value) => {
@@ -219,7 +231,19 @@ export class BibliographySettingTab extends PluginSettingTab {
 
                 new Setting(containerEl)
                         .setName('Include attachment links')
-                        .setDesc('Add attachment field with Obsidian links to attached files')
+                        .setDesc(this.createFragment((frag: DocumentFragment) => {
+                            frag.appendText('Add attachment field with Obsidian links to attached files');
+                            frag.createEl('br');
+                            frag.createEl('span', {
+                                text: 'Legacy option: Consider using a custom frontmatter field instead with template:',
+                                cls: 'setting-item-description'
+                            });
+                            frag.createEl('br');
+                            frag.createEl('code', {
+                                text: '{{#pdflink}}[["{{pdflink}}"]]{{/pdflink}}',
+                                cls: 'template-example'
+                            });
+                        }))
                         .addToggle(toggle => toggle
                                 .setValue(this.plugin.settings.includeAttachment)
                                 .onChange(async (value) => {
@@ -278,8 +302,11 @@ export class BibliographySettingTab extends PluginSettingTab {
                 const variablesDesc = containerEl.createEl('div', { cls: 'setting-item-description' });
                 variablesDesc.innerHTML = `
                 <details>
-                    <summary>Available template variables</summary>
+                    <summary>Template System Guide</summary>
                     <div class="template-variables-list">
+                        <h3>BibLib Template System</h3>
+                        <p>BibLib uses a powerful, consistent template system across all templatable content (header templates, custom frontmatter fields, and citekeys). The syntax is inspired by Mustache templates and supports simple variable replacement, formatting options, conditionals, and loops.</p>
+                        
                         <h4>Basic variables</h4>
                         <ul>
                             <li><code>{{title}}</code> - Title of the work</li>
@@ -304,6 +331,7 @@ export class BibliographySettingTab extends PluginSettingTab {
                         </ul>
                         
                         <h4>Formatting options</h4>
+                        <p>You can format any variable using pipe syntax:</p>
                         <ul>
                             <li><code>{{variable|upper}}</code> or <code>{{variable|uppercase}}</code> - ALL UPPERCASE</li>
                             <li><code>{{variable|lower}}</code> or <code>{{variable|lowercase}}</code> - all lowercase</li>
@@ -315,6 +343,7 @@ export class BibliographySettingTab extends PluginSettingTab {
                         </ul>
                         
                         <h4>Special citekey formatters</h4>
+                        <p>These formatters are especially useful for citekey generation:</p>
                         <ul>
                             <li><code>{{variable|abbr3}}</code> - First 3 characters</li>
                             <li><code>{{variable|abbr4}}</code> - First 4 characters</li>
@@ -322,13 +351,45 @@ export class BibliographySettingTab extends PluginSettingTab {
                             <li><code>{{title|shorttitle}}</code> - First 3 significant words of title</li>
                         </ul>
                         
-                        <h4>Conditionals and loops</h4>
+                        <h4>Conditionals</h4>
+                        <p>You can show content conditionally based on whether a variable exists:</p>
                         <ul>
-                            <li><code>{{#variable}}Content shown if variable exists{{/variable}}</code></li>
-                            <li><code>{{^variable}}Content shown if variable is empty{{/variable}}</code></li>
-                            <li><code>{{#array}}{{.}} is the current item{{/array}}</code> - Loop through arrays</li>
-                            <li>Iteration special variables: <code>{{@index}}</code>, <code>{{@first}}</code>, <code>{{@last}}</code></li>
+                            <li><code>{{#variable}}Content shown if variable exists/is truthy{{/variable}}</code></li>
+                            <li><code>{{^variable}}Content shown if variable is empty/falsy{{/variable}}</code></li>
                         </ul>
+                        
+                        <h4>Loops</h4>
+                        <p>Loop through array items using # syntax:</p>
+                        <ul>
+                            <li><code>{{#array}}{{.}} is the current item{{/array}}</code> - Loop through arrays</li>
+                            <li>Access loop information: <code>{{@index}}</code> (0-based), <code>{{@first}}</code> (true/false), <code>{{@last}}</code> (true/false)</li>
+                            <li>Other loop variables: <code>{{@number}}</code> (1-based), <code>{{@odd}}</code>, <code>{{@even}}</code>, <code>{{@length}}</code></li>
+                        </ul>
+                        
+                        <h4>Example templates</h4>
+                        <div class="template-examples">
+                            <h5>Header templates</h5>
+                            <ul>
+                                <li><code># [[{{pdflink}}]]{{^pdflink}}{{title}}{{/pdflink}}</code> - Link to PDF if available, otherwise title</li>
+                                <li><code># {{title}} ({{year}}){{#authors}} by {{authors}}{{/authors}}</code> - Title with year and optional authors</li>
+                                <li><code># {{citekey}} | {{title}}</code> - Citation key and title</li>
+                            </ul>
+                            
+                            <h5>Custom frontmatter fields</h5>
+                            <ul>
+                                <li><code>["{{title|sentence}}", "{{authors}} ({{year}})"]</code> - Aliases with title and author+year format</li>
+                                <li><code>{{#authors_family}}[[Author/{{.}}]]{{^@last}}, {{/@last}}{{/authors_family}}</code> - Author links with commas</li>
+                                <li><code>{{#abstract}}{{abstract|sentence}}{{/abstract}}{{^abstract}}No abstract available{{/abstract}}</code> - Abstract with fallback</li>
+                            </ul>
+                            
+                            <h5>Citekey templates</h5>
+                            <ul>
+                                <li><code>{{author|lowercase}}{{year}}</code> - Basic author+year format (smithjones2023)</li>
+                                <li><code>{{author|abbr3}}{{year}}</code> - Abbreviated author+year (smi2023)</li>
+                                <li><code>{{authors_family.0|lowercase}}{{#authors_family.1}}{{authors_family.1|abbr1}}{{/authors_family.1}}{{year}}</code> - First author full name, second author initial if present</li>
+                                <li><code>{{author|lowercase}}{{year}}{{title|titleword}}</code> - Author, year, and first significant title word</li>
+                            </ul>
+                        </div>
                     </div>
                 </details>
                 `;
@@ -393,63 +454,99 @@ export class BibliographySettingTab extends PluginSettingTab {
                 <p>Define custom frontmatter fields with templated values. These will be added to new literature notes.</p>
                 
                 <details class="custom-fields-help">
-                    <summary>Template syntax and available variables</summary>
+                    <summary>Custom Frontmatter Fields Guide</summary>
                     
-                    <h4>Basic syntax</h4>
+                    <p>Custom frontmatter fields allow you to add any data you want to your literature notes using the same powerful 
+                    template system as header templates and citekey generation. Fields will be added to the YAML frontmatter 
+                    of your literature notes.</p>
+                    
+                    <h4>Important notes about custom fields</h4>
                     <ul>
-                        <li><code>{{variable}}</code> - Insert a variable value</li>
-                        <li><code>{{variable|format}}</code> - Format a variable (e.g., <code>{{title|uppercase}}</code>)</li>
-                        <li><code>{{#variable}}Show if exists{{/variable}}</code> - Conditional content (shows only if variable exists or is true)</li>
-                        <li><code>{{^variable}}Show if missing/empty{{/variable}}</code> - Negative conditional (shows only if variable is missing or empty)</li>
-                        <li><code>{{#array}}{{.}} is current item{{/array}}</code> - Iterate through an array</li>
+                        <li><strong>JSON Arrays/Objects:</strong> If your template starts with <code>[</code> and ends with <code>]</code>, 
+                          or starts with <code>{</code> and ends with <code>}</code>, it will be parsed as JSON. This is useful for 
+                          creating arrays or objects in your frontmatter.</li>
+                        <li><strong>Accessibility:</strong> Custom frontmatter fields can be queried in Obsidian's search and used by other plugins</li>
+                        <li><strong>Field Names:</strong> Use simple, lowercase names without spaces (e.g., <code>reading-status</code>, <code>related-papers</code>)</li>
                     </ul>
                     
-                    <h4>Common variables</h4>
+                    <h4>Common Use Cases</h4>
+                    <table>
+                        <tr>
+                            <th>Use Case</th>
+                            <th>Field Name</th>
+                            <th>Template Example</th>
+                        </tr>
+                        <tr>
+                            <td>Multiple aliases</td>
+                            <td>aliases</td>
+                            <td><code>["{{title|sentence}}", "{{authors}} ({{year}})"]</code></td>
+                        </tr>
+                        <tr>
+                            <td>Author links (as array)</td>
+                            <td>author-links</td>
+                            <td><code>[{{#authors_family}}{{^@first}},{{/@first}}"[[Author/{{.}}]]"{{/authors_family}}]</code></td>
+                        </tr>
+                        <tr>
+                            <td>Author links (as string)</td>
+                            <td>author-links</td>
+                            <td><code>{{#authors_family}}[[Author/{{.}}]]{{^@last}}, {{/@last}}{{/authors_family}}</code></td>
+                        </tr>
+                        <tr>
+                            <td>Reading status</td>
+                            <td>status</td>
+                            <td><code>to-read</code></td>
+                        </tr>
+                        <tr>
+                            <td>Topic tags</td>
+                            <td>keywords</td>
+                            <td><code>["research", "methodology", "{{container-title|lowercase}}"]</code></td>
+                        </tr>
+                        <tr>
+                            <td>Reading priority</td>
+                            <td>priority</td>
+                            <td><code>{{#DOI}}high{{/DOI}}{{^DOI}}medium{{/DOI}}</code></td>
+                        </tr>
+                        <tr>
+                            <td>Citation count</td>
+                            <td>importance</td>
+                            <td><code>{{#authors_family.0}}major{{/authors_family.0}}{{^authors_family.0}}minor{{/authors_family.0}}</code></td>
+                        </tr>
+                        <tr>
+                            <td>Field-specific data</td>
+                            <td>field</td>
+                            <td><code>{{container-title|lowercase}}</code></td>
+                        </tr>
+                    </table>
+                    
+                    <h4>Advanced Template Examples</h4>
                     <ul>
-                        <li><code>{{title}}</code> - The document title</li>
-                        <li><code>{{citekey}}</code> - The citation key/ID</li>
-                        <li><code>{{year}}</code> - Publication year</li>
-                        <li><code>{{month}}</code>, <code>{{day}}</code> - Publication date parts</li>
-                        <li><code>{{authors}}</code> - Formatted author list (e.g., "A. Smith et al.")</li>
-                        <li><code>{{pdflink}}</code> - Path to attached PDF file (without brackets)</li>
-                        <li><code>{{currentDate}}</code> - Today's date in YYYY-MM-DD format</li>
+                        <li><strong>Formatted abstract:</strong> <code>{{#abstract}}{{abstract|sentence}}{{/abstract}}{{^abstract}}No abstract available{{/abstract}}</code></li>
+                        <li><strong>Citation:</strong> <code>{{authors}} ({{year}}). {{title}}. {{#container-title}}{{container-title}}, {{/container-title}}{{#volume}}{{volume}}{{#number}}({{number}}){{/number}}{{/volume}}{{#page}}, {{page}}{{/page}}.</code></li>
+                        <li><strong>Related works:</strong> <code>["{{title|titleword}}-related", "{{#container-title}}{{container-title|lowercase}}-papers{{/container-title}}"]</code></li>
+                        <li><strong>MOC inclusion:</strong> <code>[[{{#container-title}}{{container-title}} Papers{{/container-title}}{{^container-title}}Research Papers{{/container-title}}]]</code></li>
                     </ul>
                     
-                    <h4>CSL variables</h4>
-                    <p>All <a href="https://docs.citationstyles.org/en/stable/specification.html#appendix-iv-variables" target="_blank">CSL variables</a> are supported including:</p>
+                    <h4>Tips for Custom Frontmatter Fields</h4>
                     <ul>
-                        <li><code>{{DOI}}</code>, <code>{{URL}}</code>, <code>{{ISSN}}</code> - Digital identifiers</li>
-                        <li><code>{{container-title}}</code> - Journal or book title</li>
-                        <li><code>{{volume}}</code>, <code>{{issue}}</code>, <code>{{page}}</code>, <code>{{number}}</code> - Publication details</li>
-                        <li><code>{{publisher}}</code>, <code>{{publisher-place}}</code> - Publisher information</li>
-                        <li><code>{{abstract}}</code>, <code>{{note}}</code> - Document content</li>
+                        <li>Use <code>[[brackets]]</code> in templates to create Obsidian links</li>
+                        <li>Use <code>#hashtags</code> in templates to add inline tags</li>
+                        <li>Use <code>{{variable|json}}</code> to properly format complex values</li>
+                        <li>Array fields (like <code>aliases</code>) should use valid JSON array syntax: <code>["item1", "item2"]</code></li>
+                        <li>Custom fields can be queried in Obsidian search using <code>field:value</code> syntax</li>
                     </ul>
                     
-                    <h4>Contributor lists</h4>
+                    <h4>Creating YAML Arrays with Templates</h4>
+                    <p>If you want to create a YAML array (not a string) from a template with multiple items, follow these rules:</p>
                     <ul>
-                        <li><code>{{authors}}</code> - Formatted list of authors (e.g., "A. Smith et al.")</li>
-                        <li><code>{{authors_family}}</code> - Array of author last names (e.g., ["Smith", "Jones"])</li>
-                        <li><code>{{authors_given}}</code> - Array of author first names (e.g., ["Alex", "Lee"])</li>
-                        <li><code>{{#authors_family}}{{.}}{{/authors_family}}</code> - Loop through all author last names</li>
-                        <li><code>{{editors}}</code>, <code>{{translators}}</code> - Lists for other contributor types</li>
+                        <li>Your template must <strong>start with <code>[</code> and end with <code>]</code></strong></li>
+                        <li>For arrays with fixed items: <code>["item1", "item2", "{{variable}}"]</code></li>
+                        <li>For arrays from loop iterations, add commas between items using <code>{{^@first}},{{/@first}}</code>:</li>
+                        <li><strong>Example:</strong> <code>[{{#authors_family}}{{^@first}},{{/@first}}"[[Author/{{.}}]]"{{/authors_family}}]</code></li>
+                        <li>Make sure items that contain special characters (like spaces or brackets) are quoted</li>
+                        <li>This will produce a proper YAML array in frontmatter, not a text string with brackets</li>
                     </ul>
                     
-                    <h4>Formatting options</h4>
-                    <ul>
-                        <li><code>{{variable|upper}}</code> or <code>{{variable|uppercase}}</code> - ALL UPPERCASE</li>
-                        <li><code>{{variable|lower}}</code> or <code>{{variable|lowercase}}</code> - all lowercase</li>
-                        <li><code>{{variable|capitalize}}</code> - Capitalize First Letter Of Each Word</li>
-                        <li><code>{{variable|sentence}}</code> - Capitalize first letter only</li>
-                        <li><code>{{variable|date}}</code> - Format as date (if possible)</li>
-                        <li><code>{{variable|count}}</code> - Count array items (e.g., number of authors)</li>
-                    </ul>
-                    
-                    <h4>Examples</h4>
-                    <ul>
-                        <li><code>{{#authors_family}}[[Author/{{.}}]]{{^@last}}, {{/@last}}{{/authors_family}}</code> - Create links to all authors</li>
-                        <li><code>reading-{{year}}-{{currentDate|date}}</code> - Create reading ID with year and current date</li>
-                        <li><code>{{#abstract}}{{abstract|sentence}}{{/abstract}}{{^abstract}}No abstract available{{/abstract}}</code> - Show abstract with fallback</li>
-                    </ul>
+                    <p>See the Template System Guide above for full details on template syntax and available variables.</p>
                 </details>
                 `;
                 
@@ -551,22 +648,82 @@ export class BibliographySettingTab extends PluginSettingTab {
 				let wasInitiallyEmpty = this.plugin.settings.citekeyOptions.citekeyTemplate === '';
 
                 // New Template Setting
+                // Add a detailed guide specific to citekey generation
+                const citekeyGuideEl = containerEl.createEl('div', { cls: 'setting-item-description' });
+                citekeyGuideEl.innerHTML = `
+                <details>
+                    <summary>Citekey Generation Guide</summary>
+                    <div>
+                        <p>Citekeys are unique identifiers for citations, used for cross-referencing in academic writing and knowledge management.
+                        BibLib now uses the same powerful template system for citekeys as it uses for other templates.</p>
+                        
+                        <h4>Common citekey formats:</h4>
+                        <table>
+                            <tr>
+                                <th>Style</th>
+                                <th>Template</th>
+                                <th>Example</th>
+                            </tr>
+                            <tr>
+                                <td>Author-Year</td>
+                                <td><code>{{author|lowercase}}{{year}}</code></td>
+                                <td>smith2023</td>
+                            </tr>
+                            <tr>
+                                <td>Author abbreviated</td>
+                                <td><code>{{author|abbr3}}{{year}}</code></td>
+                                <td>smi2023</td>
+                            </tr>
+                            <tr>
+                                <td>Author-Year-Title</td>
+                                <td><code>{{author|lowercase}}{{year}}{{title|titleword}}</code></td>
+                                <td>smith2023quantum</td>
+                            </tr>
+                            <tr>
+                                <td>Two authors with initials</td>
+                                <td><code>{{authors_family.0|lowercase}}{{#authors_family.1}}{{authors_family.1|abbr1}}{{/authors_family.1}}{{year}}</code></td>
+                                <td>smithj2023</td>
+                            </tr>
+                            <tr>
+                                <td>APA-like format</td>
+                                <td><code>{{author|capitalize}}{{year}}</code></td>
+                                <td>Smith2023</td>
+                            </tr>
+                        </table>
+                        
+                        <h4>Most useful variables for citekeys:</h4>
+                        <ul>
+                            <li><code>{{author}}</code> - First author's last name</li>
+                            <li><code>{{authors_family}}</code> - Array of all author last names</li>
+                            <li><code>{{year}}</code> - Publication year</li>
+                            <li><code>{{title}}</code> - Title (unformatted)</li>
+                        </ul>
+                        
+                        <h4>Special formatters for citekeys:</h4>
+                        <ul>
+                            <li><code>|lowercase</code> - Convert to lowercase</li>
+                            <li><code>|abbr3</code> - Take first 3 characters</li>
+                            <li><code>|abbr4</code> - Take first 4 characters</li>
+                            <li><code>|titleword</code> - Extract first significant word from title</li>
+                        </ul>
+                        
+                        <h4>Tips:</h4>
+                        <ul>
+                            <li>Citekeys should be unique across your library</li>
+                            <li>Keep citekeys short but descriptive</li>
+                            <li>Avoid spaces and special characters</li>
+                            <li>Leave the field empty to use legacy options below</li>
+                        </ul>
+                    </div>
+                </details>
+                `;
+                
                 new Setting(containerEl)
                         .setName('Citekey template')
                         .setDesc(this.createFragment((frag: DocumentFragment) => {
-                                frag.appendText('Define a custom template for generating citekeys. Uses the same Mustache syntax as other templates. Placeholders like ');
-                                frag.createEl('code', { text: '{{author}}' });
-                                frag.appendText(', ');
-                                frag.createEl('code', { text: '{{year}}' });
-                                frag.appendText(', ');
-                                frag.createEl('code', { text: '{{title}}' });
-                                frag.appendText(' will be replaced. Add formatters with pipe: ');
-                                frag.createEl('code', { text: '{{author|lowercase}}' });
-                                frag.appendText(' or ');
-                                frag.createEl('code', { text: '{{title|abbr3}}' });
-                                frag.appendText('. Example: ');
+                                frag.appendText('Define a custom template for generating citekeys using the unified template system. Example: ');
                                 frag.createEl('code', { text: '{{author|lowercase}}{{year}}' });
-                                frag.appendText('.');
+                                frag.appendText(' produces "smith2023". See the guide above for more examples.');
                                 frag.createEl('br');
                                 frag.appendText('If this field is empty, the legacy options below will be used.');
                                 // Add note about backward compatibility

@@ -381,10 +381,17 @@
 
 .custom-frontmatter-field {
   border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  padding: 12px;
-  margin-bottom: 12px;
-  background-color: var(--background-secondary);
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background-color: var(--background-secondary-alt);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.custom-frontmatter-field:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
 }
 
 .custom-frontmatter-field .setting-item {
@@ -393,28 +400,55 @@
 }
 
 .custom-frontmatter-field textarea {
-  min-height: 60px;
+  min-height: 80px;
   resize: vertical;
   font-family: var(--font-monospace);
   font-size: 0.9em;
+  transition: background-color 0.2s ease;
+  background-color: var(--background-primary);
+}
+
+.custom-frontmatter-field textarea:focus {
+  background-color: var(--background-primary);
+  box-shadow: 0 0 0 2px var(--interactive-accent-hover);
 }
 
 .template-variables-list {
-  padding: 10px;
-  margin-top: 5px;
-  border-radius: 4px;
-  background-color: var(--background-secondary);
+  padding: 15px;
+  margin-top: 8px;
+  border-radius: 6px;
+  background-color: var(--background-secondary-alt);
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.template-variables-list h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: var(--text-accent);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-size: 1.1em;
 }
 
 .template-variables-list h4 {
-  margin-top: 15px;
-  margin-bottom: 5px;
+  margin-top: 20px;
+  margin-bottom: 8px;
   font-weight: 600;
   color: var(--text-accent);
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 5px;
 }
 
 .template-variables-list h4:first-child {
   margin-top: 5px;
+}
+
+.template-variables-list h5 {
+  margin-top: 15px;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: var(--text-accent);
 }
 
 .template-variables-list ul {
@@ -423,56 +457,164 @@
 }
 
 .template-variables-list li {
-  margin-bottom: 3px;
+  margin-bottom: 5px;
+  line-height: 1.4;
 }
 
 .template-variables-list code {
-  background-color: var(--background-modifier-form-field);
-  border-radius: 3px;
+  background-color: var(--background-primary);
+  border-radius: 4px;
   padding: 2px 4px;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+}
+
+.template-variables-list p {
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+/* Table styling for template examples */
+.template-variables-list table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  border: 1px solid var(--background-modifier-border);
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.template-variables-list th {
+  background-color: var(--background-secondary);
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: bold;
+  border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.template-variables-list td {
+  padding: 8px 12px;
+  border-top: 1px solid var(--background-modifier-border);
+  vertical-align: top;
+}
+
+.template-variables-list tr:nth-child(even) {
+  background-color: var(--background-primary);
+}
+
+.template-variables-list tr:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+/* Example templates styling */
+.template-examples h5 {
+  margin-top: 15px;
+  margin-bottom: 8px;
+  font-size: 1em;
+  color: var(--text-accent);
+  font-weight: 600;
+}
+
+.template-examples ul {
+  list-style-type: none;
+  padding-left: 10px;
+  margin-bottom: 15px;
+}
+
+.template-examples li {
+  margin-bottom: 8px;
+}
+
+.template-examples code {
+  display: block;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  background-color: var(--background-primary);
+  border-radius: 4px;
 }
 
 /* Documentation styling */
 .custom-fields-help {
   margin-top: 10px;
-  padding: 5px;
+  padding: 10px;
+  border-radius: 6px;
+  background-color: var(--background-secondary-alt);
 }
 
 .custom-fields-help h4 {
-  margin-top: 15px;
-  margin-bottom: 5px;
+  margin-top: 18px;
+  margin-bottom: 8px;
   font-weight: 600;
   color: var(--text-accent);
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 5px;
+}
+
+.custom-fields-help p {
+  margin: 8px 0;
+  line-height: 1.5;
 }
 
 .custom-fields-help ul {
   margin: 0;
   padding-left: 20px;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 
 .custom-fields-help li {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   line-height: 1.4;
+}
+
+.custom-fields-help table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 15px 0;
+  border: 1px solid var(--background-modifier-border);
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.custom-fields-help th {
+  background-color: var(--background-secondary);
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: bold;
+  border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.custom-fields-help td {
+  padding: 8px 12px;
+  border-top: 1px solid var(--background-modifier-border);
+  vertical-align: top;
+}
+
+.custom-fields-help tr:nth-child(even) {
+  background-color: var(--background-primary);
+}
+
+.custom-fields-help tr:hover {
+  background-color: var(--background-modifier-hover);
 }
 
 .custom-fields-help summary {
   cursor: pointer;
   font-weight: 600;
-  margin-bottom: 8px;
-  padding: 5px;
-  background-color: var(--background-modifier-hover);
-  border-radius: 4px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background-color: var(--background-secondary);
+  border-radius: 6px;
   transition: background-color 0.2s ease;
+  color: var(--text-accent);
 }
 
 .custom-fields-help summary:hover {
-  background-color: var(--background-modifier-active-hover);
+  background-color: var(--background-modifier-hover);
 }
 
 .custom-fields-help code {
-  background-color: var(--background-modifier-form-field);
-  border-radius: 3px;
+  background-color: var(--background-primary);
+  border-radius: 4px;
   padding: 2px 4px;
   font-family: var(--font-monospace);
   font-size: 0.9em;
@@ -481,4 +623,34 @@
 .custom-fields-help a {
   color: var(--text-accent);
   text-decoration: underline;
+}
+
+/* Legacy options styling */
+.settings-legacy-citekey {
+  padding: 12px 15px;
+  border-left: 3px solid var(--text-faint);
+  margin-left: 8px;
+  margin-bottom: 20px;
+  background-color: var(--background-secondary-alt);
+  border-radius: 0 6px 6px 0;
+}
+
+.setting-indent {
+  margin-left: 25px;
+}
+
+/* Template example styling */
+.template-example {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 6px 8px;
+  background-color: var(--background-secondary-alt);
+  border-radius: 4px;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+  border: 1px dashed var(--text-accent);
+}
+
+.setting-item-description code.template-example {
+  color: var(--text-accent);
 }

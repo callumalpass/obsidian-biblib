@@ -150,8 +150,16 @@ export class FileManager {
                 const enabledFields = this.settings.customFrontmatterFields.filter(field => field.enabled);
                 
                 enabledFields.forEach(field => {
-                    // Render the template for this field
-                    const fieldValue = this.renderTemplate(field.template, templateVariables);
+                    // Determine if this looks like an array/object template
+                    const isArrayTemplate = field.template.trim().startsWith('[') && field.template.trim().endsWith(']');
+                    const isObjectTemplate = field.template.trim().startsWith('{') && field.template.trim().endsWith('}');
+                    
+                    // Render the template with appropriate options
+                    const fieldValue = this.renderTemplate(
+                        field.template, 
+                        templateVariables, 
+                        { yamlArray: isArrayTemplate }
+                    );
                     
                     // Add to frontmatter if field name not already used and value isn't empty
                     if (fieldValue && !frontmatter.hasOwnProperty(field.name)) {
@@ -161,6 +169,7 @@ export class FileManager {
                             try {
                                 frontmatter[field.name] = JSON.parse(fieldValue);
                             } catch (e) {
+                                console.error(`Failed to parse field "${field.name}" as JSON:`, e);
                                 // If parsing fails, use as string
                                 frontmatter[field.name] = fieldValue;
                             }
@@ -182,7 +191,8 @@ ${yaml}---
             // Render header template with variable replacement
             const headerContent = this.renderTemplate(
                 this.settings.headerTemplate,
-                templateVariables
+                templateVariables,
+                {} // No special YAML array options for header
             );
             
             content += `${headerContent}\n\n`; // Add newline after header
@@ -315,9 +325,18 @@ ${yaml}---
      * - Iterators: {{#array}}{{.}}{{/array}} where {{.}} represents the current item
      * - Nested variables: {{variable.subfield}}
      * - Formatting helpers: {{variable|format}}
+     * 
+     * @param template The template string to render
+     * @param variables Object containing values for template variables
+     * @param options Additional template rendering options
+     * @returns The rendered template string
      */
-    private renderTemplate(template: string, variables: { [key: string]: any }): string {
-        return TemplateEngine.render(template, variables);
+    private renderTemplate(
+        template: string, 
+        variables: { [key: string]: any },
+        options: { yamlArray?: boolean } = {}
+    ): string {
+        return TemplateEngine.render(template, variables, options);
     }
     
     /**
