@@ -1,4 +1,4 @@
-import { App, Modal, Notice, Setting, ButtonComponent } from 'obsidian'; // Added ButtonComponent
+import { App, Modal, Notice, Setting, ButtonComponent, FuzzySuggestModal, TFile } from 'obsidian';
 import { BibliographyPluginSettings } from '../../types/settings';
 import { Contributor, AdditionalField, Citation, AttachmentData, AttachmentType } from '../../types/citation';
 import { ContributorField } from '../components/contributor-field';
@@ -125,8 +125,6 @@ export class BibliographyModal extends Modal {
             placeholder: 'Paste BibTeX entry here...',
             cls: 'bibliography-bibtex-input'
         });
-        bibtexInput.style.width = '100%';
-        bibtexInput.style.minHeight = '100px';
         
         const bibtexButton = bibtexContainer.createEl('button', {
             text: 'Parse BibTeX',
@@ -429,6 +427,26 @@ export class BibliographyModal extends Modal {
                      // Potential future logic
                 });
             });
+			
+        // --- Additional CSL fields section --- 
+        new Setting(contentEl).setName('Additional Fields').setHeading();
+
+        // Add explanation for highlighted fields
+		const additionalFieldsDesc = contentEl.createEl('p', { 
+		    cls: 'setting-item-description', // Use standard Obsidian description class
+		    text: 'Fields that are not standard CSL variables will be highlighted. These are often imported from external sources but may not be recognized by all citation tools.'
+		});
+
+        this.additionalFieldsContainer = contentEl.createDiv();
+
+        // Button to add additional fields
+        const addFieldButton = contentEl.createEl('button', { 
+            text: 'Add Field', 
+            cls: 'bibliography-add-field-button' 
+        });
+        addFieldButton.onclick = () => {
+            this.addAdditionalField('standard', '', '');
+        };
 
         // --- Attachment Section --- 
         new Setting(contentEl).setName('Attachment').setHeading();
@@ -460,54 +478,48 @@ export class BibliographyModal extends Modal {
                 });
             });
             
+
+        // Define file suggester class
+        class FileSuggestModal extends FuzzySuggestModal<TFile> {
+            private files: TFile[];
+            private callback: (file: TFile) => void;
+
+            constructor(app: App, callback: (file: TFile) => void) {
+                super(app);
+                this.files = this.app.vault.getFiles();
+                this.callback = callback;
+                this.setPlaceholder("Select a file from your vault");
+            }
+
+            getItems(): TFile[] {
+                return this.files;
+            }
+
+            getItemText(file: TFile): string {
+                return file.path;
+            }
+
+            onChooseItem(file: TFile): void {
+                this.callback(file);
+            }
+        }
+        
         // Create link button setting (hidden initially)
         const linkSetting = new Setting(contentEl)
             .setName('Link to Existing File')
             .addButton(button => {
-                button.setButtonText('Select File Path').onClick(async () => {
-                    // Create a temporary modal to get the file path
-                    const linkModal = new Modal(this.app);
-                    linkModal.contentEl.addClass('bibliography-link-modal'); // Add class for styling
-                    linkModal.titleEl.textContent = 'Enter Path to File';
-                    
-                    const form = linkModal.contentEl.createDiv();
-                    const filePathInput = form.createEl('input', { 
-                        type: 'text', 
-                        placeholder: 'Enter file path in vault'
-                    });
-                    filePathInput.addClass('link-path-input'); // Use CSS class
-                    
-                    const buttonContainer = linkModal.contentEl.createDiv();
-                    buttonContainer.addClass('link-button-container'); // Use CSS class
-                    
-                    const submitButton = buttonContainer.createEl('button', {
-                        text: 'Link File',
-                        cls: 'mod-cta' // Call to action style
-                    });
-                    submitButton.onclick = () => {
-                        const filePath = filePathInput.value.trim();
-                        if (filePath) {
-                            this.attachmentData = {
-                                type: AttachmentType.LINK,
-                                path: filePath, // Path will be normalized by FileManager
-                                filename: filePath.split('/').pop() || filePath
-                            };
-                             // Use || '' as fallback for potentially undefined filename
-                            button.setButtonText(this.attachmentData.filename || 'Select File Path'); 
-                            linkModal.close();
-                        }
-                    };
-                    
-                    const cancelButton = buttonContainer.createEl('button', {
-                        text: 'Cancel'
-                    });
-                    cancelButton.onclick = () => {
-                        linkModal.close();
-                    };
-                    
-                    linkModal.open();
+                button.setButtonText('Select File').onClick(() => {
+                    new FileSuggestModal(this.app, (file) => {
+                        this.attachmentData = {
+                            type: AttachmentType.LINK,
+                            path: file.path,
+                            filename: file.name
+                        };
+                        button.setButtonText(file.name || 'Select File');
+                    }).open();
                 });
             });
+
             
         // Initially hide both buttons from DOM
         importSetting.settingEl.addClass('setting-hidden');
@@ -549,29 +561,9 @@ export class BibliographyModal extends Modal {
                 
                 // Reset button texts if needed (Cast to ButtonComponent)
                 (importSetting.components[0] as ButtonComponent).setButtonText('Choose File'); 
-                (linkSetting.components[0] as ButtonComponent).setButtonText('Select File Path');
+                (linkSetting.components[0] as ButtonComponent).setButtonText('Select File');
             });
         });
-
-        // --- Additional CSL fields section --- 
-        new Setting(contentEl).setName('Additional Fields').setHeading();
-
-        // Add explanation for highlighted fields
-		const additionalFieldsDesc = contentEl.createEl('p', { 
-		    cls: 'setting-item-description', // Use standard Obsidian description class
-		    text: 'Fields that are not standard CSL variables will be highlighted. These are often imported from external sources but may not be recognized by all citation tools.'
-		});
-
-        this.additionalFieldsContainer = contentEl.createDiv();
-
-        // Button to add additional fields
-        const addFieldButton = contentEl.createEl('button', { 
-            text: 'Add Field', 
-            cls: 'bibliography-add-field-button' 
-        });
-        addFieldButton.onclick = () => {
-            this.addAdditionalField('standard', '', '');
-        };
 
         // --- Submit Button --- 
         const finalButtonContainer = contentEl.createDiv({cls: 'bibliography-submit-container'});

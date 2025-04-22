@@ -18,6 +18,35 @@
   color: var(--text-normal);
 }
 
+/* Citoid and BibTeX sections */
+.bibliography-citoid-container {
+  background-color: var(--background-secondary);
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.bibliography-citoid-input-container,
+.bibliography-bibtex-container {
+  margin: 12px 0;
+}
+
+.bibliography-citoid-input,
+.bibliography-bibtex-input {
+  width: 100%;
+  font-family: var(--font-monospace);
+  background-color: var(--background-primary);
+  margin-bottom: 8px;
+}
+
+/* BibTeX specific styles */
+.bibliography-bibtex-input {
+  min-height: 120px;
+  resize: vertical;
+  padding: 10px;
+  font-size: 0.9em;
+  line-height: 1.4;
+}
 /* Settings Container */
 .bibliography-modal .setting-item {
   border-top: 1px solid var(--background-modifier-border);
@@ -154,6 +183,15 @@
 .bibliography-modal input:invalid,
 .bibliography-modal select:invalid {
   border-color: var(--text-error);
+}
+
+/* Visibility classes for settings */
+.setting-hidden {
+  display: none !important;
+}
+
+.setting-visible {
+  display: block !important;
 }
 
 /* Hover States */
