@@ -65,7 +65,8 @@ export class ChapterModal extends Modal {
                     this.bookDropdown.value = book.path; // Set dropdown value using path
                     this.populateFromBook(book); // Populate fields
                     this.bookPathDisplay.textContent = `Selected book path: ${book.path}`;
-                    this.bookPathDisplay.style.display = 'block'; // Ensure visible
+                    this.bookPathDisplay.removeClass('setting-hidden');
+                    this.bookPathDisplay.addClass('setting-visible');
                 }
             } else {
                  new Notice(`Could not load initial book: ${this.initialBookPath}`);
@@ -179,27 +180,35 @@ export class ChapterModal extends Modal {
                         this.selectedBook = book; // Type is correct (BookEntry)
                         this.populateFromBook(book); // Pass correct type
                         this.bookPathDisplay.textContent = `Selected book path: ${selectedPath}`;
-                        this.bookPathDisplay.style.display = 'block'; // Show the path display
+                        this.bookPathDisplay.removeClass('setting-hidden');
+                        this.bookPathDisplay.addClass('setting-visible');
                     } else {
                         // Selected path not found: show error state
                         this.selectedBook = null;
                         this.bookPathDisplay.textContent = 'Error: Could not load selected book.';
-                        this.bookPathDisplay.style.display = 'block';
+                        this.bookPathDisplay.removeClass('setting-hidden');
+                        this.bookPathDisplay.addClass('setting-visible');
                     }
                 } else {
                     this.selectedBook = null;
                      // TODO: Consider clearing fields populated by the previous book
                      // this.clearBookPopulatedFields(); 
                     this.bookPathDisplay.textContent = 'No book selected';
-                    this.bookPathDisplay.style.display = 'none'; // Hide path display
+                    this.bookPathDisplay.removeClass('setting-visible');
+                    this.bookPathDisplay.addClass('setting-hidden');
                 }
             });
         });
         
         // Add a display area for the selected book path (initially hidden)
         this.bookPathDisplay = contentEl.createDiv({ cls: 'bibliography-book-path setting-item-description' });
-        this.bookPathDisplay.style.display = this.selectedBook ? 'block' : 'none'; 
-        this.bookPathDisplay.textContent = this.selectedBook ? `Selected book path: ${this.selectedBook.path}` : '';
+        if (this.selectedBook) {
+            this.bookPathDisplay.addClass('setting-visible');
+            this.bookPathDisplay.textContent = `Selected book path: ${this.selectedBook.path}`;
+        } else {
+            this.bookPathDisplay.addClass('setting-hidden');
+            this.bookPathDisplay.textContent = '';
+        }
 
         // --- Chapter Contributors ---
         new Setting(contentEl).setName('Chapter Contributors').setHeading();
@@ -295,7 +304,8 @@ export class ChapterModal extends Modal {
                             // Use || '' fallback for potentially undefined filename
                             button.setButtonText(this.attachmentData.filename || 'Choose File'); 
                             this.filePathDisplay.textContent = `Selected for import: ${this.attachmentData.filename || ''}`;
-                            this.filePathDisplay.style.display = 'block';
+                            this.filePathDisplay.removeClass('setting-hidden');
+                            this.filePathDisplay.addClass('setting-visible');
                         }
                     };
                     fileInput.click();
@@ -357,7 +367,8 @@ export class ChapterModal extends Modal {
                              // Use the stored ButtonComponent instance
                             this.linkButtonComponent?.setButtonText(this.attachmentData.filename || 'Select File Path'); 
                             this.filePathDisplay.textContent = `Linked to: ${filePath}`;
-                             this.filePathDisplay.style.display = 'block';
+                            this.filePathDisplay.removeClass('setting-hidden');
+                            this.filePathDisplay.addClass('setting-visible');
                             linkModal.close();
                         }
                     };
@@ -388,27 +399,47 @@ export class ChapterModal extends Modal {
                 this.attachmentData.path = undefined;
 
                 // Show/hide appropriate setting element
-                this.importSettingEl.style.display = (value === 'import') ? '' : 'none';
-                this.linkSettingEl.style.display = (value === 'link') ? '' : 'none';
+                if (value === 'import') {
+                    this.importSettingEl.removeClass('setting-hidden');
+                    this.importSettingEl.addClass('setting-visible');
+                    this.linkSettingEl.removeClass('setting-visible');
+                    this.linkSettingEl.addClass('setting-hidden');
+                } else if (value === 'link') {
+                    this.linkSettingEl.removeClass('setting-hidden');
+                    this.linkSettingEl.addClass('setting-visible');
+                    this.importSettingEl.removeClass('setting-visible');
+                    this.importSettingEl.addClass('setting-hidden');
+                } else {
+                    this.importSettingEl.removeClass('setting-visible');
+                    this.importSettingEl.addClass('setting-hidden');
+                    this.linkSettingEl.removeClass('setting-visible');
+                    this.linkSettingEl.addClass('setting-hidden');
+                }
                 
                 // Reset button texts and file path display using stored components
                 this.importButtonComponent?.setButtonText('Choose File'); 
                 this.linkButtonComponent?.setButtonText('Select File Path');
                 this.filePathDisplay.textContent = 'No file selected';
-                this.filePathDisplay.style.display = (value === 'none') ? 'none' : 'block';
+                if (value === 'none') {
+                    this.filePathDisplay.removeClass('setting-visible');
+                    this.filePathDisplay.addClass('setting-hidden');
+                } else {
+                    this.filePathDisplay.removeClass('setting-hidden');
+                    this.filePathDisplay.addClass('setting-visible');
+                }
             });
         });
         
         // Display area for showing the selected/linked file path
         this.filePathDisplay = contentEl.createDiv({ cls: 'bibliography-file-path setting-item-description' });
-        this.filePathDisplay.style.display = 'none'; // Initially hidden
+        this.filePathDisplay.addClass('setting-hidden'); // Initially hidden
         
          // Add the hidden settings elements to the DOM *after* the dropdown setting
         attachmentSection.settingEl.insertAdjacentElement('afterend', this.linkSettingEl);
         attachmentSection.settingEl.insertAdjacentElement('afterend', this.importSettingEl);
          // Initially hide them
-         this.importSettingEl.style.display = 'none';
-         this.linkSettingEl.style.display = 'none';
+         this.importSettingEl.addClass('setting-hidden');
+         this.linkSettingEl.addClass('setting-hidden');
 
 
         // --- Additional CSL fields section --- 
@@ -599,7 +630,8 @@ export class ChapterModal extends Modal {
                 // Use stored ButtonComponent instance
                 this.linkButtonComponent?.setButtonText(this.attachmentData.filename || 'Select File Path');
                 this.filePathDisplay.textContent = `Linked to: ${filePath}`;
-                this.filePathDisplay.style.display = 'block';
+                this.filePathDisplay.removeClass('setting-hidden');
+                this.filePathDisplay.addClass('setting-visible');
                 new Notice(`Pre-filled attachment link from book: ${filePath}`, 3000);
             }
         }

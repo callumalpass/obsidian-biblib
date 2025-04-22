@@ -7,6 +7,7 @@ import { CitoidService } from '../../services/api/citoid';
 import { CitationService } from '../../services/citation-service';
 import { CitekeyGenerator } from '../../utils/citekey-generator';
 import { FileManager } from '../../services/file-manager';
+import { CslType } from '../../utils/csl-variables';
 
 export class BibliographyModal extends Modal {
     // Services
@@ -133,7 +134,8 @@ export class BibliographyModal extends Modal {
             .setName('Type')
             .addDropdown(dropdown => {
                 this.typeDropdown = dropdown.selectEl;
-                dropdown.addOptions({
+                // Create options using the constant CSL_TYPES for type safety
+                const options: Record<CslType, string> = {
                     article: 'Article',
                     'article-journal': 'Journal article',
                     'article-magazine': 'Magazine article',
@@ -179,7 +181,8 @@ export class BibliographyModal extends Modal {
                     thesis: 'Thesis',
                     treaty: 'Treaty',
                     webpage: 'Webpage',
-                });
+                };
+                dropdown.addOptions(options);
 
                 dropdown.onChange(value => {
                     // Potential future logic based on type change
@@ -462,11 +465,11 @@ export class BibliographyModal extends Modal {
             });
             
         // Initially hide both buttons from DOM
-        importSetting.settingEl.style.display = 'none';
-        linkSetting.settingEl.style.display = 'none';
+        importSetting.settingEl.addClass('setting-hidden');
+        linkSetting.settingEl.addClass('setting-hidden');
         // Add them to the DOM but hidden
         attachmentSection.settingEl.insertAdjacentElement('afterend', importSetting.settingEl);
-        attachmentSection.settingEl.insertAdjacentElement('afterend', linkSetting.settingEl); 
+        attachmentSection.settingEl.insertAdjacentElement('afterend', linkSetting.settingEl);
         
         // Add dropdown for attachment type
         attachmentSection.addDropdown(dropdown => {
@@ -482,8 +485,22 @@ export class BibliographyModal extends Modal {
                 this.attachmentData.path = undefined;
                 
                 // Show/hide appropriate button setting
-                importSetting.settingEl.style.display = (value === 'import') ? '' : 'none';
-                linkSetting.settingEl.style.display = (value === 'link') ? '' : 'none';
+                if (value === 'import') {
+                    importSetting.settingEl.removeClass('setting-hidden');
+                    importSetting.settingEl.addClass('setting-visible');
+                    linkSetting.settingEl.removeClass('setting-visible');
+                    linkSetting.settingEl.addClass('setting-hidden');
+                } else if (value === 'link') {
+                    linkSetting.settingEl.removeClass('setting-hidden');
+                    linkSetting.settingEl.addClass('setting-visible');
+                    importSetting.settingEl.removeClass('setting-visible');
+                    importSetting.settingEl.addClass('setting-hidden');
+                } else {
+                    importSetting.settingEl.removeClass('setting-visible');
+                    importSetting.settingEl.addClass('setting-hidden');
+                    linkSetting.settingEl.removeClass('setting-visible');
+                    linkSetting.settingEl.addClass('setting-hidden');
+                }
                 
                 // Reset button texts if needed (Cast to ButtonComponent)
                 (importSetting.components[0] as ButtonComponent).setButtonText('Choose File'); 
@@ -612,10 +629,16 @@ export class BibliographyModal extends Modal {
             if (generatedCitekey) new Notice(`Generated citekey: ${this.idInput.value}`, 3000); // Short notice
             
             if (normalizedData.type) {
-                // Set the type dropdown if the value matches one of the options
+                // Set the type dropdown if the value matches one of the valid CSL types
                 const val = normalizedData.type;
+                // Validate that it's a valid CSL type by checking if it's in the dropdown options
                 if (this.typeDropdown.querySelector(`option[value="${val}"]`)) {
                     this.typeDropdown.value = val;
+                    this.typeDropdown.dispatchEvent(new Event('change'));
+                } else {
+                    // Default to 'document' if the type is not recognized
+                    console.warn(`Unrecognized CSL type: ${val}, defaulting to 'document'`);
+                    this.typeDropdown.value = 'document';
                     this.typeDropdown.dispatchEvent(new Event('change'));
                 }
             }
@@ -822,7 +845,7 @@ export class BibliographyModal extends Modal {
         const citation: Citation = {
             // Required fields
             id: this.idInput.value.trim(),
-            type: this.typeDropdown.value as any, // Assume value is a valid CSL type
+            type: this.typeDropdown.value as CslType, // Cast to CslType
             title: this.titleInput.value.trim(),
             year: this.yearInput.value.trim(), // Year is required by validation
             // Optional fields from main form

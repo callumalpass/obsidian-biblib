@@ -122,8 +122,8 @@ export class BibliographyBuilder {
             if (existingRawFile instanceof TFile) {
                 await this.app.vault.modify(existingRawFile, rawKeys);
             } else {
-                 // If it exists but is not a TFile (e.g., folder), delete it first?
-                 if (existingRawFile) await this.app.vault.delete(existingRawFile);
+                 // If it exists but is not a TFile (e.g., folder), trash it first using fileManager
+                 if (existingRawFile) await this.app.fileManager.trashFile(existingRawFile);
                 await this.app.vault.create(rawFilePath, rawKeys);
             }
             
@@ -131,7 +131,7 @@ export class BibliographyBuilder {
             if (existingFormattedFile instanceof TFile) {
                 await this.app.vault.modify(existingFormattedFile, formattedKeys);
             } else {
-                 if (existingFormattedFile) await this.app.vault.delete(existingFormattedFile);
+                 if (existingFormattedFile) await this.app.fileManager.trashFile(existingFormattedFile);
                 await this.app.vault.create(formattedFilePath, formattedKeys);
             }
 
@@ -175,7 +175,7 @@ export class BibliographyBuilder {
             if (existingFile instanceof TFile) {
                 await this.app.vault.modify(existingFile, bibliographyJson);
             } else {
-                if (existingFile) await this.app.vault.delete(existingFile);
+                if (existingFile) await this.app.fileManager.trashFile(existingFile);
                 await this.app.vault.create(outputFilePath, bibliographyJson);
             }
         } catch (error) {
@@ -204,7 +204,7 @@ export class BibliographyBuilder {
             if (existing instanceof TFile) {
                 await this.app.vault.modify(existing, bib);
             } else {
-                if (existing) await this.app.vault.delete(existing);
+                if (existing) await this.app.fileManager.trashFile(existing);
                 await this.app.vault.create(bibtexPath, bib);
             }
             new Notice(`BibTeX file exported to ${bibtexPath}`);

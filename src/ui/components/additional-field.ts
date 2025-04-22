@@ -110,7 +110,7 @@ export class AdditionalFieldComponent {
             fieldOptions.push(this.field.name);
         }
         
-        // Create options for field name
+        fieldOptions.sort(); // Alphabetize all collected options
         fieldOptions.forEach(fieldOption => {
             const option = this.fieldSelect.createEl('option', { 
                 text: fieldOption, 
@@ -163,14 +163,16 @@ export class AdditionalFieldComponent {
 
     /**
      * Adds or removes a highlight class based on whether the current field name is a standard CSL variable.
+     * CSL field names are case-sensitive according to the specification.
      */
     private updateHighlight(): void {
-		const fieldNameLower = this.field.name?.toLowerCase() || ''; // Ensure lowercase and handle null/undefined
-		const isNonStandard = fieldNameLower !== '' && !CSL_ALL_CSL_FIELDS.has(fieldNameLower);
-		if (isNonStandard) {
-			this.fieldDiv.addClass('non-csl-field');
-		} else {
-			this.fieldDiv.removeClass('non-csl-field');
-		}
+        const fieldName = this.field.name || ''; // Handle null/undefined
+        const isNonStandard = fieldName !== '' && !CSL_ALL_CSL_FIELDS.has(fieldName);
+        
+        if (isNonStandard) {
+            this.fieldDiv.addClass('non-csl-field');
+        } else {
+            this.fieldDiv.removeClass('non-csl-field');
+        }
     }
 }

@@ -1,4 +1,5 @@
 import { Contributor } from '../../types';
+import { CSL_NAME_FIELDS } from '../../utils/csl-variables';
 
 export class ContributorField {
     private containerEl: HTMLDivElement;
@@ -27,34 +28,8 @@ export class ContributorField {
         
         // Role dropdown
         this.roleSelect = contributorDiv.createEl('select', { cls: 'bibliography-input bibliography-contributor-role' });
-        [
-            'author',
-            'editor',
-            'chair',
-            'collection-editor',
-            'compiler',
-            'composer',
-            'container-author',
-            'contributor',
-            'curator',
-            'director',
-            'editorial-director',
-            'executive-producer',
-            'guest',
-            'host',
-            'interviewer',
-            'illustrator',
-            'narrator',
-            'organizer',
-            'original-author',
-            'performer',
-            'producer',
-            'recipient',
-            'reviewed-author',
-            'script-writer',
-            'series-creator',
-            'translator',
-        ].forEach(roleOption => {
+
+        CSL_NAME_FIELDS.forEach(roleOption => {
             this.roleSelect.createEl('option', { text: roleOption, value: roleOption });
         });
         this.roleSelect.value = this.contributor.role;

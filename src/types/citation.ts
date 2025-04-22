@@ -1,3 +1,5 @@
+import { CslType } from '../utils/csl-variables';
+
 /**
  * Contributor types follow CSL format
  */
@@ -32,9 +34,10 @@ export interface AdditionalField {
 /**
  * CSL-compatible citation data
  */
+
 export interface Citation {
     id: string;
-    type: string;
+    type: CslType;
     title: string;
     'title-short'?: string;
     URL?: string;
