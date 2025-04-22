@@ -372,3 +372,113 @@
   font-weight: 600;
   color: var(--text-accent);
 }
+
+/* Custom frontmatter fields */
+.custom-frontmatter-fields-container {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.custom-frontmatter-field {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 12px;
+  background-color: var(--background-secondary);
+}
+
+.custom-frontmatter-field .setting-item {
+  border-top: none;
+  padding: 5px 0;
+}
+
+.custom-frontmatter-field textarea {
+  min-height: 60px;
+  resize: vertical;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+}
+
+.template-variables-list {
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 4px;
+  background-color: var(--background-secondary);
+}
+
+.template-variables-list h4 {
+  margin-top: 15px;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: var(--text-accent);
+}
+
+.template-variables-list h4:first-child {
+  margin-top: 5px;
+}
+
+.template-variables-list ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.template-variables-list li {
+  margin-bottom: 3px;
+}
+
+.template-variables-list code {
+  background-color: var(--background-modifier-form-field);
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+
+/* Documentation styling */
+.custom-fields-help {
+  margin-top: 10px;
+  padding: 5px;
+}
+
+.custom-fields-help h4 {
+  margin-top: 15px;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: var(--text-accent);
+}
+
+.custom-fields-help ul {
+  margin: 0;
+  padding-left: 20px;
+  margin-bottom: 10px;
+}
+
+.custom-fields-help li {
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.custom-fields-help summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin-bottom: 8px;
+  padding: 5px;
+  background-color: var(--background-modifier-hover);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.custom-fields-help summary:hover {
+  background-color: var(--background-modifier-active-hover);
+}
+
+.custom-fields-help code {
+  background-color: var(--background-modifier-form-field);
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+}
+
+.custom-fields-help a {
+  color: var(--text-accent);
+  text-decoration: underline;
+}

@@ -141,6 +141,37 @@ export class FileManager {
                 }
             }
 
+            // Create template variables for both header and custom frontmatter fields
+            const templateVariables = this.buildTemplateVariables(citation, contributors, attachmentPath);
+            
+            // Process custom frontmatter fields if any are enabled - BEFORE generating YAML
+            if (this.settings.customFrontmatterFields && this.settings.customFrontmatterFields.length > 0) {
+                const enabledFields = this.settings.customFrontmatterFields.filter(field => field.enabled);
+                
+                enabledFields.forEach(field => {
+                    // Render the template for this field
+                    const fieldValue = this.renderTemplate(field.template, templateVariables);
+                    
+                    // Add to frontmatter if field name not already used and value isn't empty
+                    if (fieldValue && !frontmatter.hasOwnProperty(field.name)) {
+                        // Try to parse as JSON if it looks like an array or object
+                        if ((fieldValue.startsWith('[') && fieldValue.endsWith(']')) || 
+                            (fieldValue.startsWith('{') && fieldValue.endsWith('}'))) {
+                            try {
+                                frontmatter[field.name] = JSON.parse(fieldValue);
+                            } catch (e) {
+                                // If parsing fails, use as string
+                                frontmatter[field.name] = fieldValue;
+                            }
+                        } else {
+                            // Use as string
+                            frontmatter[field.name] = fieldValue;
+                        }
+                    }
+                });
+            }
+            
+            // Generate YAML AFTER processing custom fields
             const yaml = jsyaml.dump(frontmatter, { noRefs: true, sortKeys: true }); // Use js-yaml options for cleaner output
             let content = `---
 ${yaml}---
@@ -150,14 +181,7 @@ ${yaml}---
             // Render header template with variable replacement
             const headerContent = this.renderTemplate(
                 this.settings.headerTemplate,
-                {
-                    title: citation.title || '',
-                    citekey: citation.id || '',
-                    year: citation.year?.toString() || '',
-                    authors: this.formatAuthorsForTemplate(contributors),
-                    // Provide the raw path without any braces for pdflink template variable
-                    pdflink: attachmentPath || '' 
-                }
+                templateVariables
             );
             
             content += `${headerContent}\n\n`; // Add newline after header
@@ -282,30 +306,207 @@ ${yaml}---
     }
     
     /**
-     * Render a template string with variable replacements
-     * Supports basic Mustache-like syntax: {{variable}} and {{^variable}}fallback{{/variable}}
+     * Advanced template renderer with Mustache-like syntax
+     * Supports:
+     * - Basic variable replacement: {{variable}}
+     * - Negative conditionals: {{^variable}}content{{/variable}} (renders if variable empty/falsy)
+     * - Positive conditionals: {{#variable}}content{{/variable}} (renders if variable exists/truthy)
+     * - Iterators: {{#array}}{{.}}{{/array}} where {{.}} represents the current item
+     * - Nested variables: {{variable.subfield}}
+     * - Formatting helpers: {{variable|format}}
      */
-    private renderTemplate(template: string, variables: { [key: string]: string | undefined }): string {
-        // Process conditional blocks first {{^variable}}content{{/variable}}
-        // These show content only if the variable is empty/undefined/falsy
-        let result = template.replace(/\{\{\^([^}]+)\}\}(.*?)\{\{\/\1\}\}/gs, (match, key, content) => {
-            const value = variables[key.trim()]; // Trim whitespace from key
-            // Consider empty string as falsy for conditionals
-            return !value ? content : ''; 
-        });
+    private renderTemplate(template: string, variables: { [key: string]: any }): string {
+        let result = template;
         
-        // Then do basic variable replacement {{variable}}
-        result = result.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
-             // Trim whitespace from key
-            const trimmedKey = key.trim();
-            if (trimmedKey.startsWith('^')) {
-                return ''; // Skip this, it's part of a conditional that was already processed
-            }
-            // Return the variable value or an empty string if undefined/null
-            return variables[trimmedKey] ?? ''; 
-        });
+        // Process positive conditionals/iterators first {{#variable}}content{{/variable}}
+        result = this.processPositiveBlocks(result, variables);
+        
+        // Process negative conditionals {{^variable}}content{{/variable}}
+        result = this.processNegativeBlocks(result, variables);
+        
+        // Process variable replacements with formatting {{variable}} or {{variable|format}}
+        result = this.processVariables(result, variables);
         
         return result;
+    }
+    
+    /**
+     * Process positive conditional blocks {{#variable}}content{{/variable}}
+     * Also handles iteration if the variable is an array
+     */
+    private processPositiveBlocks(template: string, variables: { [key: string]: any }): string {
+        // Regex for positive blocks {{#variable}}content{{/variable}}
+        const blockRegex = /\{\{#([^}]+)\}\}(.*?)\{\{\/\1\}\}/gs;
+        
+        return template.replace(blockRegex, (match, key, content) => {
+            const trimmedKey = key.trim();
+            const value = this.getNestedValue(variables, trimmedKey);
+            
+            // If the value is an array, iterate over it
+            if (Array.isArray(value)) {
+                if (value.length === 0) return ''; // Empty array = don't render
+                
+                // Map each item in the array through the template
+                return value.map((item, index) => {
+                    // For each iteration, create a new variables object
+                    // with enhanced metadata about the iteration
+                    const iterationVars = { 
+                        ...variables, 
+                        '.': item,                               // Current item
+                        '@index': index,                         // Current index (0-based)
+                        '@number': index + 1,                    // Current number (1-based)
+                        '@first': index === 0,                   // Is this the first item?
+                        '@last': index === value.length - 1,     // Is this the last item?
+                        '@odd': index % 2 === 1,                 // Is this an odd-indexed item?
+                        '@even': index % 2 === 0,                // Is this an even-indexed item?
+                        '@length': value.length,                 // Total number of items
+                    };
+                    
+                    // Process this iteration's content recursively
+                    let itemContent = this.processPositiveBlocks(content, iterationVars);
+                    itemContent = this.processNegativeBlocks(itemContent, iterationVars);
+                    itemContent = this.processVariables(itemContent, iterationVars);
+                    
+                    return itemContent;
+                }).join('');
+            }
+            
+            // For non-arrays, treat as a simple conditional
+            return value ? content : '';
+        });
+    }
+    
+    /**
+     * Process negative conditional blocks {{^variable}}content{{/variable}}
+     */
+    private processNegativeBlocks(template: string, variables: { [key: string]: any }): string {
+        // Regex for negative blocks {{^variable}}content{{/variable}}
+        const blockRegex = /\{\{\^([^}]+)\}\}(.*?)\{\{\/\1\}\}/gs;
+        
+        return template.replace(blockRegex, (match, key, content) => {
+            const trimmedKey = key.trim();
+            const value = this.getNestedValue(variables, trimmedKey);
+            
+            // Consider empty arrays, empty strings, null, and undefined as falsy
+            const isFalsy = value === undefined || 
+                           value === null || 
+                           value === '' || 
+                           (Array.isArray(value) && value.length === 0);
+                           
+            return isFalsy ? content : '';
+        });
+    }
+    
+    /**
+     * Process variable replacements {{variable}} or {{variable|format}}
+     */
+    private processVariables(template: string, variables: { [key: string]: any }): string {
+        // Regex for variables, optionally with formats {{variable}} or {{variable|format}}
+        const variableRegex = /\{\{([^#^}|]+)(?:\|([^}]+))?\}\}/g;
+        
+        return template.replace(variableRegex, (match, key, format) => {
+            const trimmedKey = key.trim();
+            
+            // Skip keys that start with # or ^ as those are handled by block processors
+            if (trimmedKey.startsWith('#') || trimmedKey.startsWith('^')) {
+                return '';
+            }
+            
+            // Get the value, handling nested properties
+            const value = this.getNestedValue(variables, trimmedKey);
+            
+            // If the value is undefined/null, return empty string
+            if (value === undefined || value === null) {
+                return '';
+            }
+            
+            // If a format is specified, apply it
+            if (format) {
+                return this.formatValue(value, format.trim());
+            }
+            
+            // Otherwise, return the value as string
+            if (typeof value === 'object') {
+                try {
+                    return JSON.stringify(value);
+                } catch (e) {
+                    return '[Object]';
+                }
+            }
+            
+            return String(value);
+        });
+    }
+    
+    /**
+     * Get a value from nested object properties using dot notation
+     * Example: 'user.profile.name' gets variables.user.profile.name
+     */
+    private getNestedValue(obj: { [key: string]: any }, path: string): any {
+        // Handle direct property access
+        if (obj[path] !== undefined) {
+            return obj[path];
+        }
+        
+        // Handle dot notation for nested properties
+        const parts = path.split('.');
+        let current = obj;
+        
+        for (const part of parts) {
+            if (current === undefined || current === null) {
+                return undefined;
+            }
+            
+            current = current[part];
+        }
+        
+        return current;
+    }
+    
+    /**
+     * Format a value based on specified format
+     */
+    private formatValue(value: any, format: string): string {
+        switch (format) {
+            case 'upper':
+            case 'uppercase':
+                return String(value).toUpperCase();
+                
+            case 'lower':
+            case 'lowercase':
+                return String(value).toLowerCase();
+                
+            case 'capitalize':
+                return String(value).charAt(0).toUpperCase() + String(value).slice(1).toLowerCase();
+                
+            case 'sentence':
+                return String(value).charAt(0).toUpperCase() + String(value).slice(1);
+                
+            case 'json':
+                try {
+                    return JSON.stringify(value);
+                } catch (e) {
+                    return '[Invalid JSON]';
+                }
+                
+            case 'count':
+                if (Array.isArray(value)) {
+                    return String(value.length);
+                }
+                return '0';
+                
+            case 'date':
+                try {
+                    const date = new Date(value);
+                    return date.toLocaleDateString();
+                } catch (e) {
+                    return String(value);
+                }
+                
+            default:
+                // If format is not recognized, return value as is
+                return String(value);
+        }
     }
     
     /**
@@ -348,6 +549,83 @@ ${yaml}---
              return given;
         }
         return ''; // No name parts found
+    }
+    
+    /**
+     * Build a comprehensive set of template variables for use in templates
+     */
+    private buildTemplateVariables(citation: Citation, contributors: Contributor[], attachmentPath?: string): { [key: string]: any } {
+        // Start with the basic variable set
+        const variables: { [key: string]: any } = {
+            // Current date (useful for templates)
+            currentDate: new Date().toISOString().split('T')[0],
+            
+            // Formatted author list for display
+            authors: this.formatAuthorsForTemplate(contributors),
+            
+            // Raw path for attachment
+            pdflink: attachmentPath || '',
+            
+            // Add all citation fields directly (for access to any field)
+            ...citation,
+            
+            // Add contributor lists by role
+            ...this.buildContributorLists(contributors),
+            
+            // Override with explicit versions of common fields for clarity
+            // These ensure consistent access even if the citation object structure changes
+            citekey: citation.id || '',
+        };
+        
+        return variables;
+    }
+    
+    /**
+     * Build contributor lists by role for use in templates
+     */
+    private buildContributorLists(contributors: Contributor[]): { [key: string]: any } {
+        const result: { [key: string]: any } = {};
+        
+        // Group contributors by role
+        const byRole = contributors.reduce((groups, contributor) => {
+            const role = contributor.role || 'author';
+            if (!groups[role]) {
+                groups[role] = [];
+            }
+            groups[role].push(contributor);
+            return groups;
+        }, {} as { [key: string]: Contributor[] });
+        
+        // Create raw arrays by role
+        Object.entries(byRole).forEach(([role, roleContributors]) => {
+            // Add raw contributor objects
+            result[`${role}s_raw`] = roleContributors;
+            
+            // Add array of formatted names
+            result[`${role}s`] = roleContributors.map(c => {
+                const family = c.family || '';
+                const given = c.given || '';
+                
+                // Return full name if both parts exist
+                if (family && given) {
+                    return `${given} ${family}`;
+                }
+                // Return whichever part exists
+                return family || given || c.literal || '';
+            });
+            
+            // Add array of family names only
+            result[`${role}s_family`] = roleContributors
+                .map(c => c.family || c.literal || '')
+                .filter(name => name !== '');
+                
+            // Add array of given names only
+            result[`${role}s_given`] = roleContributors
+                .map(c => c.given || '')
+                .filter(name => name !== '');
+        });
+        
+        return result;
     }
     
     /**

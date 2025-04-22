@@ -79,6 +79,15 @@ export interface CitekeyOptions {
 }
 
 
+/**
+ * Interface for custom frontmatter field templates
+ */
+export interface CustomFrontmatterField {
+    name: string;    // Field name in frontmatter
+    template: string; // Template with variables
+    enabled: boolean; // Whether this field is enabled
+}
+
 // --- Interface for Overall Plugin Settings ---
 
 export interface BibliographyPluginSettings {
@@ -101,6 +110,7 @@ export interface BibliographyPluginSettings {
         enableZoteroConnector: boolean;
         zoteroConnectorPort: number;
         tempPdfPath: string;
+        customFrontmatterFields: CustomFrontmatterField[]; // Custom frontmatter fields with templating
         citekeyOptions: CitekeyOptions; // Uses the interface defined above
 }
 
@@ -119,13 +129,41 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         bibliographyJsonPath: 'biblib/bibliography.json',
         citekeyListPath: 'citekeylist.md',
         bibtexFilePath: 'biblib/bibliography.bib',
-        headerTemplate: '# [[{{^pdflink}}@{{citekey}}{{/pdflink}}|{{citekey}}]]',
-        chapterHeaderTemplate: '# [[{{^pdflink}}@{{citekey}}{{/pdflink}}|{{citekey}}]] (in {{container-title}})',
+        headerTemplate: '# [[{{pdflink}}]]{{^pdflink}}{{title}}{{/pdflink}}',
+        chapterHeaderTemplate: '# [[{{pdflink}}]]{{^pdflink}}{{title}}{{/pdflink}} (in {{container-title}})',
         literatureNoteTag: 'literature_note',
         openNoteOnCreate: true,
         enableZoteroConnector: false,
         zoteroConnectorPort: 23119,
         tempPdfPath: '',
+        // Default custom frontmatter fields
+        customFrontmatterFields: [
+                {
+                        name: 'status',
+                        template: 'to-read',
+                        enabled: true
+                },
+                {
+                        name: 'aliases',
+                        template: '["{{title|sentence}}", "{{authors}} ({{year}})"]',
+                        enabled: true
+                },
+                {
+                        name: 'author-links',
+                        template: '{{#authors_family}}[[Author/{{.}}]]{{^@last}}, {{/@last}}{{/authors_family}}',
+                        enabled: true
+                },
+                {
+                        name: 'keywords',
+                        template: '[]',
+                        enabled: true
+                },
+                {
+                        name: 'related',
+                        template: '[]',
+                        enabled: true
+                }
+        ],
         // Default citekey options
         citekeyOptions: {
                 citekeyTemplate: '', // Default to empty string, signifying use of legacy options below

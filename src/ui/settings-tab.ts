@@ -272,6 +272,54 @@ export class BibliographySettingTab extends PluginSettingTab {
                         text: 'Configure the format of your literature notes.',
                         cls: 'setting-item-description'
                 });
+                
+                // Add description listing the available template variables
+                const variablesDesc = containerEl.createEl('div', { cls: 'setting-item-description' });
+                variablesDesc.innerHTML = `
+                <details>
+                    <summary>Available template variables</summary>
+                    <div class="template-variables-list">
+                        <h4>Basic variables</h4>
+                        <ul>
+                            <li><code>{{title}}</code> - Title of the work</li>
+                            <li><code>{{citekey}}</code> - Citation key</li>
+                            <li><code>{{year}}</code>, <code>{{month}}</code>, <code>{{day}}</code> - Publication date parts</li>
+                            <li><code>{{container-title}}</code> - Journal or book title containing the work</li>
+                            <li><code>{{authors}}</code> - Formatted author list</li>
+                            <li><code>{{pdflink}}</code> - Path to attached PDF (if any)</li>
+                            <li><code>{{DOI}}</code>, <code>{{URL}}</code> - Digital identifiers</li>
+                            <li><code>{{publisher}}</code>, <code>{{publisher-place}}</code> - Publisher information</li>
+                            <li><code>{{volume}}</code>, <code>{{number}}</code>, <code>{{page}}</code> - Publication details</li>
+                            <li><code>{{language}}</code>, <code>{{abstract}}</code>, <code>{{edition}}</code> - Additional metadata</li>
+                            <li><code>{{currentDate}}</code> - Today's date (YYYY-MM-DD)</li>
+                        </ul>
+                        
+                        <h4>Contributor variables</h4>
+                        <ul>
+                            <li><code>{{authors}}</code> - Array of all author names</li>
+                            <li><code>{{authors_family}}</code> - Array of author last names only</li>
+                            <li><code>{{authors_given}}</code> - Array of author first names only</li>
+                            <li><code>{{editors}}</code>, <code>{{translators}}</code>, etc. - Lists for other contributor types</li>
+                        </ul>
+                        
+                        <h4>Formatting options</h4>
+                        <ul>
+                            <li><code>{{variable|upper}}</code> - UPPERCASE</li>
+                            <li><code>{{variable|lower}}</code> - lowercase</li>
+                            <li><code>{{variable|capitalize}}</code> - Capitalize First Letter Of Each Word</li>
+                            <li><code>{{variable|sentence}}</code> - First letter capitalized only</li>
+                            <li><code>{{variable|date}}</code> - Format as date</li>
+                        </ul>
+                        
+                        <h4>Conditionals and loops</h4>
+                        <ul>
+                            <li><code>{{#variable}}Content shown if variable exists{{/variable}}</code></li>
+                            <li><code>{{^variable}}Content shown if variable is empty{{/variable}}</code></li>
+                            <li><code>{{#array}}{{.}} is the current item{{/array}}</code> - Loop through arrays</li>
+                        </ul>
+                    </div>
+                </details>
+                `;
 
                 new Setting(containerEl)
                         .setName('Header template')
@@ -322,6 +370,164 @@ export class BibliographySettingTab extends PluginSettingTab {
                                 })
                         );
 
+                // Custom Frontmatter Fields Settings
+                new Setting(containerEl).setName('Custom frontmatter fields').setHeading();
+                
+                const customFieldsDesc = containerEl.createEl('div', { 
+                    cls: 'setting-item-description'
+                });
+                
+                customFieldsDesc.innerHTML = `
+                <p>Define custom frontmatter fields with templated values. These will be added to new literature notes.</p>
+                
+                <details class="custom-fields-help">
+                    <summary>Template syntax and available variables</summary>
+                    
+                    <h4>Basic syntax</h4>
+                    <ul>
+                        <li><code>{{variable}}</code> - Insert a variable value</li>
+                        <li><code>{{variable|format}}</code> - Format a variable (e.g., <code>{{title|uppercase}}</code>)</li>
+                        <li><code>{{#variable}}Show if exists{{/variable}}</code> - Conditional content (shows only if variable exists or is true)</li>
+                        <li><code>{{^variable}}Show if missing/empty{{/variable}}</code> - Negative conditional (shows only if variable is missing or empty)</li>
+                        <li><code>{{#array}}{{.}} is current item{{/array}}</code> - Iterate through an array</li>
+                    </ul>
+                    
+                    <h4>Common variables</h4>
+                    <ul>
+                        <li><code>{{title}}</code> - The document title</li>
+                        <li><code>{{citekey}}</code> - The citation key/ID</li>
+                        <li><code>{{year}}</code> - Publication year</li>
+                        <li><code>{{month}}</code>, <code>{{day}}</code> - Publication date parts</li>
+                        <li><code>{{authors}}</code> - Formatted author list (e.g., "A. Smith et al.")</li>
+                        <li><code>{{pdflink}}</code> - Path to attached PDF file (without brackets)</li>
+                        <li><code>{{currentDate}}</code> - Today's date in YYYY-MM-DD format</li>
+                    </ul>
+                    
+                    <h4>CSL variables</h4>
+                    <p>All <a href="https://docs.citationstyles.org/en/stable/specification.html#appendix-iv-variables" target="_blank">CSL variables</a> are supported including:</p>
+                    <ul>
+                        <li><code>{{DOI}}</code>, <code>{{URL}}</code>, <code>{{ISSN}}</code> - Digital identifiers</li>
+                        <li><code>{{container-title}}</code> - Journal or book title</li>
+                        <li><code>{{volume}}</code>, <code>{{issue}}</code>, <code>{{page}}</code>, <code>{{number}}</code> - Publication details</li>
+                        <li><code>{{publisher}}</code>, <code>{{publisher-place}}</code> - Publisher information</li>
+                        <li><code>{{abstract}}</code>, <code>{{note}}</code> - Document content</li>
+                    </ul>
+                    
+                    <h4>Contributor lists</h4>
+                    <ul>
+                        <li><code>{{authors}}</code> - Formatted list of authors (e.g., "A. Smith et al.")</li>
+                        <li><code>{{authors_family}}</code> - Array of author last names (e.g., ["Smith", "Jones"])</li>
+                        <li><code>{{authors_given}}</code> - Array of author first names (e.g., ["Alex", "Lee"])</li>
+                        <li><code>{{#authors_family}}{{.}}{{/authors_family}}</code> - Loop through all author last names</li>
+                        <li><code>{{editors}}</code>, <code>{{translators}}</code> - Lists for other contributor types</li>
+                    </ul>
+                    
+                    <h4>Formatting options</h4>
+                    <ul>
+                        <li><code>{{variable|upper}}</code> or <code>{{variable|uppercase}}</code> - ALL UPPERCASE</li>
+                        <li><code>{{variable|lower}}</code> or <code>{{variable|lowercase}}</code> - all lowercase</li>
+                        <li><code>{{variable|capitalize}}</code> - Capitalize First Letter Of Each Word</li>
+                        <li><code>{{variable|sentence}}</code> - Capitalize first letter only</li>
+                        <li><code>{{variable|date}}</code> - Format as date (if possible)</li>
+                        <li><code>{{variable|count}}</code> - Count array items (e.g., number of authors)</li>
+                    </ul>
+                    
+                    <h4>Examples</h4>
+                    <ul>
+                        <li><code>{{#authors_family}}[[Author/{{.}}]]{{^@last}}, {{/@last}}{{/authors_family}}</code> - Create links to all authors</li>
+                        <li><code>reading-{{year}}-{{currentDate|date}}</code> - Create reading ID with year and current date</li>
+                        <li><code>{{#abstract}}{{abstract|sentence}}{{/abstract}}{{^abstract}}No abstract available{{/abstract}}</code> - Show abstract with fallback</li>
+                    </ul>
+                </details>
+                `;
+                
+                // Container for custom frontmatter fields
+                const customFieldsContainer = containerEl.createDiv({ cls: 'custom-frontmatter-fields-container' });
+                
+                // Function to add a new field row to the settings
+                const addCustomFieldRow = (field: { name: string, template: string, enabled: boolean }, container: HTMLElement) => {
+                    const fieldEl = container.createDiv({ cls: 'custom-frontmatter-field' });
+                    
+                    const fieldSettingEl = new Setting(fieldEl)
+                        .addToggle(toggle => toggle
+                            .setValue(field.enabled)
+                            .onChange(async (value) => {
+                                field.enabled = value;
+                                await this.plugin.saveSettings();
+                            })
+                        )
+                        .addText(text => text
+                            .setPlaceholder('Field name')
+                            .setValue(field.name)
+                            .onChange(async (value) => {
+                                field.name = value;
+                                await this.plugin.saveSettings();
+                            })
+                        )
+                        .addTextArea(text => text
+                            .setPlaceholder('Template (e.g. {{authors|capitalize}})')
+                            .setValue(field.template)
+                            .onChange(async (value) => {
+                                field.template = value;
+                                await this.plugin.saveSettings();
+                            })
+                        )
+                        .addExtraButton(button => button
+                            .setIcon('trash')
+                            .setTooltip('Delete field')
+                            .onClick(async () => {
+                                // Remove the field from settings
+                                this.plugin.settings.customFrontmatterFields = 
+                                    this.plugin.settings.customFrontmatterFields.filter(f => 
+                                        f !== field
+                                    );
+                                await this.plugin.saveSettings();
+                                // Remove the UI element
+                                fieldEl.remove();
+                            })
+                        );
+                    
+                    // Adjust textarea height
+                    const textarea = fieldSettingEl.controlEl.querySelector('textarea');
+                    if (textarea) {
+                        textarea.style.minHeight = '60px';
+                    }
+                    
+                    return fieldEl;
+                };
+                
+                // Add existing custom frontmatter fields
+                if (this.plugin.settings.customFrontmatterFields) {
+                    this.plugin.settings.customFrontmatterFields.forEach(field => {
+                        addCustomFieldRow(field, customFieldsContainer);
+                    });
+                }
+                
+                // Add button to add a new custom field
+                const addFieldButton = new Setting(containerEl)
+                    .setName('Add custom frontmatter field')
+                    .addButton(button => button
+                        .setButtonText('Add Field')
+                        .onClick(async () => {
+                            // Create a new field with default values
+                            const newField = {
+                                name: '',
+                                template: '',
+                                enabled: true
+                            };
+                            
+                            // Add to settings
+                            if (!this.plugin.settings.customFrontmatterFields) {
+                                this.plugin.settings.customFrontmatterFields = [];
+                            }
+                            this.plugin.settings.customFrontmatterFields.push(newField);
+                            await this.plugin.saveSettings();
+                            
+                            // Add to UI
+                            addCustomFieldRow(newField, customFieldsContainer);
+                        })
+                    );
+                
                 // --- Citekey Generation Settings ---
                 new Setting(containerEl).setName('Citekey generation').setHeading();
                 containerEl.createEl('p', {
