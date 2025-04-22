@@ -56,14 +56,7 @@ export class FileManager {
                     : [this.settings.literatureNoteTag],
             };
             
-            // Add configurable non-CSL fields based on settings
-            if (this.settings.includeYear && citation.year) {
-                frontmatter.year = Number(citation.year);
-            }
-            
-            if (this.settings.includeDateCreated) {
-                frontmatter.dateCreated = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-            }
+            // No hardcoded frontmatter fields - everything through custom frontmatter templates
 
             // Add contributors to frontmatter, preserving all CSL contributor properties
             contributors.forEach(contributor => {
@@ -77,21 +70,6 @@ export class FileManager {
                     frontmatter[contributor.role].push(personData);
                 }
             });
-
-            // Add authorLink to frontmatter if enabled in settings
-            if (this.settings.includeAuthorLink) {
-                const authorLinks: string[] = contributors
-                    .filter(contributor => contributor.role === 'author' && contributor.family)
-                    .map(contributor => {
-                        const fullName = `${contributor.given ? `${contributor.given} ` : ''}${contributor.family}`;
-                        // Simple link for now, assumes Author/ folder exists
-                        return `[[Author/${fullName}]]`; 
-                    });
-
-                if (authorLinks.length > 0) {
-                    frontmatter.authorLink = authorLinks;
-                }
-            }
 
             // Add additional fields to frontmatter
             additionalFields.forEach((field) => {
@@ -127,19 +105,7 @@ export class FileManager {
             let attachmentPath = '';
             if (attachmentData && attachmentData.type !== AttachmentType.NONE) {
                 attachmentPath = await this.handleAttachment(citation.id, attachmentData);
-                // Add attachment link to frontmatter if enabled in settings
-                if (attachmentPath && this.settings.includeAttachment) {
-                    // Use Obsidian link format, ensuring path is relative if possible
-                    const file = this.app.vault.getAbstractFileByPath(attachmentPath);
-                    if (file instanceof TFile) {
-                        // Generate a relative path if possible, otherwise use the full path
-                        const relativePath = this.app.metadataCache.fileToLinktext(file, '', true);
-                         frontmatter.attachment = [`[[${relativePath}]]`];
-                    } else {
-                        // Fallback if file not found (e.g., external link? unlikely here)
-                         frontmatter.attachment = [`[[${attachmentPath}]]`];
-                    }
-                }
+                // Attachment links now handled through custom frontmatter field templates
             }
 
             // Create template variables for both header and custom frontmatter fields

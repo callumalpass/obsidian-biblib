@@ -97,20 +97,25 @@ export interface BibliographyPluginSettings {
         usePrefix: boolean;
         notePrefix: string;
         createAttachmentSubfolder: boolean;
+        // Legacy fields still in type but no longer in UI
         includeDateCreated: boolean;
         includeYear: boolean;
         includeAuthorLink: boolean;
         includeAttachment: boolean;
+        // Bibliography and file options
         bibliographyJsonPath: string;
         citekeyListPath: string;
         bibtexFilePath: string;
+        // Template options
         headerTemplate: string;
         chapterHeaderTemplate: string;
+        // Other settings
         literatureNoteTag: string;
         openNoteOnCreate: boolean;
         enableZoteroConnector: boolean;
         zoteroConnectorPort: number;
         tempPdfPath: string;
+        // Template systems
         customFrontmatterFields: CustomFrontmatterField[]; // Custom frontmatter fields with templating
         citekeyOptions: CitekeyOptions; // Uses the interface defined above
 }
@@ -140,6 +145,16 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         // Default custom frontmatter fields
         customFrontmatterFields: [
                 {
+                        name: 'year',
+                        template: '{{year}}',
+                        enabled: true
+                },
+                {
+                        name: 'dateCreated',
+                        template: '{{currentDate}}',
+                        enabled: true
+                },
+                {
                         name: 'status',
                         template: 'to-read',
                         enabled: true
@@ -151,7 +166,12 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
                 },
                 {
                         name: 'author-links',
-                        template: '{{#authors_family}}[[Author/{{.}}]]{{^@last}}, {{/@last}}{{/authors_family}}',
+                        template: '[{{#authors}}"[[Author/{{.}}]]"{{/authors}}]',
+                        enabled: true
+                },
+                {
+                        name: 'attachment',
+                        template: '{{#pdflink}}["[[{{pdflink}}]]"]{{/pdflink}}{{^pdflink}}[]{{/pdflink}}',
                         enabled: true
                 },
                 {

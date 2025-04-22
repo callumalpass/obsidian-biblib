@@ -54,7 +54,8 @@ export class BibliographyModal extends Modal {
         super(app);
         // Initialize services with fixed BibTeX endpoint
         this.citoidService = new CitoidService();
-        this.citationService = new CitationService();
+        // Pass the citekey options to ensure generated citekeys respect user settings
+        this.citationService = new CitationService(this.settings.citekeyOptions);
         this.fileManager = new FileManager(app, settings);
         this.openedViaCommand = openedViaCommand;
     }

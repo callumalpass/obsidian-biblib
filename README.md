@@ -42,8 +42,12 @@ This approach has proven effective for my personal academic workflow for several
   - Import files (copy to bibliography folder)
   - Link to existing files in your vault
 - Full support for Citation Style Language (CSL) fields
+- **Unified templating system** for consistent customization across:
+  - Header templates
+  - Custom frontmatter fields
+  - Citekey generation
+- **YAML array support** for proper frontmatter arrays
 - Customizable note prefixes and file locations
-- Automatic creation of contributor links
 - Auto-fill citation data using DOI, URL, or ISBN via Citoid API
  - Citation.js parsing of BibTeX into CSL-JSON for seamless DOI, URL, and ISBN support
 - **Zotero Connector integration** - capture citations and PDFs directly from your browser with one click
@@ -153,28 +157,59 @@ This workflow keeps your references, PDFs, and annotations all within the same s
 - **Use prefix for literature notes**: Option to add a prefix to literature note filenames
 - **Literature note prefix**: The prefix to add to literature note filenames
 
-### API Settings
-
-- **Citoid API URL**: Fixed to Wikipedia's `/citation/bibtex/` endpoint; BibTeX is parsed via Citation.js into CSL-JSON
-
 ### Custom Frontmatter Fields
 
-- **Include date created**: Add a dateCreated field with creation timestamp
-- **Include year field**: Add a separate year field for easy filtering
-- **Include author links**: Add authorLink field with Obsidian links to author pages
-- **Include attachment links**: Add attachment field with Obsidian links to attached files
+BibLib uses a flexible templating system for custom frontmatter fields, allowing you to define exactly which fields you want in your literature notes. Each field can have:
 
-### Note Templates
+- **Field Name**: The name of the field in the YAML frontmatter
+- **Template**: A template using variables and formatting options to determine the field's value
+- **Enabled/Disabled**: Toggle to control whether the field is included
 
-- **Header Template**: Customize the format of the first header in literature notes using variables:
-  - `{{title}}` - The title of the reference
-  - `{{citekey}}` - The citation key
-  - `{{year}}` - Publication year
-  - `{{authors}}` - Formatted author names
-  - `{{pdflink}}` - Link to the attached PDF (if available)
-  - Supports conditional blocks with `{{^variable}}fallback{{/variable}}`
-- **Chapter Header Template**: Customize the format of the first header in chapter notes with additional variables:
-  - `{{container-title}}` - The title of the container book
+Default fields include:
+- **year**: Publication year (extracted from CSL data)
+- **dateCreated**: Current date when the note is created
+- **status**: Default value of "to-read"
+- **aliases**: Array of alternate names for the note
+- **author-links**: Array of Obsidian links to author pages
+- **attachment**: Array of Obsidian links to attached files
+- **keywords**: Empty array for you to add keywords
+- **related**: Empty array for related citations
+
+You can easily add, edit, or remove these fields to suit your workflow.
+
+### Template System
+
+BibLib uses a powerful, consistent templating system across all customizable content:
+
+#### Basic Variable Syntax
+- `{{variable}}` - Outputs the value of the variable
+- `{{variable|format}}` - Applies formatting to the variable (e.g., `{{title|lowercase}}`)
+
+#### Conditional Blocks
+- `{{#variable}}Content if exists{{/variable}}` - Renders content if variable exists/is truthy
+- `{{^variable}}Content if not exists{{/variable}}` - Renders content if variable is empty/falsy
+
+#### Loops and Arrays
+- `{{#array}}{{.}}{{/array}}` - Loops through array items, with `{{.}}` representing the current item
+- Can access loop information with `{{@index}}`, `{{@first}}`, `{{@last}}`, etc.
+
+#### YAML Arrays
+- Templates that start with `[` and end with `]` will be parsed as proper YAML arrays
+- Example: `[{{#authors_family}}{{^@first}},{{/@first}}"[[Author/{{.}}]]"{{/authors_family}}]`
+
+#### Available Variables
+- CSL fields: `{{title}}`, `{{citekey}}`, `{{year}}`, `{{container-title}}`, etc.
+- Special variables: `{{authors}}` (formatted string), `{{pdflink}}` (attachment path), `{{currentDate}}`
+- Arrays: `{{authors_family}}`, `{{authors_given}}`, `{{editors}}`, etc.
+
+#### Formatting Options
+- `{{variable|upper}}` or `{{variable|uppercase}}` - ALL UPPERCASE
+- `{{variable|lower}}` or `{{variable|lowercase}}` - all lowercase
+- `{{variable|capitalize}}` - Capitalize First Letter Of Each Word
+- `{{variable|sentence}}` - First letter capitalized only
+- Special formatters for citekeys: `{{variable|abbr3}}`, `{{title|titleword}}`, etc.
+
+This system is used for header templates, custom frontmatter fields, and citekey generation, providing a consistent experience throughout the plugin.
 
 ### Bibliography Builder
 
@@ -195,15 +230,36 @@ This workflow keeps your references, PDFs, and annotations all within the same s
 
 ## Citekey Generation
 
-BibLib provides flexible citekey generation with customizable options:
+BibLib provides a powerful templating system for citekey generation using the same syntax as other templates:
 
-- Author name formats: full, first three, or first four letters
-- Multiple author handling: include information from co-authors
-- Two-author styles: Author1AndAuthor2 or Author1J (initial)
-- Style options for three or more authors: Author1JK or Author1EtAl
-- Customizable delimiters between author and year: smith_2023
-- Length validation with random suffixes for short citekeys
-- Special handling for Zotero keys
+### Template-Based Generation
+
+Define your citekey pattern using the template syntax, for example:
+- `{{author|lowercase}}{{year}}` - Basic author-year format (e.g., "smith2023")
+- `{{author|abbr3}}{{year}}` - First three letters of author name (e.g., "smi2023")
+- `{{author|lowercase}}{{year}}{{title|titleword}}` - Author, year, and first significant title word
+
+### Special Citekey Formatters
+
+- `|abbr3` - First 3 characters (e.g., "smith" → "smi")
+- `|abbr4` - First 4 characters (e.g., "smith" → "smit")
+- `|titleword` - First significant word from title (e.g., "Quantum Theory" → "quantum")
+- `|shorttitle` - First 3 significant words from title
+
+### Advanced Patterns
+
+- Access specific authors by index: `{{authors_family.0|lowercase}}`
+- Multiple author handling: `{{authors_family.0|lowercase}}{{#authors_family.1}}{{authors_family.1|abbr1}}{{/authors_family.1}}{{year}}`
+- Conditional formatting: `{{#DOI}}{{author|lowercase}}{{year}}{{/DOI}}{{^DOI}}{{title|titleword}}{{year}}{{/DOI}}`
+
+### Legacy Options
+
+For backward compatibility, BibLib still includes the legacy citekey options if you prefer the older system:
+
+- Author name formats (full, abbreviations)
+- Multiple author handling
+- Two-author styles (And/Initial)
+- Delimiters and other customizations
 
 You can configure all citekey options in the settings tab under "Citekey generation".
 
