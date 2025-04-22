@@ -81,6 +81,21 @@ export interface BibliographyPluginSettings {
      * Whether to automatically open a newly created literature note
      */
     openNoteOnCreate: boolean;
+    
+    /**
+     * Whether to enable the Zotero Connector server
+     */
+    enableZoteroConnector: boolean;
+    
+    /**
+     * The port to use for the Zotero Connector server
+     */
+    zoteroConnectorPort: number;
+    
+    /**
+     * Temporary folder path for downloaded PDFs from Zotero
+     */
+    tempPdfPath: string;
 }
 
 export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
@@ -101,5 +116,9 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
     headerTemplate: '# {{pdflink}}{{^pdflink}}{{citekey}}{{/pdflink}}',
     chapterHeaderTemplate: '# {{pdflink}}{{^pdflink}}{{title}}{{/pdflink}} (in {{container-title}})',
     literatureNoteTag: 'literature_note',
-    openNoteOnCreate: true
+    openNoteOnCreate: true,
+    // Zotero Connector settings
+    enableZoteroConnector: false,
+    zoteroConnectorPort: 23119,
+    tempPdfPath: ''
 };

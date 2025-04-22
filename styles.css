@@ -252,3 +252,72 @@
   display: flex; /* Optional: Arrange buttons nicely */
   gap: 0.5rem; /* Optional: Add space between buttons */
 }
+
+/* Zotero Indicator Styles */
+.zotero-attachment-indicator {
+  margin-left: 8px;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-weight: 500;
+  display: inline-block;
+  vertical-align: middle;
+  cursor: help;
+  transition: background-color 0.2s ease;
+}
+
+.zotero-attachment-indicator:hover {
+  background-color: var(--interactive-accent-hover);
+}
+
+.zotero-attachment-note {
+  font-size: 12px;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Animation for Zotero elements - subtle fade in */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.zotero-attachment-indicator, 
+.zotero-attachment-note {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+/* Zotero Connector Settings */
+.setting-item-description h3 {
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.setting-item-description ol {
+  margin-top: 0.75em;
+  margin-bottom: 1.25em;
+  padding-left: 1.75em;
+  list-style-type: decimal;
+}
+
+.setting-item-description ol li {
+  margin-bottom: 0.75em;
+  line-height: 1.4;
+}
+
+.setting-item-description p {
+  margin-top: 0.75em;
+  margin-bottom: 0.75em;
+  line-height: 1.4;
+}
+
+.setting-item-description strong {
+  font-weight: 600;
+  color: var(--text-accent);
+}

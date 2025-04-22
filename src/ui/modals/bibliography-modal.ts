@@ -43,6 +43,9 @@ export class BibliographyModal extends Modal {
     
     // Attachment data in the new structure
     private attachmentData: AttachmentData = { type: AttachmentType.NONE };
+    
+    // Flag for whether the modal is initialized
+    private isInitialized: boolean = false;
 
     constructor(app: App, private settings: BibliographyPluginSettings) {
         super(app);
@@ -70,6 +73,84 @@ export class BibliographyModal extends Modal {
 
         // Create the main form
         this.createMainForm(contentEl);
+        
+        // Mark as initialized
+        this.isInitialized = true;
+    }
+    
+    /**
+     * Set the attachment data (for use by external callers)
+     */
+    public setAttachmentData(data: AttachmentData): void {
+        this.attachmentData = data;
+        
+        // Update the UI to reflect the attachment, if the form is initialized
+        if (this.isInitialized) {
+            // Find the attachment section heading
+            const headings = Array.from(this.contentEl.querySelectorAll('.setting-item-heading'));
+            const attachmentHeading = headings.find(h => h.textContent?.includes('Attachment'));
+            
+            if (attachmentHeading) {
+                // Find existing indicator and remove it if present
+                const existingIndicator = attachmentHeading.querySelector('.zotero-attachment-indicator');
+                if (existingIndicator) {
+                    existingIndicator.remove();
+                }
+                
+                // Create a visual indicator for Zotero attachment
+                const indicatorEl = document.createElement('span');
+                indicatorEl.className = 'zotero-attachment-indicator';
+                indicatorEl.textContent = 'From Zotero';
+                
+                // Add tooltip
+                indicatorEl.setAttribute('aria-label', 'This attachment was imported from Zotero');
+                
+                // Add to heading
+                attachmentHeading.appendChild(indicatorEl);
+            }
+            
+            // Find the attachment dropdown element
+            const attachmentSetting = this.contentEl.querySelectorAll('.setting').item(
+                Array.from(this.contentEl.querySelectorAll('.setting-item-heading'))
+                    .findIndex(h => h.textContent?.includes('Attachment')) + 1
+            );
+            
+            const attachmentDropdown = attachmentSetting?.querySelector('select') as HTMLSelectElement;
+            if (attachmentDropdown) {
+                // Set the dropdown value based on the attachment type
+                attachmentDropdown.value = data.type;
+                // Dispatch change event to trigger the UI update
+                attachmentDropdown.dispatchEvent(new Event('change'));
+                
+                // If we have file data, update the button text
+                if (data.type === AttachmentType.IMPORT && data.file) {
+                    const importButton = this.contentEl.querySelector('.setting-visible button') as HTMLButtonElement;
+                    if (importButton) {
+                        importButton.textContent = data.file.name;
+                        
+                        // Also add a note about Zotero source
+                        const container = importButton.closest('.setting-item-control');
+                        if (container) {
+                            // Check if there's already a note
+                            let noteEl = container.querySelector('.zotero-attachment-note');
+                            if (!noteEl) {
+                                const noteDiv = document.createElement('div');
+                                noteDiv.className = 'zotero-attachment-note';
+                                noteDiv.textContent = 'PDF imported from Zotero';
+                                container.appendChild(noteDiv);
+                            }
+                        }
+                    }
+                } else if (data.type === AttachmentType.LINK && data.path) {
+                    const linkButton = this.contentEl.querySelector('.setting-visible button') as HTMLButtonElement;
+                    if (linkButton) {
+                        // Extract just the filename from the path
+                        const fileName = data.path.split('/').pop() || data.path;
+                        linkButton.textContent = fileName;
+                    }
+                }
+            }
+        }
     }
 
     private createCitoidLookupSection(contentEl: HTMLElement) {
@@ -637,7 +718,19 @@ export class BibliographyModal extends Modal {
     /**
      * Populate form fields from Citoid API data (normalized CSL)
      */
-    private populateFormFromCitoid(normalizedData: any): void {
+    /**
+     * Populate form with normalized data (made public for external access)
+     * @param normalizedData CSL-JSON format data
+     */
+    public populateFormFromCitoid(normalizedData: any): void {
+        // Make sure the UI is initialized before attempting to populate
+        if (!this.isInitialized) {
+            console.warn('Form not initialized yet, setting up delayed population');
+            // If the form isn't initialized, set up a brief delay and retry
+            setTimeout(() => this.populateFormFromCitoid(normalizedData), 100);
+            return;
+        }
+        
         try {
             // Map common camelCase keys from Citoid/Citation.js into hyphen-case for form fields
             // (e.g., containerTitle -> container-title, publisherPlace -> publisher-place, titleShort -> title-short)
