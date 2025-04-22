@@ -47,12 +47,16 @@ export class BibliographyModal extends Modal {
     // Flag for whether the modal is initialized
     private isInitialized: boolean = false;
 
-    constructor(app: App, private settings: BibliographyPluginSettings) {
+    // Track how the modal was opened
+    private openedViaCommand: boolean = true;
+    
+    constructor(app: App, private settings: BibliographyPluginSettings, openedViaCommand: boolean = true) {
         super(app);
         // Initialize services with fixed BibTeX endpoint
         this.citoidService = new CitoidService();
         this.citationService = new CitationService();
         this.fileManager = new FileManager(app, settings);
+        this.openedViaCommand = openedViaCommand;
     }
 
     onOpen() {
@@ -86,6 +90,23 @@ export class BibliographyModal extends Modal {
         
         // Update the UI to reflect the attachment, if the form is initialized
         if (this.isInitialized) {
+            // If this is Zotero data, also collapse the auto-fill section
+            if (data.type === AttachmentType.IMPORT) {
+                const citoidContainer = this.contentEl.querySelector('.bibliography-citoid-container');
+                if (citoidContainer) {
+                    citoidContainer.addClass('collapsed');
+                    
+                    // Add a notice next to the toggle if not already there
+                    const toggle = citoidContainer.querySelector('.bibliography-citoid-toggle');
+                    if (toggle && !toggle.querySelector('.bibliography-zotero-notice')) {
+                        const noticeEl = document.createElement('span');
+                        noticeEl.className = 'bibliography-zotero-notice';
+                        noticeEl.textContent = 'Zotero data loaded - auto-fill section collapsed';
+                        toggle.appendChild(noticeEl);
+                    }
+                }
+            }
+            
             // Find the attachment section heading
             const headings = Array.from(this.contentEl.querySelectorAll('.setting-item-heading'));
             const attachmentHeading = headings.find(h => h.textContent?.includes('Attachment'));
@@ -155,10 +176,43 @@ export class BibliographyModal extends Modal {
 
     private createCitoidLookupSection(contentEl: HTMLElement) {
         const citoidContainer = contentEl.createDiv({ cls: 'bibliography-citoid-container' });
-        citoidContainer.createEl('h3', { text: 'Auto-fill' });
-        citoidContainer.createEl('h4', { text: 'From DOI, URL, or ISBN' });
         
-        const citoidInputContainer = citoidContainer.createDiv({ cls: 'bibliography-citoid-input-container' });
+        // Create collapsible header
+        const toggleHeader = citoidContainer.createDiv({ cls: 'bibliography-citoid-toggle' });
+        toggleHeader.createEl('h3', { text: 'Auto-fill' });
+        const toggleIcon = toggleHeader.createSpan({ cls: 'bibliography-citoid-toggle-icon', text: '▼' });
+        
+        // Determine if the section should be collapsed:
+        // 1. If we have Zotero attachment data, always collapse and show a notice
+        // 2. If opened via command, expand by default
+        // 3. Otherwise, collapse by default
+        if (this.attachmentData && this.attachmentData.type === AttachmentType.IMPORT) {
+            toggleHeader.createSpan({
+                cls: 'bibliography-zotero-notice',
+                text: 'Zotero data loaded - auto-fill section collapsed'
+            });
+            citoidContainer.addClass('collapsed');
+        } else if (!this.openedViaCommand) {
+            // Collapse by default if not opened via command
+            citoidContainer.addClass('collapsed');
+        }
+        // When opened via command, leave expanded (default state)
+        
+        // Add click handler for collapsible section
+        toggleHeader.addEventListener('click', () => {
+            if (citoidContainer.hasClass('collapsed')) {
+                citoidContainer.removeClass('collapsed');
+            } else {
+                citoidContainer.addClass('collapsed');
+            }
+        });
+        
+        // Create content container for collapsible section
+        const citoidContent = citoidContainer.createDiv({ cls: 'bibliography-citoid-content' });
+        
+        citoidContent.createEl('h4', { text: 'From DOI, URL, or ISBN' });
+        
+        const citoidInputContainer = citoidContent.createDiv({ cls: 'bibliography-citoid-input-container' });
         const citoidInput = citoidInputContainer.createEl('input', { 
             type: 'text', 
             placeholder: 'Enter DOI, URL, or ISBN',
@@ -199,8 +253,8 @@ export class BibliographyModal extends Modal {
         };
 
         // Add BibTeX paste section
-        citoidContainer.createEl('h4', { text: 'From BibTeX' });
-        const bibtexContainer = citoidContainer.createDiv({ cls: 'bibliography-bibtex-container' });
+        citoidContent.createEl('h4', { text: 'From BibTeX' });
+        const bibtexContainer = citoidContent.createDiv({ cls: 'bibliography-bibtex-container' });
         
         const bibtexInput = bibtexContainer.createEl('textarea', {
             placeholder: 'Paste BibTeX entry here...',

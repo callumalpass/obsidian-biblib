@@ -28,7 +28,7 @@ export default class BibliographyPlugin extends Plugin {
             id: 'create-literature-note',
             name: 'Create literature note',
             callback: () => {
-                new BibliographyModal(this.app, this.settings).open();
+                new BibliographyModal(this.app, this.settings, true).open();
             },
         });
         
@@ -225,7 +225,8 @@ export default class BibliographyPlugin extends Plugin {
             }
             
             // Open bibliography modal with pre-filled data
-            const modal = new BibliographyModal(this.app, this.settings);
+            // Set openedViaCommand to false since this is opened via Zotero
+            const modal = new BibliographyModal(this.app, this.settings, false);
             modal.open();
             
             // We need to wait a bit for the modal to initialize

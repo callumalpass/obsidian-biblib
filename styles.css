@@ -24,6 +24,48 @@
   padding: 16px;
   border-radius: 8px;
   margin-bottom: 24px;
+  transition: all 0.3s ease;
+}
+
+.bibliography-citoid-container.collapsed {
+  padding-top: 0px;
+  padding-bottom: 0px;
+  overflow: hidden;
+}
+
+.bibliography-citoid-toggle {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  margin-bottom: 10px;
+}
+
+.bibliography-citoid-toggle:hover {
+  color: var(--text-accent);
+}
+
+.bibliography-citoid-toggle-icon {
+  transition: transform 0.3s ease;
+}
+
+.bibliography-citoid-container.collapsed .bibliography-citoid-toggle-icon {
+  transform: rotate(-90deg);
+}
+
+.bibliography-citoid-content {
+  opacity: 1;
+  max-height: 1000px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.bibliography-citoid-container.collapsed .bibliography-citoid-content {
+  opacity: 0;
+  max-height: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .bibliography-citoid-input-container,
@@ -46,6 +88,15 @@
   padding: 10px;
   font-size: 0.9em;
   line-height: 1.4;
+}
+
+.bibliography-zotero-notice {
+  font-size: 0.85em;
+  color: var(--text-accent);
+  font-style: italic;
+  margin-left: 10px;
+  padding-left: 5px;
+  border-left: 2px solid var(--interactive-accent);
 }
 /* Settings Container */
 .bibliography-modal .setting-item {
