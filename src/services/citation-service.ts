@@ -37,7 +37,14 @@ export class CitationService {
             });
             const data = JSON.parse(jsonString);
             // Citoid returns a single entry
-            return Array.isArray(data) ? data[0] : data;
+            const entry = Array.isArray(data) ? data[0] : data;
+            
+            // If the entry has no ID or we don't want to use external IDs, generate a citekey
+            if (!entry.id || !this.citekeyOptions.useZoteroKeys) {
+                entry.id = CitekeyGenerator.generate(entry, this.citekeyOptions);
+            }
+            
+            return entry;
         } catch (e) {
             console.error('Error fetching/parsing BibTeX from Citoid:', e);
             new Notice('Error fetching citation data. Please check the identifier and try again.');
@@ -58,8 +65,15 @@ export class CitationService {
                 type: 'string',
             });
             const data = JSON.parse(jsonString);
-            // Return first entry if it's an array
-            return Array.isArray(data) ? data[0] : data;
+            // Get the first entry if it's an array
+            const entry = Array.isArray(data) ? data[0] : data;
+            
+            // If the entry has no ID or we don't want to use Zotero keys, generate a citekey
+            if (!entry.id || !this.citekeyOptions.useZoteroKeys) {
+                entry.id = CitekeyGenerator.generate(entry, this.citekeyOptions);
+            }
+            
+            return entry;
         } catch (e) {
             console.error('Error parsing BibTeX:', e);
             new Notice('Error parsing BibTeX. Please check the format and try again.');
@@ -127,7 +141,8 @@ export class CitationService {
     private mapZoteroToCsl(item: any): any {
         // Basic CSL structure
         const csl: any = {
-            id: item.key || this.generateCiteKey(item),
+            // Use item.key (Zotero key) only if useZoteroKeys is true in settings
+            id: (item.key && this.citekeyOptions.useZoteroKeys) ? item.key : this.generateCiteKey(item),
             type: this.mapItemType(item.itemType),
         };
         

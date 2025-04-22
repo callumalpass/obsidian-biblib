@@ -69,9 +69,12 @@ export class BibliographyModal extends Modal {
         // Add Citoid lookup fields
         this.createCitoidLookupSection(contentEl);
         
+        
+        this.createAttachmentSection(contentEl);
+
         // Add horizontal separator
         contentEl.createEl('hr');
-        
+
         // Add section title
         contentEl.createEl('h3', { text: 'Entry details' });
 
@@ -124,7 +127,7 @@ export class BibliographyModal extends Modal {
                 indicatorEl.textContent = 'From Zotero Connector';
                 
                 // Add tooltip
-                indicatorEl.setAttribute('aria-label', 'This attachment was imported from Zotero Connector');
+                indicatorEl.setAttribute('aria-label', 'An attachment has been imported from Zotero Connector');
                 
                 // Add to heading
                 attachmentHeading.appendChild(indicatorEl);
@@ -294,6 +297,127 @@ export class BibliographyModal extends Modal {
             }
         };
     }
+
+    private createAttachmentSection(contentEl: HTMLElement) {
+
+        // --- Attachment Section --- 
+        new Setting(contentEl).setName('Attachment').setHeading();
+
+        const attachmentSection = new Setting(contentEl)
+            // .setName('Attachment') // Name moved to heading
+            .setDesc('Choose how to handle the attachment');
+            
+        // Create import button setting (hidden initially)
+        const importSetting = new Setting(contentEl)
+            .setName('Select File to Import')
+            .addButton(button => {
+                button.setButtonText('Choose File').onClick(async () => {
+                    const fileInput = document.createElement('input');
+                    fileInput.type = 'file';
+                    fileInput.accept = '.pdf, .epub'; // Accept common formats
+                    fileInput.onchange = () => {
+                        if (fileInput.files && fileInput.files.length > 0) {
+                            this.attachmentData = {
+                                type: AttachmentType.IMPORT,
+                                file: fileInput.files[0],
+                                filename: fileInput.files[0].name
+                            };
+                            // Use || '' as fallback for potentially undefined filename
+                            button.setButtonText(this.attachmentData.filename || 'Choose File'); 
+                        }
+                    };
+                    fileInput.click();
+                });
+            });
+            
+
+        // Define file suggester class
+        class FileSuggestModal extends FuzzySuggestModal<TFile> {
+            private files: TFile[];
+            private callback: (file: TFile) => void;
+
+            constructor(app: App, callback: (file: TFile) => void) {
+                super(app);
+                this.files = this.app.vault.getFiles();
+                this.callback = callback;
+                this.setPlaceholder("Select a file from your vault");
+            }
+
+            getItems(): TFile[] {
+                return this.files;
+            }
+
+            getItemText(file: TFile): string {
+                return file.path;
+            }
+
+            onChooseItem(file: TFile): void {
+                this.callback(file);
+            }
+        }
+        
+        // Create link button setting (hidden initially)
+        const linkSetting = new Setting(contentEl)
+            .setName('Link to Existing File')
+            .addButton(button => {
+                button.setButtonText('Select File').onClick(() => {
+                    new FileSuggestModal(this.app, (file) => {
+                        this.attachmentData = {
+                            type: AttachmentType.LINK,
+                            path: file.path,
+                            filename: file.name
+                        };
+                        button.setButtonText(file.name || 'Select File');
+                    }).open();
+                });
+            });
+
+            
+        // Initially hide both buttons from DOM
+        importSetting.settingEl.addClass('setting-hidden');
+        linkSetting.settingEl.addClass('setting-hidden');
+        // Add them to the DOM but hidden
+        attachmentSection.settingEl.insertAdjacentElement('afterend', importSetting.settingEl);
+        attachmentSection.settingEl.insertAdjacentElement('afterend', linkSetting.settingEl);
+        
+        // Add dropdown for attachment type
+        attachmentSection.addDropdown(dropdown => {
+            dropdown.addOptions({
+                'none': 'No Attachment',
+                'import': 'Import File (Copy to biblib folder)',
+                'link': 'Link to Existing File'
+            });
+            dropdown.onChange(value => {
+                // Update attachment data type
+                this.attachmentData.type = value as AttachmentType;
+                this.attachmentData.file = undefined; // Clear file/path when type changes
+                this.attachmentData.path = undefined;
+                
+                // Show/hide appropriate button setting
+                if (value === 'import') {
+                    importSetting.settingEl.removeClass('setting-hidden');
+                    importSetting.settingEl.addClass('setting-visible');
+                    linkSetting.settingEl.removeClass('setting-visible');
+                    linkSetting.settingEl.addClass('setting-hidden');
+                } else if (value === 'link') {
+                    linkSetting.settingEl.removeClass('setting-hidden');
+                    linkSetting.settingEl.addClass('setting-visible');
+                    importSetting.settingEl.removeClass('setting-visible');
+                    importSetting.settingEl.addClass('setting-hidden');
+                } else {
+                    importSetting.settingEl.removeClass('setting-visible');
+                    importSetting.settingEl.addClass('setting-hidden');
+                    linkSetting.settingEl.removeClass('setting-visible');
+                    linkSetting.settingEl.addClass('setting-hidden');
+                }
+                
+                // Reset button texts if needed (Cast to ButtonComponent)
+                (importSetting.components[0] as ButtonComponent).setButtonText('Choose File'); 
+                (linkSetting.components[0] as ButtonComponent).setButtonText('Select File');
+            });
+        });
+
+	}
 
     private createMainForm(contentEl: HTMLElement) {
         // Citekey input (required)
@@ -583,122 +707,6 @@ export class BibliographyModal extends Modal {
             this.addAdditionalField('standard', '', '');
         };
 
-        // --- Attachment Section --- 
-        new Setting(contentEl).setName('Attachment').setHeading();
-
-        const attachmentSection = new Setting(contentEl)
-            // .setName('Attachment') // Name moved to heading
-            .setDesc('Choose how to handle the attachment');
-            
-        // Create import button setting (hidden initially)
-        const importSetting = new Setting(contentEl)
-            .setName('Select File to Import')
-            .addButton(button => {
-                button.setButtonText('Choose File').onClick(async () => {
-                    const fileInput = document.createElement('input');
-                    fileInput.type = 'file';
-                    fileInput.accept = '.pdf, .epub'; // Accept common formats
-                    fileInput.onchange = () => {
-                        if (fileInput.files && fileInput.files.length > 0) {
-                            this.attachmentData = {
-                                type: AttachmentType.IMPORT,
-                                file: fileInput.files[0],
-                                filename: fileInput.files[0].name
-                            };
-                            // Use || '' as fallback for potentially undefined filename
-                            button.setButtonText(this.attachmentData.filename || 'Choose File'); 
-                        }
-                    };
-                    fileInput.click();
-                });
-            });
-            
-
-        // Define file suggester class
-        class FileSuggestModal extends FuzzySuggestModal<TFile> {
-            private files: TFile[];
-            private callback: (file: TFile) => void;
-
-            constructor(app: App, callback: (file: TFile) => void) {
-                super(app);
-                this.files = this.app.vault.getFiles();
-                this.callback = callback;
-                this.setPlaceholder("Select a file from your vault");
-            }
-
-            getItems(): TFile[] {
-                return this.files;
-            }
-
-            getItemText(file: TFile): string {
-                return file.path;
-            }
-
-            onChooseItem(file: TFile): void {
-                this.callback(file);
-            }
-        }
-        
-        // Create link button setting (hidden initially)
-        const linkSetting = new Setting(contentEl)
-            .setName('Link to Existing File')
-            .addButton(button => {
-                button.setButtonText('Select File').onClick(() => {
-                    new FileSuggestModal(this.app, (file) => {
-                        this.attachmentData = {
-                            type: AttachmentType.LINK,
-                            path: file.path,
-                            filename: file.name
-                        };
-                        button.setButtonText(file.name || 'Select File');
-                    }).open();
-                });
-            });
-
-            
-        // Initially hide both buttons from DOM
-        importSetting.settingEl.addClass('setting-hidden');
-        linkSetting.settingEl.addClass('setting-hidden');
-        // Add them to the DOM but hidden
-        attachmentSection.settingEl.insertAdjacentElement('afterend', importSetting.settingEl);
-        attachmentSection.settingEl.insertAdjacentElement('afterend', linkSetting.settingEl);
-        
-        // Add dropdown for attachment type
-        attachmentSection.addDropdown(dropdown => {
-            dropdown.addOptions({
-                'none': 'No Attachment',
-                'import': 'Import File (Copy to biblib folder)',
-                'link': 'Link to Existing File'
-            });
-            dropdown.onChange(value => {
-                // Update attachment data type
-                this.attachmentData.type = value as AttachmentType;
-                this.attachmentData.file = undefined; // Clear file/path when type changes
-                this.attachmentData.path = undefined;
-                
-                // Show/hide appropriate button setting
-                if (value === 'import') {
-                    importSetting.settingEl.removeClass('setting-hidden');
-                    importSetting.settingEl.addClass('setting-visible');
-                    linkSetting.settingEl.removeClass('setting-visible');
-                    linkSetting.settingEl.addClass('setting-hidden');
-                } else if (value === 'link') {
-                    linkSetting.settingEl.removeClass('setting-hidden');
-                    linkSetting.settingEl.addClass('setting-visible');
-                    importSetting.settingEl.removeClass('setting-visible');
-                    importSetting.settingEl.addClass('setting-hidden');
-                } else {
-                    importSetting.settingEl.removeClass('setting-visible');
-                    importSetting.settingEl.addClass('setting-hidden');
-                    linkSetting.settingEl.removeClass('setting-visible');
-                    linkSetting.settingEl.addClass('setting-hidden');
-                }
-                
-                // Reset button texts if needed (Cast to ButtonComponent)
-                (importSetting.components[0] as ButtonComponent).setButtonText('Choose File'); 
-                (linkSetting.components[0] as ButtonComponent).setButtonText('Select File');
-            });
-        });
 
         // --- Submit Button --- 
         const finalButtonContainer = contentEl.createDiv({cls: 'bibliography-submit-container'});

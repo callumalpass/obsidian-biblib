@@ -119,8 +119,8 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         bibliographyJsonPath: 'biblib/bibliography.json',
         citekeyListPath: 'citekeylist.md',
         bibtexFilePath: 'biblib/bibliography.bib',
-        headerTemplate: '# [[{{pdflink}}|{{citekey}}]]{{^pdflink}}{{citekey}}{{/pdflink}}',
-        chapterHeaderTemplate: '# [[{{pdflink}}|{{citekey}}]]{{^pdflink}}{{citekey}}{{/pdflink}} (in {{container-title}})',
+        headerTemplate: '# [[{{^pdflink}}@{{citekey}}{{/pdflink}}|{{citekey}}]]',
+        chapterHeaderTemplate: '# [[{{^pdflink}}@{{citekey}}{{/pdflink}}|{{citekey}}]] (in {{container-title}})',
         literatureNoteTag: 'literature_note',
         openNoteOnCreate: true,
         enableZoteroConnector: false,
@@ -129,7 +129,7 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         // Default citekey options
         citekeyOptions: {
                 citekeyTemplate: '', // Default to empty string, signifying use of legacy options below
-                useZoteroKeys: true,
+                useZoteroKeys: false,
                 authorAbbreviationStyle: 'full',
                 includeMultipleAuthors: false,
                 maxAuthors: 3,
