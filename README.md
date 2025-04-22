@@ -4,23 +4,29 @@
 > This plugin is awaiting approval by the Obsidian team, so currently 
 > must be installed manually, or by using BRAT. 
 
-BibLib is a streamlined approach to academic reference management that leverages Obsidian's core strengths: plain text, interlinked notes, and powerful metadata. Unlike plugins that focus on Zotero integration, BibLib enables you to manage your entire reference library directly within Obsidian, eliminating synchronization complexities and giving you a fully integrated knowledge system.
+BibLib is a streamlined approach to academic reference management that leverages Obsidian's core strengths: plain text, interlinked notes, and powerful metadata. BibLib enables you to manage your entire reference library directly within Obsidian, providing a fully integrated knowledge system. With the new Zotero Connector integration, you can now capture citations and PDFsinto Obsidian directly from your browser with a single click, combining the best of both worlds: Zotero's powerful web capture with Obsidian's knowledge management capabilities.
 
 ![Screenshot of biblib Obsidian plugin](https://github.com/callumalpass/obsidian-biblib/blob/main/screenshots/create-lit-note.gif?raw=true)
 
 ## Why BibLib?
 
-Most reference management solutions for Obsidian focus on integrating with external tools like Zotero. This often works well, but can sometimes introduce complexity through managing synchronization processes, dealing with different data formats, and working across two distinct applications.
+BibLib provides a unique approach to reference management by letting you maintain your bibliography natively within Obsidian's ecosystem. While it now includes Zotero Connector integration for easy web capture, it doesn't require you to maintain a separate Zotero database or deal with complex synchronization processes.
 
-BibLib helps to implement alternative approach by managing reference information directly within Obsidian. The idea is to treat bibliographic entries fundamentally like any other note in your vault.
+With BibLib, you get the best of both worlds:
+- **Zotero's powerful web capture** - use the Zotero browser extension to grab citations and PDFs with one click
+- **Native Obsidian storage** - all data stays in your vault as markdown notes with structured YAML frontmatter
+- **No external dependencies** - no need to run Zotero alongside Obsidian or manage synchronization
+
+The core idea is simple: treat bibliographic entries fundamentally like any other note in your vault.
 
 Here's how this workflow functions:
 
+- **Browser to Obsidian in One Click**: With the Zotero Connector integration, capture citations and PDFs directly from your browser with a single click - no need to manually copy DOIs or download PDFs separately.
 - **References as Markdown Notes**: Each reference (article, book, chapter, etc.) is stored as a standard .md file. The **bibliographic data is contained within YAML front matter, structured to be compatible with the CSL-JSON standard commonly used by citation tools.**
 - **Direct Linking within Your Vault**: Because references are just notes, you can link to them (and from them) using standard Obsidian [[wiki links]]. This allows you to connect your ideas, meeting notes, or project plans directly to the relevant source material within the same system.
 - **Plain Text Simplicity and Durability**: Using markdown and YAML means your reference data is stored in open, human-readable formats. This makes your library easily portable, searchable with standard text tools, manageable with version control (like Git), and less dependent on the future of any single piece of software.
 - **Utilizing Obsidian's Tools**: Obsidian's built-in features like search, backlinks, tags, and graph view work directly on your reference notes. You can also use community plugins, such as Dataview, to query and organize your reference data in flexible ways (e.g., listing papers by author, year, or tag).
-- **Simplified Reference Entry**: To ease the process of adding new references, BibLib fetches BibTeX from the Citoid API (using DOIs, URLs, or ISBNs) and uses Citation.js to parse it into true CSL-JSON.
+- **Simplified Reference Entry**: To ease the process of adding new references, BibLib fetches BibTeX from the Citoid API (using DOIs, URLs, or ISBNs) and uses Citation.js to parse it into true CSL-JSON, or captures data directly from your browser via the Zotero Connector.
 - **Connecting Notes to Source Texts**: The workflow integrates with Obsidian's handling of PDFs. You can link directly from a line in your notes to a specific page and location within a PDF attached to a reference note, keeping your arguments closely tied to the source text.
 - **Preparing for Publication**: Since the YAML frontmatter is CSL-compatible, BibLib can generate a bibliography.json file from your notes (if you decide you don't like *this* plugin, it is also trivial to write your own script to convert the YAML frontmatter to a CSL file). This file can then be used directly with tools like Pandoc to create formatted citations and bibliographies in your final documents, avoiding manual export steps from external managers.
 
@@ -40,6 +46,8 @@ This approach has proven effective for my personal academic workflow for several
 - Automatic creation of contributor links
 - Auto-fill citation data using DOI, URL, or ISBN via Citoid API
  - Citation.js parsing of BibTeX into CSL-JSON for seamless DOI, URL, and ISBN support
+- **Zotero Connector integration** - capture citations and PDFs directly from your browser with one click
+- Automatic PDF download and attachment from supported sites
 - Build bibliography files from your literature notes
 
 > [!NOTE]
@@ -96,6 +104,30 @@ This approach has proven effective for my personal academic workflow for several
 4. These files can be used with external tools or referenced in your notes
 5. To export a unified BibTeX file from all your literature notes, open the command palette and select "Export Bibliography as BibTeX" (path configurable in Settings).
 
+### Using the Zotero Connector (Desktop Only)
+
+BibLib now includes direct integration with the Zotero Connector browser extension, allowing you to capture citations and PDFs with a single click:
+
+1. In BibLib settings, enable the "Zotero Connector Server" option
+2. Install the [Zotero Connector](https://www.zotero.org/download/connectors) extension for your browser
+3. Make sure Zotero desktop application is **NOT running** (it uses the same port by default)
+4. When browsing a site with scholarly content:
+   - Simply click the Zotero button in your browser toolbar
+   - The connector will automatically detect and send data to BibLib
+5. BibLib will:
+   - Automatically open the bibliography modal with pre-filled citation data
+   - Download and attach PDFs when available from supported sites (like arXiv, publisher sites, etc.)
+   - Allow you to customize the citekey before saving
+   - Create a properly formatted literature note with all metadata
+
+> [!NOTE]
+> The Zotero Connector feature is only available on desktop versions of Obsidian due to platform limitations on mobile devices.
+>
+> **Advanced usage:** If you want to use both Zotero desktop and BibLib simultaneously, you'll need to:
+> 1. Change the port in BibLib settings to something different (e.g., 23118)
+> 2. Hold Shift when clicking the Zotero button to manually select server
+> 3. Enter the custom address (e.g., `http://127.0.0.1:23118`)
+
 ### Working with PDF Annotations
 
 BibLib integrates with Obsidian's native PDF capabilities, creating a workflow for academic reading and citation:
@@ -149,6 +181,12 @@ This workflow keeps your references, PDFs, and annotations all within the same s
 - **Bibliography JSON path**: Where to save the bibliography.json file
 - **Citekey list path**: Where to save the citekeylist.md file
 - **BibTeX file path**: Where to save the exported BibTeX file
+
+### Zotero Connector Server (Desktop Only)
+
+- **Enable Connector Server**: Start a local server to intercept Zotero connector browser requests
+- **Connector Server Port**: The port to run the Zotero connector server on (default: 23119, same as Zotero)
+- **Temporary PDF folder**: The folder where temporary PDFs from the connector will be stored
 
 
 ## Upcoming Features

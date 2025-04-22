@@ -186,7 +186,6 @@ export default class BibliographyPlugin extends Plugin {
         
         // Check if we're already processing an item to prevent duplicates
         if (this.processingItem) {
-            console.log('Already processing an item, ignoring new event');
             return;
         }
         
@@ -221,7 +220,7 @@ export default class BibliographyPlugin extends Plugin {
                         file: file,
                         filename: fileName
                     };
-                    console.log(`Prepared attachment data for ${fileName}`);
+                    // Attachment data prepared
                 }
             }
             
@@ -231,11 +230,11 @@ export default class BibliographyPlugin extends Plugin {
             
             // We need to wait a bit for the modal to initialize
             setTimeout(() => {
-                // Double check that we have required fields (for debugging)
+                // Double check that we have required fields 
                 const expectedFields = ['title', 'author', 'type', 'issued'];
                 const missingFields = expectedFields.filter(field => !cslData[field]);
                 if (missingFields.length > 0) {
-                    console.warn(`Missing expected fields in CSL data: ${missingFields.join(', ')}`);
+                    // Silent validation - no need to log warnings
                 }
                 
                 modal.populateFormFromCitoid(cslData);

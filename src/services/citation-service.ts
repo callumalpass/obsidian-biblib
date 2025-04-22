@@ -68,15 +68,10 @@ export class CitationService {
      * @param zoteroData Zotero JSON data
      */
     parseZoteroItem(zoteroData: any): any {
-        // Log the received data for debugging
-        console.log('Received Zotero data:', JSON.stringify(zoteroData, null, 2));
-        
-        // Looking at the logs, we see that Citation.js is not properly converting 
-        // all the fields we need, so let's use our direct mapping approach first
+        // Use direct mapping approach first - most reliable for Zotero data
         try {
             // Map the data directly to CSL format using our custom mapper
             const mappedData = this.mapZoteroToCsl(zoteroData);
-            console.log('Mapped Zotero data to CSL (direct):', JSON.stringify(mappedData, null, 2));
             return mappedData;
         } catch (directMapError) {
             console.error('Error in direct mapping of Zotero data:', directMapError);
@@ -108,10 +103,8 @@ export class CitationService {
                         abstract: result.abstract || mappedBackup.abstract
                     };
                     
-                    console.log('Augmented Citation.js result:', JSON.stringify(augmentedResult, null, 2));
                     return augmentedResult;
                 } catch (augmentError) {
-                    console.log('Could not augment Citation.js result:', augmentError.message);
                     return result; // Return the Citation.js result anyway
                 }
             } catch (citeError) {

@@ -52,7 +52,6 @@ export class ConnectorServer {
         
         return new Promise((resolve, reject) => {
             this.server?.listen(port, () => {
-                console.log(`Zotero Connector server listening on port ${port}`);
                 new Notice(`Zotero Connector server started on port ${port}`);
                 resolve();
             });
@@ -72,7 +71,6 @@ export class ConnectorServer {
         if (this.server) {
             this.server.close();
             this.server = null;
-            console.log('Zotero Connector server stopped');
             new Notice('Zotero Connector server stopped');
         }
     }
@@ -178,18 +176,7 @@ export class ConnectorServer {
         try {
             data = JSON.parse(body);
             
-            // Log the received data for debugging (without attachments to keep it clean)
-            const debugData = { ...data };
-            if (debugData.items && Array.isArray(debugData.items)) {
-                debugData.items = debugData.items.map((item: any) => {
-                    const itemCopy = { ...item };
-                    if (itemCopy.attachments) {
-                        itemCopy.attachments = `[${itemCopy.attachments.length} attachments]`;
-                    }
-                    return itemCopy;
-                });
-            }
-            console.log('Received data from Zotero Connector:', JSON.stringify(debugData, null, 2));
+            // Process received data from Zotero Connector
             
         } catch (error) {
             res.statusCode = 400;
@@ -211,9 +198,7 @@ export class ConnectorServer {
             // Download attachments if present
             let downloadedFiles: string[] = [];
             if (item.attachments && Array.isArray(item.attachments)) {
-                console.log(`Processing ${item.attachments.length} attachment(s)`);
                 downloadedFiles = await this.downloadAttachments(item.attachments);
-                console.log(`Downloaded ${downloadedFiles.length} file(s):`, downloadedFiles);
             }
             
             // Respond with success
@@ -255,7 +240,7 @@ export class ConnectorServer {
                     await this.downloadFile(attachment.url, filePath);
                     downloadedFiles.push(filePath);
                     
-                    console.log(`Downloaded attachment: ${attachment.title || 'Unnamed'} to ${filePath}`);
+                    // Attachment downloaded successfully
                 } catch (error) {
                     console.error(`Failed to download attachment: ${error}`);
                 }
@@ -307,7 +292,6 @@ export class ConnectorServer {
         const itemKey = item.id || item.key || JSON.stringify(item);
         
         if (this.processedItems.has(itemKey)) {
-            console.log(`Item ${itemKey} already processed, skipping`);
             return;
         }
         
