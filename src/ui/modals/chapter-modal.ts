@@ -1,4 +1,4 @@
-import { App, Modal, Notice, Setting, TFile, ButtonComponent } from 'obsidian'; // Added ButtonComponent
+import { App, Modal, Notice, Setting, TFile, ButtonComponent, FuzzySuggestModal } from 'obsidian';
 import { BibliographyPluginSettings } from '../../types/settings';
 import { Contributor, AdditionalField, Citation, AttachmentData, AttachmentType } from '../../types/citation';
 import { ContributorField } from '../components/contributor-field';
@@ -313,13 +313,54 @@ export class ChapterModal extends Modal {
             });
         this.importSettingEl = importSetting.settingEl; // Store setting element
             
+        // Define file suggester class for better file selection
+        class FileSuggestModal extends FuzzySuggestModal<TFile> {
+            private files: TFile[];
+            private callback: (file: TFile) => void;
+            private suggestedPath?: string;
+
+            constructor(app: App, callback: (file: TFile) => void, suggestedPath?: string) {
+                super(app);
+                this.files = this.app.vault.getFiles();
+                this.callback = callback;
+                this.suggestedPath = suggestedPath;
+                this.setPlaceholder("Select a file from your vault");
+            }
+
+            getItems(): TFile[] {
+                return this.files;
+            }
+
+            getItemText(file: TFile): string {
+                return file.path;
+            }
+
+            onChooseItem(file: TFile): void {
+                this.callback(file);
+            }
+            
+            onOpen() {
+                super.onOpen();
+                // If there's a suggested path, try to highlight/select it
+                if (this.suggestedPath) {
+                    const suggestedFile = this.files.find(file => file.path === this.suggestedPath);
+                    if (suggestedFile) {
+                        // Set initial query to the filename to help find it
+                        const filename = suggestedFile.name;
+                        this.inputEl.value = filename;
+                        this.inputEl.dispatchEvent(new Event('input'));
+                    }
+                }
+            }
+        }
+        
         // Create link button setting (hidden initially)
         const linkSetting = new Setting(contentEl)
             .setName('Link to Existing File')
             .addButton(button => {
                 // Store the ButtonComponent instance
                 this.linkButtonComponent = button; 
-                button.setButtonText('Select File Path').onClick(async () => {
+                button.setButtonText('Select File').onClick(() => {
                     // Suggest book's attachment first if available
                     let suggestedPath = '';
                     if (this.selectedBook?.frontmatter?.attachment) {
@@ -331,56 +372,21 @@ export class ChapterModal extends Modal {
                          }
                     }
 
-                    // Create a temporary modal to get the file path
-                    const linkModal = new Modal(this.app);
-                    linkModal.contentEl.addClass('bibliography-link-modal');
-                    linkModal.titleEl.textContent = 'Enter Path to File';
-
-                    const form = linkModal.contentEl.createDiv();
-                    const filePathInput = form.createEl('input', { 
-                        type: 'text', 
-                        placeholder: 'Enter file path in vault'
-                    });
-                    filePathInput.addClass('link-path-input'); // Use CSS class
-                    if (suggestedPath) {
-                        filePathInput.value = suggestedPath;
-                        const suggestionEl = form.createDiv({ cls: 'setting-item-description' });
-                        suggestionEl.textContent = `Suggested path from book: ${suggestedPath}`;
-                    }
-                    
-                    const buttonContainer = linkModal.contentEl.createDiv();
-                    buttonContainer.addClass('link-button-container'); // Use CSS class
-                    
-                    const submitButton = buttonContainer.createEl('button', {
-                        text: 'Link File',
-                        cls: 'mod-cta'
-                    });
-                    submitButton.onclick = () => {
-                        const filePath = filePathInput.value.trim();
-                        if (filePath) {
+                    new FileSuggestModal(
+                        this.app, 
+                        (file) => {
                             this.attachmentData = {
                                 type: AttachmentType.LINK,
-                                path: filePath,
-                                filename: filePath.split('/').pop() || filePath
+                                path: file.path,
+                                filename: file.name
                             };
-                             // Use || '' fallback for potentially undefined filename
-                             // Use the stored ButtonComponent instance
-                            this.linkButtonComponent?.setButtonText(this.attachmentData.filename || 'Select File Path'); 
-                            this.filePathDisplay.textContent = `Linked to: ${filePath}`;
+                            this.linkButtonComponent?.setButtonText(file.name || 'Select File');
+                            this.filePathDisplay.textContent = `Linked to: ${file.path}`;
                             this.filePathDisplay.removeClass('setting-hidden');
                             this.filePathDisplay.addClass('setting-visible');
-                            linkModal.close();
-                        }
-                    };
-                    
-                    const cancelButton = buttonContainer.createEl('button', {
-                        text: 'Cancel'
-                    });
-                    cancelButton.onclick = () => {
-                        linkModal.close();
-                    };
-                    
-                    linkModal.open();
+                        },
+                        suggestedPath
+                    ).open();
                 });
             });
          this.linkSettingEl = linkSetting.settingEl; // Store setting element
@@ -418,7 +424,7 @@ export class ChapterModal extends Modal {
                 
                 // Reset button texts and file path display using stored components
                 this.importButtonComponent?.setButtonText('Choose File'); 
-                this.linkButtonComponent?.setButtonText('Select File Path');
+                this.linkButtonComponent?.setButtonText('Select File');
                 this.filePathDisplay.textContent = 'No file selected';
                 if (value === 'none') {
                     this.filePathDisplay.removeClass('setting-visible');
