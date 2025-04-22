@@ -74,7 +74,8 @@ export class BibliographyModal extends Modal {
 
     private createCitoidLookupSection(contentEl: HTMLElement) {
         const citoidContainer = contentEl.createDiv({ cls: 'bibliography-citoid-container' });
-        citoidContainer.createEl('h3', { text: 'Auto-fill from DOI, URL, or ISBN' });
+        citoidContainer.createEl('h3', { text: 'Auto-fill' });
+        citoidContainer.createEl('h4', { text: 'From DOI, URL, or ISBN' });
         
         const citoidInputContainer = citoidContainer.createDiv({ cls: 'bibliography-citoid-input-container' });
         const citoidInput = citoidInputContainer.createEl('input', { 
@@ -117,7 +118,7 @@ export class BibliographyModal extends Modal {
         };
 
         // Add BibTeX paste section
-        citoidContainer.createEl('h3', { text: 'Auto-fill from BibTeX' });
+        citoidContainer.createEl('h4', { text: 'From BibTeX' });
         const bibtexContainer = citoidContainer.createDiv({ cls: 'bibliography-bibtex-container' });
         
         const bibtexInput = bibtexContainer.createEl('textarea', {
