@@ -382,7 +382,7 @@
 .custom-frontmatter-field {
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
-  padding: 15px;
+  padding: 10px;
   margin-bottom: 15px;
   background-color: var(--background-secondary-alt);
   box-shadow: 0 2px 5px rgba(0,0,0,0.05);
@@ -396,12 +396,12 @@
 
 .custom-frontmatter-field .setting-item {
   border-top: none;
-  padding: 5px 0;
+  /* padding: px 0; */
 }
 
 .custom-frontmatter-field textarea {
   min-height: 80px;
-  resize: vertical;
+  /* resize: vertical; */
   font-family: var(--font-monospace);
   font-size: 0.9em;
   transition: background-color 0.2s ease;
