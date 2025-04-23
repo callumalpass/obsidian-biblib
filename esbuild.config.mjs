@@ -31,6 +31,7 @@ const context = await esbuild.context({
         "@lezer/common",
         "@lezer/highlight",
         "@lezer/lr",
+        "@citation-js/date",
         // Externalize all Node builtins except 'buffer' so Citation.js can bundle its buffer dependency
         ...builtins.filter(mod => mod !== 'buffer')
     ],
