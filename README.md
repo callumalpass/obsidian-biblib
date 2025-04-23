@@ -1,268 +1,204 @@
-# BibLib for Obsidian
+# **BibLib for Obsidian**
 
-> [!NOTE]
-> This plugin is awaiting approval by the Obsidian team, so currently 
-> must be installed manually, or by using BRAT. 
+> [!NOTE]  
+> This plugin is awaiting approval by the Obsidian team, so currently must be installed manually, or by using BRAT.
 
-BibLib is a streamlined approach to academic reference management that leverages Obsidian's core strengths: plain text, interlinked notes, and powerful metadata. BibLib enables you to manage your entire reference library directly within Obsidian, providing a fully integrated knowledge system. With the new Zotero Connector integration, you can now capture citations and PDFsinto Obsidian directly from your browser with a single click, combining the best of both worlds: Zotero's powerful web capture with Obsidian's knowledge management capabilities.
+BibLib offers **an approach to academic reference management focused on simplicity and robustness *natively within Obsidian***. It treats your references as standard Markdown notes within your vault, grounding your bibliography in the durable and open formats of **plain text, structured YAML, and the widely-supported Citation Style Language (CSL) standard**. This promotes long-term accessibility and interoperability.
+
+With BibLib, you manage your reference library directly alongside your notes, using Obsidian's linking, tagging, and querying capabilities. The **Zotero Connector integration** streamlines capture of web sources directly into Obsidian notes *without requiring the Zotero desktop application or database synchronization*.
+
+BibLib aims to provide an integrated knowledge system where your references are first-class citizens within your Obsidian vault.
+
 
 ![Screenshot of biblib Obsidian plugin](https://github.com/callumalpass/obsidian-biblib/blob/main/screenshots/create-lit-note.gif?raw=true)
 
-## Why BibLib?
+## **The BibLib Approach**
 
-BibLib provides a unique approach to reference management by letting you maintain your bibliography natively within Obsidian's ecosystem. While it now includes Zotero Connector integration for easy web capture, it doesn't require you to maintain a separate Zotero database or deal with complex synchronization processes.
+Traditional reference management often involves separate applications and synchronization. BibLib simplifies this by using Obsidian's core strengths and focusing on data robustness:
 
-With BibLib, you get the best of both worlds:
-- **Zotero's powerful web capture** - use the Zotero browser extension to grab citations and PDFs with one click
-- **Native Obsidian storage** - all data stays in your vault as markdown notes with structured YAML frontmatter
-- **No external dependencies** - no need to run Zotero alongside Obsidian or manage synchronization
+1. **Native Obsidian Storage:** Each reference (article, book, etc.) is a standard .md file. Bibliographic data resides within its YAML frontmatter, structured according to the CSL-JSON standard. Your references live *with* your notes.  
+2. **Plain Text Foundation:** Using Markdown and YAML means your library is inherently **robust, portable, and future-proof**. It's searchable, version-controllable (e.g., with Git), and not locked into a proprietary format.  
+3. **CSL Standard Compliance:** Storing metadata in a CSL-compatible structure offers key advantages. CSL is the **open standard** used by numerous academic tools. This ensures your data is **interoperable** (e.g., usable by Pandoc to create formatted citations/bibliographies) and remains **accessible** long-term.  
+4. **Direct Capture with Zotero Connector:** Use the Zotero browser extension to capture citation data and PDFs. BibLib intercepts this data and creates Obsidian notes directly, **bypassing the need for the Zotero application or a separate library sync**. This provides web capture feeding directly into your Obsidian-native system.  
+5. **Using Obsidian's Ecosystem:** Because references *are* notes, Obsidian's features work directly:  
+   * **Linking:** Use standard \[\[wiki links\]\] to connect ideas or project outlines to source materials.  
+   * **Discovery:** Utilize backlinks, tags, search, and graph view to explore connections.  
+   * **Querying:** Employ plugins like Dataview to create dynamic lists of your references.  
+6. **Integrated PDF Workflow:** Attach PDFs to reference notes. Link directly from annotations in your notes to specific locations within the source PDF using Obsidian's PDF viewer or tools like [PDF++](https://github.com/RyotaUshio/obsidian-pdf-plus).  
+7. **Direct Output:** BibLib can generate a bibliography.json (CSL-JSON) or a BibTeX file directly from your notes' frontmatter. This file is ready for use with tools like Pandoc, removing manual export steps.
 
-The core idea is simple: treat bibliographic entries fundamentally like any other note in your vault.
+This approach prioritizes **simplicity through integration** and **robustness through open standards and plain text**, creating an integrated research environment within Obsidian.
 
-Here's how this workflow functions:
+## **Features**
 
-- **Browser to Obsidian in One Click**: With the Zotero Connector integration, capture citations and PDFs directly from your browser with a single click - no need to manually copy DOIs or download PDFs separately.
-- **References as Markdown Notes**: Each reference (article, book, chapter, etc.) is stored as a standard .md file. The **bibliographic data is contained within YAML front matter, structured to be compatible with the CSL-JSON standard commonly used by citation tools.**
-- **Direct Linking within Your Vault**: Because references are just notes, you can link to them (and from them) using standard Obsidian [[wiki links]]. This allows you to connect your ideas, meeting notes, or project plans directly to the relevant source material within the same system.
-- **Plain Text Simplicity and Durability**: Using markdown and YAML means your reference data is stored in open, human-readable formats. This makes your library easily portable, searchable with standard text tools, manageable with version control (like Git), and less dependent on the future of any single piece of software.
-- **Utilizing Obsidian's Tools**: Obsidian's built-in features like search, backlinks, tags, and graph view work directly on your reference notes. You can also use community plugins, such as Dataview, to query and organize your reference data in flexible ways (e.g., listing papers by author, year, or tag).
-- **Simplified Reference Entry**: To ease the process of adding new references, BibLib fetches BibTeX from the Citoid API (using DOIs, URLs, or ISBNs) and uses Citation.js to parse it into true CSL-JSON, or captures data directly from your browser via the Zotero Connector.
-- **Connecting Notes to Source Texts**: The workflow integrates with Obsidian's handling of PDFs. You can link directly from a line in your notes to a specific page and location within a PDF attached to a reference note, keeping your arguments closely tied to the source text.
-- **Preparing for Publication**: Since the YAML frontmatter is CSL-compatible, BibLib can generate a bibliography.json file from your notes (if you decide you don't like *this* plugin, it is also trivial to write your own script to convert the YAML frontmatter to a CSL file). This file can then be used directly with tools like Pandoc to create formatted citations and bibliographies in your final documents, avoiding manual export steps from external managers.
+* **Native Reference Management:** Store and manage bibliographic data as Markdown notes within Obsidian.  
+* **Zotero Connector Integration:** Capture citations and PDFs directly from your browser into Obsidian notes (Desktop only).  
+  * *No need for Zotero desktop app or database sync.*  
+* **CSL-JSON Compatible Storage:** Bibliographic data stored in YAML frontmatter adheres to the CSL-JSON standard.  
+* **Flexible Templating System:** Customize note titles, file paths, citekey formats, YAML frontmatter fields, and note body content via templates.  
+* **Metadata Auto-Fetch:** Populate bibliographic data using DOI, URL, or ISBN via the Citoid API (parsing via Citation.js).  
+* **Supports Various Publication Types:** Handles articles, books, chapters, reports, etc.  
+* **Book Chapter Handling:** Create chapter entries that inherit data from parent book notes.  
+* **Contributor Management:** Add authors, editors, translators, etc., with appropriate roles.  
+* **PDF/EPUB Attachment Options:**  
+  * Import files (copy to vault).  
+  * Link to existing files within the vault.  
+  * Automatic PDF download via Zotero Connector where available.  
+* **Bibliography Generation:** Create bibliography.json (CSL-JSON) or export a .bib (BibTeX) file from notes for use with Pandoc or other tools.  
+* **YAML Array Support:** Formats YAML arrays (e.g., for authors, keywords) in frontmatter.
 
-This approach has proven effective for my personal academic workflow for several years, offering a good balance of simplicity and power. When combined with plugins like [PDF++](https://github.com/RyotaUshio/obsidian-pdf-plus), BibLib creates a comprehensive environment for managing both reference metadata and annotations in a unified, interlinked system.
+> [!IMPORTANT]  
+> Obsidian's built-in frontmatter parser currently only supports simple key-value pairs and cannot interpret nested structures (like CSL's author or issued fields). BibLib generates valid YAML and CSL-JSON, but you might see warnings in Obsidian's metadata panel for these nested fields. These warnings do not indicate an error with BibLib or your data; the nested data is stored correctly and usable by external tools like Pandoc. Obsidian simply cannot display or query these specific nested fields natively yet.
 
-## Features
+## **How to Use**
 
-- Create literature notes with complete bibliographic information
-- Support for various publication types (articles, books, chapters, etc.)
-- Create book chapter entries that inherit properties from their container book
-- Add and manage contributors with different roles (authors, editors, translators, etc.)
-- Link to PDF/EPUB attachments with flexible options:
-  - Import files (copy to bibliography folder)
-  - Link to existing files in your vault
-- Full support for Citation Style Language (CSL) fields
-- **Unified templating system** for consistent customization across:
-  - Header templates
-  - Custom frontmatter fields
-  - Citekey generation
-- **YAML array support** for proper frontmatter arrays
-- Customizable note prefixes and file locations
-- Auto-fill citation data using DOI, URL, or ISBN via Citoid API
- - Citation.js parsing of BibTeX into CSL-JSON for seamless DOI, URL, and ISBN support
-- **Zotero Connector integration** - capture citations and PDFs directly from your browser with one click
-- Automatic PDF download and attachment from supported sites
-- Build bibliography files from your literature notes
+### **Creating Literature Notes**
 
-> [!NOTE]
-> Obsidian's frontmatter parser only supports simple key-value pairs and does not handle nested objects in YAML. When using this plugin, you may see warnings in Obsidian for certain fields that BibLib generates (particularly the `authors` and `issued` fields). 
-> 
-> Please note that these warnings do not indicate a problem - the YAML generated by BibLib is completely valid and can be properly converted to CSL-JSON for use with tools like Pandoc. Obsidian simply cannot display or utilize the nested structure of these fields in its metadata views.
+1. Open the command palette and select "BibLib: Create Literature Note".  
+2. Enter the bibliographic information in the modal:  
+   * **Auto-fill option**: Enter a DOI, URL, or ISBN and click "Lookup" to attempt to automatically fill the form using the Citoid API.  
+   * Required fields: Citekey, Type, Title, Year (though requirements may vary slightly by Type).  
+   * Optional fields depend on the publication type selected.  
+3. Add contributors (authors, editors, etc.) using the dedicated section.  
+4. Choose an attachment option:  
+   * **No attachment**: No file will be linked or imported.  
+   * **Import file**: Copies a selected PDF/EPUB to your configured attachment folder (potentially in a subfolder).  
+   * **Link to existing file**: Creates a link to a file already present in your vault.  
+5. Click "Create Note" to generate the formatted literature note based on your templates and settings.
 
-## How to Use
+### **Creating Book Chapter Entries**
 
-### Creating Literature Notes
+1. There are two ways to initiate creating a chapter entry:  
+   * Open the command palette and select "BibLib: Create Book Chapter Entry".  
+   * While viewing an existing book-type literature note, open the command palette and select "BibLib: Create Chapter From Current Book".  
+2. Enter the chapter-specific information:  
+   * Required fields: Citekey, Title, Container Book (select from existing book notes), Year.  
+3. When you select a container book from the dropdown (which lists notes of type 'book' or 'bookSection'), relevant information is automatically inherited and displayed:  
+   * Publisher and publisher place.  
+   * Book editors (mapped as container-author in CSL).  
+   * Publication year.  
+   * The book's attachment (offered as a "link to existing file" option).  
+4. Add chapter-specific details:  
+   * Chapter author(s).  
+   * Page range (page field).  
+   * Any other chapter-specific metadata.  
+5. Choose an attachment option (similar to standard literature notes). The container book's PDF is suggested if available.  
+6. Click "Create Chapter Note" to generate the formatted chapter note.
 
-1. Open the command palette and select "Create Literature Note"
-2. Enter the bibliographic information in the modal:
-   - **Auto-fill option**: Enter a DOI, URL, or ISBN and click "Lookup" to automatically fill the form
-   - Required fields: Citekey, Type, Title, Year
-   - Optional fields depend on the publication type
-3. Add contributors (authors, editors, etc.)
-4. Choose an attachment option:
-   - No attachment
-   - Import file (copies PDF/EPUB to your configured attachment folder)
-   - Link to existing file (creates a link to a file already in your vault)
-5. Click "Create Note" to generate a formatted literature note
+### **Building a Bibliography**
 
-### Creating Book Chapter Entries
+1. Ensure you have created literature notes for your references.  
+2. Open the command palette and select "BibLib: Build Bibliography".  
+3. The plugin will perform the following actions based on your settings:  
+   * Generate a citekeylist.md file (path configurable) containing a list of all citekey values found in your literature notes.  
+   * Create a comprehensive bibliography.json file (path configurable) containing the full CSL-JSON data extracted from the YAML frontmatter of all literature notes.  
+4. These files can be used with external tools (like Pandoc for citations) or referenced within your vault.  
+5. To export a unified BibTeX file, open the command palette and select "BibLib: Export Bibliography as BibTeX". The output path is configurable in Settings.
 
-1. There are two ways to create a chapter entry:
-   - Open the command palette and select "Create Book Chapter Entry"
-   - While viewing a book entry, open the command palette and select "Create Chapter From Current Book"
-2. Enter the chapter information:
-   - Required fields: Citekey, Title, Container Book, Year
-   - The container book dropdown shows all book entries in your vault
-3. When you select a container book, relevant information is automatically inherited:
-   - Publisher and publisher place
-   - Book editors (mapped as container-authors)
-   - Publication year
-   - Book's attachment (as a link option)
-4. Add chapter-specific information:
-   - Chapter author(s)
-   - Page range
-   - Chapter-specific metadata
-5. Choose an attachment option:
-   - No attachment
-   - Import a new file
-   - Link to an existing file (the container book's PDF is suggested if available)
-6. Click "Create Chapter Note" to generate a formatted chapter note
+### **Using the Zotero Connector (Desktop Only)**
 
-### Building a Bibliography
+BibLib integrates with the Zotero Connector browser extension for direct capture:
 
-1. Create literature notes for your references using the method above
-2. Open the command palette and select "Build Bibliography"
-3. The plugin will:
-   - Generate a `citekeylist.md` file with all citation keys
-   - Create a comprehensive `bibliography.json` file with full citation data
-4. These files can be used with external tools or referenced in your notes
-5. To export a unified BibTeX file from all your literature notes, open the command palette and select "Export Bibliography as BibTeX" (path configurable in Settings).
+1. In BibLib settings, navigate to the "Zotero Connector Server" section and enable the "Enable Connector Server" option.  
+2. Install the [Zotero Connector](https://www.zotero.org/download/connectors) extension for your browser (Chrome, Firefox, Edge, Safari).  
+3. **Crucially: Ensure the Zotero desktop application is *NOT running***. BibLib needs to listen on the same communication port (default 23119\) that Zotero normally uses to receive data from the connector. If Zotero is running, it will intercept the data instead of BibLib.  
+4. When browsing a webpage containing bibliographic data (e.g., a journal article page, arXiv preprint, book page):  
+   * Click the Zotero Connector icon in your browser toolbar.  
+   * The connector detects the metadata and sends it to the locally running server (which BibLib is now providing).  
+5. BibLib will:  
+   * Automatically open the "Create Literature Note" modal within Obsidian, pre-filled with the captured citation data.  
+   * If the connector successfully identifies and downloads a PDF, BibLib will automatically select the "Import file" option and pre-fill the path to the downloaded temporary file.  
+   * Allow you to review and customize the citekey, type, and other fields before saving.  
+   * Create a fully formatted literature note within your vault upon clicking "Create Note".
 
-### Using the Zotero Connector (Desktop Only)
+> [!NOTE]  
+> This feature requires Obsidian running on a desktop operating system because it needs permission to run a local web server to listen for the connector. It is not available on mobile versions of Obsidian.
 
-BibLib now includes direct integration with the Zotero Connector browser extension, allowing you to capture citations and PDFs with a single click:
+### **Working with PDF Annotations**
 
-1. In BibLib settings, enable the "Zotero Connector Server" option
-2. Install the [Zotero Connector](https://www.zotero.org/download/connectors) extension for your browser
-3. Make sure Zotero desktop application is **NOT running** (it uses the same port by default)
-4. When browsing a site with scholarly content:
-   - Simply click the Zotero button in your browser toolbar
-   - The connector will automatically detect and send data to BibLib
-5. BibLib will:
-   - Automatically open the bibliography modal with pre-filled citation data
-   - Download and attach PDFs when available from supported sites (like arXiv, publisher sites, etc.)
-   - Allow you to customize the citekey before saving
-   - Create a properly formatted literature note with all metadata
+BibLib facilitates linking your notes to specific parts of attached PDFs:
 
-> [!NOTE]
-> The Zotero Connector feature is only available on desktop versions of Obsidian due to platform limitations on mobile devices.
->
-> **Advanced usage:** If you want to use both Zotero desktop and BibLib simultaneously, you'll need to:
-> 1. Change the port in BibLib settings to something different (e.g., 23118)
-> 2. Hold Shift when clicking the Zotero button to manually select server
-> 3. Enter the custom address (e.g., `http://127.0.0.1:23118`)
+1. Attach PDFs to your literature notes during creation or add them later via links.  
+2. Open the PDF from the literature note using Obsidian's built-in viewer.  
+3. Create highlights or annotations within the PDF viewer.  
+4. You can copy references to these annotations (often via a right-click menu in the PDF viewer or sidebar) and paste them into your Markdown notes. This typically creates links like:  
+   `[[MyReference2023.pdf#page=12&annotation=ABCDEF123]]`
 
-### Working with PDF Annotations
+   or using selection coordinates:  
+   `[[AnotherPaper2024.pdf#page=5&selection=10,0,25,50|See discussion on p.5]]`
 
-BibLib integrates with Obsidian's native PDF capabilities, creating a workflow for academic reading and citation:
+5. This allows precise linking between your thoughts or summaries and the exact location in the source text. Consider using plugins like [PDF++](https://github.com/RyotaUshio/obsidian-pdf-plus) for enhanced PDF interaction features within Obsidian.
 
-1. Attach PDFs to your literature notes during creation
-2. Open PDFs directly from your literature notes
-3. Create precise annotations using Obsidian's PDF viewer
-4. Insert citations in your notes using Obsidian's annotation syntax:
-   ```
-   [[smith2023.pdf#page=42&selection=17,1,21,22|Smith 2023, p. 42]]
-   ```
-5. Enhance your PDF workflow with compatible plugins like [PDF++](https://github.com/RyotaUshio/obsidian-pdf-plus)
+## **Settings**
 
-This workflow keeps your references, PDFs, and annotations all within the same system, creating a truly integrated research environment.
+BibLib offers customization options to tailor the workflow:
 
-## Settings
+### **File Paths**
 
-### File Paths
+* **Attachment folder path**: Specify the default directory within your vault where imported PDF/EPUB attachments will be stored.  
+* **Create subfolder for attachments**: If enabled, creates a subfolder named after the citekey within the attachment folder for each reference's files.  
+* **Literature note location**: Specify the default directory where new literature notes (.md files) will be created.  
+* **Use prefix for literature notes**: If enabled, adds a prefix to the filename of literature notes.  
+* **Literature note prefix**: Define the prefix string (e.g., Lit/, Ref-) to be added if the above option is enabled.
 
-- **Attachment folder path**: Where PDF and EPUB attachments will be stored
-- **Create subfolder for attachments**: Option to create a subfolder for each citation
-- **Literature note location**: Where literature notes will be stored
-- **Use prefix for literature notes**: Option to add a prefix to literature note filenames
-- **Literature note prefix**: The prefix to add to literature note filenames
+### **Custom Frontmatter Fields & Templating**
 
-### Custom Frontmatter Fields
+BibLib uses a template engine (based on Handlebars syntax) for customizing various aspects of your notes. This allows you to define exactly what fields appear in your YAML frontmatter and how the note itself is structured.
 
-BibLib uses a flexible templating system for custom frontmatter fields, allowing you to define exactly which fields you want in your literature notes. Each field can have:
+* **Header Template**: Define the template for the main content *above* the frontmatter block (e.g., `## {{title}}`).  
+* **Custom Frontmatter Fields**: Manage the fields included in the YAML frontmatter. You can add, edit, reorder, or disable fields. Each field has:  
+  * **Field Name**: The key used in the YAML (e.g., status, keywords).  
+  * **Template**: A Handlebars template defining the value for that key. Use CSL variables (`{{title}}`, `{{author.0.family}}`) and helpers. Templates starting with `[` and ending with `]` will attempt to parse the content as a YAML array (e.g., `[{{#authors_family}}"[[Author/{{.}}]]"{{^@last}}, {{/@last}}{{/authors_family}}]`).  
+  * **Enabled**: Toggle whether this field is included.  
+* **Body Template**: Define a template for the content *below* the frontmatter block in newly created notes.
 
-- **Field Name**: The name of the field in the YAML frontmatter
-- **Template**: A template using variables and formatting options to determine the field's value
-- **Enabled/Disabled**: Toggle to control whether the field is included
+**Template System Basics:**
 
-Default fields include:
-- **year**: Publication year (extracted from CSL data)
-- **dateCreated**: Current date when the note is created
-- **status**: Default value of "to-read"
-- **aliases**: Array of alternate names for the note
-- **author-links**: Array of Obsidian links to author pages
-- **attachment**: Array of Obsidian links to attached files
-- **keywords**: Empty array for you to add keywords
-- **related**: Empty array for related citations
+* Variables: `{{variable}}` (e.g., `{{title}}`, `{{year}}`, `{{DOI}}`). Access nested CSL data using dot notation (e.g., `{{issued.date-parts.0.0}}` for year).  
+* Formatting Helpers: `{{variable|format}}` (e.g., `{{title|lowercase}}`). Common formats include uppercase, lowercase, capitalize, sentence. Specific helpers exist for citekeys (see below).  
+* Negative Conditional Blocks: `{{^variable}}Content if variable is missing{{/variable}}`
+* Positive Conditional Blocks: `{{#variable}}Content if variable is present{{\variable}}`.  
+* Available Variables: Includes all standard CSL fields detected for the reference, plus computed fields like `{{authors}}` (formatted string), `{{pdflink}}` (path to linked attachment), `{{currentDate}}`. Arrays like `{{authors_family}}`, `{{authors_given}}`, `{{editor}}` are available for looping.  
+* Consult the plugin settings panel for more detailed syntax examples and a list of available formatting helpers.
 
-You can easily add, edit, or remove these fields to suit your workflow.
+This system provides **control** over how your reference data is stored and presented.
 
-### Template System
+### **Bibliography Builder**
 
-BibLib uses a powerful, consistent templating system across all customizable content:
+* **Bibliography JSON path**: Set the vault path (including filename) where the bibliography.json file will be saved.  
+* **Citekey list path**: Set the vault path (including filename) where the citekeylist.md file will be saved.  
+* **BibTeX file path**: Set the vault path (including filename) where the exported .bib file will be saved.
 
-#### Basic Variable Syntax
-- `{{variable}}` - Outputs the value of the variable
-- `{{variable|format}}` - Applies formatting to the variable (e.g., `{{title|lowercase}}`)
+### **Zotero Connector Server (Desktop Only)**
 
-#### Conditional Blocks
-- `{{#variable}}Content if exists{{/variable}}` - Renders content if variable exists/is truthy
-- `{{^variable}}Content if not exists{{/variable}}` - Renders content if variable is empty/falsy
+* **Enable Connector Server**: Toggle the local server on/off. Must be enabled to use the Zotero Connector integration.  
+* **Connector Server Port**: The network port the server listens on. Default is 23119, matching Zotero's default. Change only if needed due to port conflicts.  
+* **Temporary PDF folder**: A system temporary directory where PDFs downloaded via the connector are initially stored before being imported into the vault. Usually does not need changing.
 
-#### Loops and Arrays
-- `{{#array}}{{.}}{{/array}}` - Loops through array items, with `{{.}}` representing the current item
-- Can access loop information with `{{@index}}`, `{{@first}}`, `{{@last}}`, etc.
+## **Citekey Generation**
 
-#### YAML Arrays
-- Templates that start with `[` and end with `]` will be parsed as proper YAML arrays
-- Example: `[{{#authors_family}}{{^@first}},{{/@first}}"[[Author/{{.}}]]"{{/authors_family}}]`
+Define automated citekey patterns using the **templating engine**, providing consistent and predictable keys for your references.
 
-#### Available Variables
-- CSL fields: `{{title}}`, `{{citekey}}`, `{{year}}`, `{{container-title}}`, etc.
-- Special variables: `{{authors}}` (formatted string), `{{pdflink}}` (attachment path), `{{currentDate}}`
-- Arrays: `{{authors_family}}`, `{{authors_given}}`, `{{editors}}`, etc.
+* **Citekey Template**: Enter a Handlebars template defining the desired citekey format. Examples:  
+  * `{{authors_family.0|lower}}{{year}}` -> smith2023  
+  * `{{authors_family.0|lower}}{{year}}{{title|abbr1}}` -> smith2023q (using first letter of first significant title word)  
+  * `{{authors_family.0|abbr3}}{{year}}` -> smi2023 (using first 3 letters of first author's last name)  
+* **Special Citekey Formatters**: In addition to standard formatters, specific helpers are available for citekey generation:  
+  * `|abbrN`: Abbreviate to first N characters (e.g., |abbr3).  
+  * `|titleword`: First significant word of the title (lowercase).  
+  * `|abbrTitleWordN`: First N letters of the first significant title word.  
+  * `|shorttitle`: First few significant words of the title.  
+  * (Consult settings for a full list).  
 
-#### Formatting Options
-- `{{variable|upper}}` or `{{variable|uppercase}}` - ALL UPPERCASE
-- `{{variable|lower}}` or `{{variable|lowercase}}` - all lowercase
-- `{{variable|capitalize}}` - Capitalize First Letter Of Each Word
-- `{{variable|sentence}}` - First letter capitalized only
-- Special formatters for citekeys: `{{variable|abbr3}}`, `{{title|titleword}}`, etc.
+*(Legacy citekey generation options might still be present in settings for backward compatibility but using the template is recommended for flexibility.)*
 
-This system is used for header templates, custom frontmatter fields, and citekey generation, providing a consistent experience throughout the plugin.
+This template-driven approach provides **consistent citekeys** tailored to your preferences.
 
-### Bibliography Builder
+## **Upcoming Features**
 
-- **Bibliography JSON path**: Where to save the bibliography.json file
-- **Citekey list path**: Where to save the citekeylist.md file
-- **BibTeX file path**: Where to save the exported BibTeX file
+* Bulk import from existing BibTeX/CSL-JSON files.  
+* Export individuals files to various formats.
 
-### Zotero Connector Server (Desktop Only)
-
-- **Enable Connector Server**: Start a local server to intercept Zotero connector browser requests
-- **Connector Server Port**: The port to run the Zotero connector server on (default: 23119, same as Zotero)
-- **Temporary PDF folder**: The folder where temporary PDFs from the connector will be stored
-
-
-## Upcoming Features
-
-- Bulk import of existing bibliographic data from BibTeX/CSL-JSON
-
-## Citekey Generation
-
-BibLib provides a powerful templating system for citekey generation using the same syntax as other templates:
-
-### Template-Based Generation
-
-Define your citekey pattern using the template syntax, for example:
-- `{{author|lowercase}}{{year}}` - Basic author-year format (e.g., "smith2023")
-- `{{author|abbr3}}{{year}}` - First three letters of author name (e.g., "smi2023")
-- `{{author|lowercase}}{{year}}{{title|titleword}}` - Author, year, and first significant title word
-
-### Special Citekey Formatters
-
-- `|abbr3` - First 3 characters (e.g., "smith" → "smi")
-- `|abbr4` - First 4 characters (e.g., "smith" → "smit")
-- `|titleword` - First significant word from title (e.g., "Quantum Theory" → "quantum")
-- `|shorttitle` - First 3 significant words from title
-
-### Advanced Patterns
-
-- Access specific authors by index: `{{authors_family.0|lowercase}}`
-- Multiple author handling: `{{authors_family.0|lowercase}}{{#authors_family.1}}{{authors_family.1|abbr1}}{{/authors_family.1}}{{year}}`
-- Conditional formatting: `{{#DOI}}{{author|lowercase}}{{year}}{{/DOI}}{{^DOI}}{{title|titleword}}{{year}}{{/DOI}}`
-
-### Legacy Options
-
-For backward compatibility, BibLib still includes the legacy citekey options if you prefer the older system:
-
-- Author name formats (full, abbreviations)
-- Multiple author handling
-- Two-author styles (And/Initial)
-- Delimiters and other customizations
-
-You can configure all citekey options in the settings tab under "Citekey generation".
-
-## License
+## **License**
 
 MIT
