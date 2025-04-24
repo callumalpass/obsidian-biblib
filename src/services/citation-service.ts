@@ -28,11 +28,60 @@ const simpleParseDateFallback = (dateString: string): { 'date-parts': number[][]
     return { 'raw': dateString };
 };
 
-const parseDateRobust = (dateStr: string | undefined): any => {
+const parseDateRobust = (dateStr: string | undefined | any): any => {
     if (!dateStr) return undefined;
+    
+    // Function to return current date in CSL format
+    const getCurrentDate = () => {
+        const now = new Date();
+        return { 
+            'date-parts': [[
+                now.getFullYear(), 
+                now.getMonth() + 1, // JavaScript months are 0-indexed
+                now.getDate()
+            ]] 
+        };
+    };
+    
+    // Check for various forms of current date markers
+    // 1. String values
+    if (typeof dateStr === 'string') {
+        if (dateStr === "CURRENT" || dateStr === "CURREN" || dateStr === "CURRENT_DATE") {
+            return getCurrentDate();
+        }
+    } 
+    // 2. Objects with special properties
+    else if (typeof dateStr === 'object' && dateStr !== null) {
+        // Check if it's an object with a raw property containing a current date marker
+        if ('raw' in dateStr && typeof dateStr.raw === 'string' && 
+            (dateStr.raw === "CURRENT" || dateStr.raw === "CURREN" || dateStr.raw === "CURRENT_DATE")) {
+            return getCurrentDate();
+        }
+        // Check if it's a CURRENT_DATE object
+        else if ('CURRENT_DATE' in dateStr || dateStr.constructor?.name === 'CURRENT_DATE') {
+            return getCurrentDate();
+        }
+        // Check if it's the exact object named CURRENT_DATE or contains that string
+        else if (Object.prototype.toString.call(dateStr) === '[object CURRENT_DATE]' ||
+                String(dateStr).includes('CURRENT_DATE')) {
+            return getCurrentDate();
+        }
+    }
+    
     try {
+        // Handle object or string input appropriately
+        let dateString: string;
+        if (typeof dateStr === 'string') {
+            dateString = dateStr;
+        } else if (typeof dateStr === 'object' && dateStr !== null && 'raw' in dateStr && typeof dateStr.raw === 'string') {
+            dateString = dateStr.raw;
+        } else {
+            console.warn(`Unable to process date: ${JSON.stringify(dateStr)}`);
+            return { 'raw': String(dateStr) };
+        }
+        
         // @citation-js/date expects YYYY-MM-DD format primarily
-        const datePart = dateStr.split('T')[0];
+        const datePart = dateString.split('T')[0];
         // Basic validation before passing to parseDate
         if (/^\d{4}(?:-\d{1,2}(?:-\d{1,2})?)?$/.test(datePart)) {
              // Use @citation-js/date if available and format matches
@@ -48,7 +97,22 @@ const parseDateRobust = (dateStr: string | undefined): any => {
         return simpleParseDateFallback(datePart);
     } catch (e) {
         console.warn(`Date parsing failed for "${dateStr}", using fallback:`, e);
-        return simpleParseDateFallback(dateStr.split('T')[0]);
+        // Safely handle string conversion for error output
+        const safeStr = typeof dateStr === 'string' ? dateStr : 
+                       (typeof dateStr === 'object' && dateStr !== null && 'raw' in dateStr) ? 
+                       String(dateStr.raw) : String(dateStr);
+        
+        // Try to get a string to parse as fallback
+        let fallbackStr = "";
+        if (typeof dateStr === 'string') {
+            fallbackStr = dateStr;
+        } else if (typeof dateStr === 'object' && dateStr !== null && 'raw' in dateStr && typeof dateStr.raw === 'string') {
+            fallbackStr = dateStr.raw;
+        } else {
+            return { 'raw': String(dateStr) };
+        }
+        
+        return simpleParseDateFallback(fallbackStr.split('T')[0]);
     }
 };
 // --- End Date Handling ---
@@ -119,7 +183,11 @@ const mapZoteroCreatorToCsl = (creator: any): { literal: string } | { family: st
 
 const ZOTERO_CONVERTERS = {
     DATE: {
-        toTarget: (date: string | undefined): any => parseDateRobust(date)
+        toTarget: (date: string | undefined): any => {
+            // Debug logging for date conversion issues
+            console.log(`Converting date: "${date}" (type: ${typeof date})`);
+            return parseDateRobust(date);
+        }
     },
     CREATORS: {
         toTarget: (creators: any[] | undefined): any[] | undefined => creators?.map(mapZoteroCreatorToCsl).filter(Boolean) as any[] | undefined
@@ -333,6 +401,11 @@ const EXTRA_FIELDS_CSL_MAP: { [key: string]: string } = {
     // Add more specific mappings if you frequently use certain 'extra' fields
 };
 
+// Fields that should preserve their case (typically acronyms)
+const PRESERVE_CASE_FIELDS = [
+    'DOI', 'ISBN', 'ISSN', 'PMID', 'PMCID', 'URL', 'ORCID'
+];
+
 function parseExtraField(extraString: string | undefined): Record<string, any> {
     if (!extraString) return {};
     const fields: Record<string, any> = {};
@@ -348,10 +421,22 @@ function parseExtraField(extraString: string | undefined): Record<string, any> {
                 value = value.substring(1, value.length - 1).replace(/\\n/g, '\n');
             }
 
-            const cslKey = EXTRA_FIELDS_CSL_MAP[key] || key.toLowerCase().replace(/\s+/g, '-'); // Default mapping
+            // Determine correct key name and case
+            let cslKey;
+            if (EXTRA_FIELDS_CSL_MAP[key]) {
+                cslKey = EXTRA_FIELDS_CSL_MAP[key];
+            } else if (PRESERVE_CASE_FIELDS.includes(key)) {
+                cslKey = key; // Preserve exact case for special fields
+            } else if (PRESERVE_CASE_FIELDS.some(field => field.toLowerCase() === key.toLowerCase())) {
+                // Find the correct case version if a case-insensitive match exists
+                cslKey = PRESERVE_CASE_FIELDS.find(field => field.toLowerCase() === key.toLowerCase()) || key;
+            } else {
+                // Default to lowercase with hyphens for spaces
+                cslKey = key.toLowerCase().replace(/\s+/g, '-');
+            }
 
             // Basic type detection (can be enhanced)
-            if (cslKey.includes('date') || key.toLowerCase().includes('date')) {
+            if (cslKey.toLowerCase().includes('date') || key.toLowerCase().includes('date')) {
                  const parsedDate = parseDateRobust(value);
                  // Check if parsing yielded a standard CSL date structure
                  if (parsedDate && (parsedDate['date-parts'] || parsedDate['raw'] || parsedDate['literal'])) {
@@ -553,6 +638,40 @@ export class CitationService {
         const targetType = ZOTERO_TYPES_TO_CSL[item.itemType] || 'document';
         // Set type early, might be overridden by 'extra' field later if allowed
         csl.type = targetType;
+        
+        // Direct handling for accessDate special cases (CURREN, CURRENT, CURRENT_DATE)
+        const isTodayDate = (val: any): boolean => {
+            if (!val) return false;
+            
+            // String checks
+            if (typeof val === 'string') {
+                return val === "CURREN" || val === "CURRENT" || val === "CURRENT_DATE";
+            }
+            
+            // Object checks
+            if (typeof val === 'object' && val !== null) {
+                // Check raw property
+                if ('raw' in val && typeof val.raw === 'string') {
+                    return val.raw === "CURREN" || val.raw === "CURRENT" || val.raw === "CURRENT_DATE";
+                }
+                
+                // Check for CURRENT_DATE object/property
+                return 'CURRENT_DATE' in val || 
+                       val.constructor?.name === 'CURRENT_DATE' || 
+                       String(val).includes('CURRENT_DATE') ||
+                       Object.prototype.toString.call(val) === '[object CURRENT_DATE]';
+            }
+            
+            return false;
+        };
+        
+        if (isTodayDate(item.accessDate)) {
+            console.log("Special handling for current date in accessDate:", item.accessDate);
+            const now = new Date();
+            csl.accessed = { 
+                'date-parts': [[now.getFullYear(), now.getMonth() + 1, now.getDate()]] 
+            };
+        }
 
         // 2. Prepare Source Data (Group creators for easy access by Zotero field name)
         const sourceData: Record<string, any> = { ...item }; // Shallow copy item
@@ -597,6 +716,12 @@ export class CitationService {
 
             if (applies) {
                 const sourceValue = sourceData[rule.source];
+                
+                // Special debug for accessDate issues
+                if (rule.source === 'accessDate') {
+                    console.log(`Processing accessDate: "${sourceValue}" (type: ${typeof sourceValue})`);
+                    console.log('Full sourceData:', JSON.stringify(sourceData));
+                }
 
                 // Proceed only if the source field exists and has a value
                 if (sourceValue !== undefined && sourceValue !== null && sourceValue !== '') {
@@ -623,7 +748,16 @@ export class CitationService {
                          } else {
                             // Normal assignment: Prevent overwriting existing CSL value unless the new value is non-empty?
                             // Simple overwrite is usually fine as mappings should be ordered logically or non-overlapping
-                            csl[rule.target] = targetValue;
+                            
+                            // Preserve case for special fields
+                            let targetKey = rule.target;
+                            if (PRESERVE_CASE_FIELDS.some(field => field.toLowerCase() === targetKey.toLowerCase())) {
+                                // Find the correct case version
+                                targetKey = PRESERVE_CASE_FIELDS.find(field => 
+                                    field.toLowerCase() === targetKey.toLowerCase()) || targetKey;
+                            }
+                            
+                            csl[targetKey] = targetValue;
                          }
                     }
                 }
@@ -645,6 +779,41 @@ export class CitationService {
         }
         // Add more specific post-processing rules as needed
 
+        // Final case correction for any special fields that might have been missed or set elsewhere
+        PRESERVE_CASE_FIELDS.forEach(field => {
+            const lowerField = field.toLowerCase();
+            // If we have this field but with wrong case
+            if (csl[lowerField] !== undefined && csl[field] === undefined) {
+                csl[field] = csl[lowerField];
+                delete csl[lowerField];
+            }
+        });
+        
+        // Special handling for accessed date - ensure it has proper date-parts structure
+        if (csl.accessed) {
+            const isCurrentDateFormat = (val: any): boolean => {
+                if (typeof val !== 'object' || val === null) return false;
+                
+                // Check for raw property with current date value
+                if ('raw' in val && typeof val.raw === 'string') {
+                    return val.raw === "CURREN" || val.raw === "CURRENT" || val.raw === "CURRENT_DATE";
+                }
+                
+                // Check for CURRENT_DATE object or property
+                return 'CURRENT_DATE' in val || 
+                       val.constructor?.name === 'CURRENT_DATE' || 
+                       String(val).includes('CURRENT_DATE') ||
+                       Object.prototype.toString.call(val) === '[object CURRENT_DATE]';
+            };
+            
+            if (isCurrentDateFormat(csl.accessed)) {
+                console.log("Post-processing fixing current date in accessed field:", csl.accessed);
+                const now = new Date();
+                csl.accessed = { 
+                    'date-parts': [[now.getFullYear(), now.getMonth() + 1, now.getDate()]] 
+                };
+            }
+        }
 
         return csl;
     }
