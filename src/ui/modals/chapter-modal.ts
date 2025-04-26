@@ -499,6 +499,8 @@ export class ChapterModal extends Modal {
         given: string = '',
         literal: string = ''
     ): void {
+        // Make sure the contributors container has the right class
+        this.contributorsListContainer.addClass('bibliography-contributors');
         // Create contributor object
         const contributor: Contributor = {
             role,
@@ -541,6 +543,8 @@ export class ChapterModal extends Modal {
      * Add an additional field to the UI and data model
      */
     private addAdditionalField(name: string = '', value: any = '', type: string = 'standard'): void {
+        // Make sure the container has the right class
+        this.additionalFieldsContainer.addClass('bibliography-additional-fields');
         // Create field object
         const additionalField: AdditionalField = {
             name,
@@ -676,6 +680,19 @@ export class ChapterModal extends Modal {
             }
         }
         
+		// Add author data specifically for citekey generation purposes
+		citation.author = this.contributors
+			.filter(c => c.role === 'author' && (c.family || c.given || c.literal)) // Get authors with some name info
+			.map(c => {
+				const authorData: { family?: string; given?: string; literal?: string } = {};
+				if (c.family) authorData.family = c.family;
+				if (c.given) authorData.given = c.given;
+				 // Include literal only if family/given are missing, typically for institutions
+				if (c.literal && !c.family && !c.given) authorData.literal = c.literal;
+				return authorData;
+			})
+			.filter(a => a.family || a.given || a.literal); // Ensure we don't have empty objects
+
         // Add the book ID as a related publication
         citation.bookID = this.selectedBook.id;
         

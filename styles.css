@@ -88,6 +88,24 @@
   padding: 10px;
   font-size: 0.9em;
   line-height: 1.4;
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.bibliography-bibtex-button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  display: block;
+}
+
+.bibliography-bibtex-button:hover {
+  background-color: var(--interactive-accent-hover);
 }
 
 .bibliography-zotero-notice {
@@ -133,6 +151,7 @@
 }
 
 /* Contributors Section */
+.bibliography-contributors,
 .bibliography-contributors-list {
   margin: 10px 0;
 }
@@ -151,6 +170,11 @@
 }
 
 /* Additional Fields Section */
+.bibliography-additional-fields,
+.bibliography-additional-fields-list {
+  margin: 10px 0;
+}
+
 .bibliography-additional-field {
   display: grid;
   grid-template-columns: 1fr 1fr 2fr auto;
@@ -250,6 +274,23 @@
 .bibliography-modal select:hover,
 .bibliography-modal textarea:hover {
   border-color: var(--interactive-accent);
+}
+
+/* Regenerate citekey button */
+.bibliography-modal .citekey-regenerate-button {
+  padding: 4px 8px;
+  margin-left: 8px;
+  font-size: 14px;
+  color: var(--text-normal);
+  background-color: var(--background-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.bibliography-modal .citekey-regenerate-button:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-accent);
 }
 
 /* Focus States */

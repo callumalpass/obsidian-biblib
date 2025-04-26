@@ -55,10 +55,10 @@ export interface Citation {
     year?: string | number;
     month?: string | number;
     day?: string | number;
-    author?: Array<{ given?: string; family: string }>;
-    editor?: Array<{ given?: string; family: string }>;
-    translator?: Array<{ given?: string; family: string }>;
-    'container-author'?: Array<{ given?: string; family: string }>;
+	author?: Array<{ given?: string; family?: string; literal?: string }>; 
+    editor?: Array<{ given?: string; family?: string; literal?: string }>; 
+    translator?: Array<{ given?: string; family?: string; literal?: string }>; 
+    'container-author'?: Array<{ given?: string; family?: string; literal?: string }>;
     [key: string]: any; // For additional fields
 }
 

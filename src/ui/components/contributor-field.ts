@@ -2,7 +2,7 @@ import { Contributor } from '../../types';
 import { CSL_NAME_FIELDS } from '../../utils/csl-variables';
 
 export class ContributorField {
-    private containerEl: HTMLDivElement;
+    public containerEl: HTMLDivElement; // Changed to public for CSS access
     public contributor: Contributor;
     private onRemove: (contributor: Contributor) => void;
 
@@ -44,9 +44,14 @@ export class ContributorField {
             cls: 'bibliography-input bibliography-contributor-given' 
         });
         this.givenInput.value = this.contributor.given ?? '';
-        this.givenInput.oninput = () => {
+        
+        // Use both input and change events to ensure data is updated immediately
+        const updateGivenName = () => {
             this.contributor.given = this.givenInput.value.trim();
         };
+        this.givenInput.oninput = updateGivenName;
+        this.givenInput.onchange = updateGivenName;
+        this.givenInput.onblur = updateGivenName;
         
         // Family name input
         this.familyInput = contributorDiv.createEl('input', { 
@@ -55,9 +60,14 @@ export class ContributorField {
             cls: 'bibliography-input bibliography-contributor-family' 
         });
         this.familyInput.value = this.contributor.family ?? '';
-        this.familyInput.oninput = () => {
+        
+        // Use both input and change events to ensure data is updated immediately 
+        const updateFamilyName = () => {
             this.contributor.family = this.familyInput.value.trim();
         };
+        this.familyInput.oninput = updateFamilyName;
+        this.familyInput.onchange = updateFamilyName;
+        this.familyInput.onblur = updateFamilyName;
         
         // Remove button
         this.removeButton = contributorDiv.createEl('button', { 

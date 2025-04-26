@@ -264,7 +264,8 @@ export class CitekeyGenerator {
 
        /**
         * Extract the primary author part for a citekey (First author's last name).
-        * Returns cleaned, lowercase string or a fallback like 'unknown' or title word.
+        * Returns cleaned, lowercase string or a fallback of 'unknown' when no author is found.
+        * Note: No longer falls back to title data to avoid template variable confusion.
         */
        private static extractAuthorPart(citationData: any, config: CitekeyOptions): string {
                let authorName = '';
@@ -284,13 +285,8 @@ export class CitekeyGenerator {
                        return authorName;
                }
 
-               // Fallback to title if no author found
-               const titleFallback = this.extractTitlePart(citationData, 1); // Use first significant title word
-               if (titleFallback) {
-                       return titleFallback; // Already cleaned/lowercased
-               }
-
-               // Ultimate fallback
+               // Use a clear fallback value instead of silent title substitution
+               // This prevents template confusion where {{author}} shows title content
                return 'unknown';
        }
 

@@ -294,6 +294,50 @@ export class BibliographyModal extends Modal {
                     lookupButton.setButtonText('Lookup');
                 }
             });
+            
+        // Add BibTeX paste section
+        citoidContent.createEl('h3', { text: 'Auto-fill from BibTeX' });
+        const bibtexContainer = citoidContent.createDiv({ cls: 'bibliography-bibtex-container' });
+        
+        const bibtexInput = bibtexContainer.createEl('textarea', {
+            placeholder: 'Paste BibTeX entry here...',
+            cls: 'bibliography-bibtex-input'
+        });
+        bibtexInput.style.width = '100%';
+        bibtexInput.style.minHeight = '100px';
+        
+        const bibtexButton = bibtexContainer.createEl('button', {
+            text: 'Parse BibTeX',
+            cls: 'bibliography-bibtex-button'
+        });
+        
+        bibtexButton.onclick = () => {
+            const bibtexText = bibtexInput.value.trim();
+            if (!bibtexText) {
+                new Notice('Please paste a BibTeX entry');
+                return;
+            }
+            
+            new Notice('Parsing BibTeX data...');
+            bibtexButton.setAttr('disabled', 'true');
+            bibtexButton.textContent = 'Parsing...';
+            
+            try {
+                const normalizedData = this.citationService.parseBibTeX(bibtexText);
+                if (!normalizedData) {
+                    new Notice('No valid citation data found in the BibTeX entry');
+                    return;
+                }
+                this.populateFormFromCitoid(normalizedData);
+                new Notice('BibTeX data successfully parsed and filled');
+            } catch (error) {
+                console.error('Error parsing BibTeX data:', error);
+                new Notice('Error parsing BibTeX data. Please check the format and try again.');
+            } finally {
+                bibtexButton.removeAttribute('disabled');
+                bibtexButton.textContent = 'Parse BibTeX';
+            }
+        };
     }
 
     private createAttachmentSection(contentEl: HTMLElement) {
@@ -890,6 +934,9 @@ export class BibliographyModal extends Modal {
         given: string = '',
         literal: string = ''
     ): void {
+        // Make sure the contributors container has the right class
+        this.contributorsListContainer.addClass('bibliography-contributors');
+        
         // Create contributor object
         const contributor: Contributor = {
             role,
@@ -897,6 +944,10 @@ export class BibliographyModal extends Modal {
             given,
             literal
         };
+        
+        // Always add to contributors array, even if empty
+        // This ensures the contributor exists in the array as soon as the field is created
+        this.contributors.push(contributor);
         
         // Create and append the component
         const component = new ContributorField(
@@ -916,22 +967,14 @@ export class BibliographyModal extends Modal {
                 }
             }
         );
-        
-        // Add to contributors array if values provided
-        if (role || family || given || literal) {
-            this.contributors.push({
-                role,
-                family,
-                given,
-                literal
-            });
-        }
     }
 
     /**
      * Add an additional field to the form
      */
     private addAdditionalField(name: string = '', value: any = '', type: string = 'standard'): void {
+        // Make sure the container has the right class
+        this.additionalFieldsContainer.addClass('bibliography-additional-fields');
         // Create field object
         const additionalField: AdditionalField = {
             name,
@@ -988,6 +1031,19 @@ export class BibliographyModal extends Modal {
             DOI: this.doiInput.value || undefined,
             abstract: this.abstractInput.value || undefined
         };
+
+		// Add author data specifically for citekey generation purposes
+		citation.author = this.contributors
+			.filter(c => c.role === 'author' && (c.family || c.given || c.literal)) // Get authors with some name info
+			.map(c => {
+				const authorData: { family?: string; given?: string; literal?: string } = {};
+				if (c.family) authorData.family = c.family;
+				if (c.given) authorData.given = c.given;
+				// Include literal only if family/given are missing, typically for institutions
+				if (c.literal && !c.family && !c.given) authorData.literal = c.literal;
+				return authorData;
+			})
+			.filter(a => a.family || a.given || a.literal); // Ensure we don't have empty objects
         
         // Handle date fields
         const year = this.yearInput.value.trim();
@@ -1036,15 +1092,34 @@ export class BibliographyModal extends Modal {
         
         // ID will be auto-generated if empty
         
-        // Check for at least one author
-        const hasAuthor = this.contributors.some(contributor => 
-            contributor.role === 'author' && 
-            (contributor.family || contributor.given || contributor.literal)
+        // Check for at least one author with content
+        const authors = this.contributors.filter(contributor => 
+            contributor.role === 'author'
         );
         
-        if (!hasAuthor) {
+        // First check if we have any author contributors at all
+        if (authors.length === 0) {
             isValid = false;
-            message += '\n- At least one author is required';
+            message += '\n- At least one contributor with role "author" is required';
+        } else {
+            // Then check if any of them have content
+            const hasAuthorWithContent = authors.some(author => 
+                (author.family && author.family.trim() !== '') || 
+                (author.given && author.given.trim() !== '') || 
+                (author.literal && author.literal.trim() !== '')
+            );
+            
+            if (!hasAuthorWithContent) {
+                isValid = false;
+                message += '\n- At least one author must have a name (family or given)';
+                
+                // Force refresh contributor fields
+                authors.forEach(author => {
+                    if (author.family === '') author.family = undefined;
+                    if (author.given === '') author.given = undefined;
+                    if (author.literal === '') author.literal = undefined;
+                });
+            }
         }
 
         if (!isValid) {

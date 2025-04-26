@@ -7,13 +7,13 @@ import {
 } from '../../utils/csl-variables';
 
 export class AdditionalFieldComponent {
-    private containerEl: HTMLDivElement;
+    public containerEl: HTMLDivElement; // Changed to public for CSS access
     public field: AdditionalField;
     private onRemove: (field: AdditionalField) => void;
 
     // UI elements
     private typeSelect: HTMLSelectElement;
-    private fieldDiv: HTMLDivElement; // Store the main field row div
+    public fieldDiv: HTMLDivElement; // Changed to public and store the main field row div
     private fieldSelect: HTMLSelectElement;
     private valueInputContainer: HTMLDivElement;
 
