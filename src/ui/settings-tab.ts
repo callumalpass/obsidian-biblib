@@ -294,6 +294,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 		this.createListItem(formatOptsUl, '{{variable|date}}', 'Format as date');
 		this.createListItem(formatOptsUl, '{{variable|json}}', 'Format as JSON string');
 		this.createListItem(formatOptsUl, '{{variable|count}}', 'Count array items');
+		this.createListItem(formatOptsUl, '{{rand|3}} or {{rand3}}', 'Generate random alphanumeric string (length 3)');
 
 		guideDiv.createEl('strong', { text: 'Special citekey formatters', cls:'setting-guide-subtitle' });
 		guideDiv.createEl('p', { text: 'These formatters are especially useful for citekey generation:' });

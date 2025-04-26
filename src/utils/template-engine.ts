@@ -161,8 +161,16 @@ export class TemplateEngine {
     
     /**
      * Process variable replacements {{variable}} or {{variable|format}}
+     * Also supports special case {{rand|N}} or {{randN}} for random strings
      */
     private static processVariables(template: string, variables: { [key: string]: any }): string {
+        // First, handle the special case of {{rand|N}} or {{randN}}
+        // This format doesn't require an actual variable to exist
+        template = template.replace(/\{\{(rand)(?:\|(\d+))?\}\}/g, (match, key, length) => {
+            const len = length ? parseInt(length, 10) : 5;
+            return this.generateRandomString(len);
+        });
+        
         // Regex for variables, optionally with formats {{variable}} or {{variable|format}}
         const variableRegex = /\{\{([^#^}|]+)(?:\|([^}]+))?\}\}/g;
         
@@ -229,6 +237,16 @@ export class TemplateEngine {
      * Format a value based on specified format
      */
     private static formatValue(value: any, format: string): string {
+        // Check if this is a special "rand" formatter for random sequences
+        if (format.startsWith('rand')) {
+            // Extract the length from the format string (e.g., 'rand5' → length=5)
+            const lengthMatch = format.match(/^rand(\d+)$/);
+            if (lengthMatch) {
+                const length = parseInt(lengthMatch[1], 10);
+                return this.generateRandomString(length);
+            }
+        }
+        
         switch (format) {
             case 'upper':
             case 'uppercase':
@@ -321,5 +339,24 @@ export class TemplateEngine {
         
         // Combine words, lowercase, and basic sanitize
         return resultWords.join('').toLowerCase().replace(/[^a-z0-9]/gi, '');
+    }
+    
+    /**
+     * Generate a random alphanumeric string of the specified length
+     * Used for the rand formatter
+     */
+    private static generateRandomString(length: number = 5): string {
+        const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = '';
+        
+        // Ensure length is valid
+        const finalLength = Math.max(1, Math.min(32, length));
+        
+        for (let i = 0; i < finalLength; i++) {
+            const randomIndex = Math.floor(Math.random() * chars.length);
+            result += chars.charAt(randomIndex);
+        }
+        
+        return result;
     }
 }
