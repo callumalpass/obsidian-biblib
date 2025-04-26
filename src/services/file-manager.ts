@@ -88,7 +88,7 @@ export class FileManager {
                                     }
                                 }
                                 if (!attachmentPath) {
-                                    console.log(`Unable to import attachments for ${citekey}. File paths: ${JSON.stringify(filePaths)}`);
+                                    // console.log(`Unable to import attachments for ${citekey}. File paths: ${JSON.stringify(filePaths)}`);
                                 }
                             } catch {}
                         }
@@ -1315,7 +1315,7 @@ ${yaml}---
         
         // Get all files in the vault
         const files = this.app.vault.getFiles();
-        console.log(`Total files in vault: ${files.length}`);
+        // console.log(`Total files in vault: ${files.length}`);
         
         // First, extract all potential filenames from the paths
         const potentialFilenames = filePaths.map(path => {
@@ -1323,14 +1323,14 @@ ${yaml}---
             return parts[parts.length - 1]; // Get the last part (the filename)
         }).filter(Boolean);
         
-        console.log(`Potential attachment filenames: ${JSON.stringify(potentialFilenames)}`);
+        // console.log(`Potential attachment filenames: ${JSON.stringify(potentialFilenames)}`);
         
         // Look for exact filename matches in the vault
         for (const filename of potentialFilenames) {
             const matches = files.filter(file => file.name === filename);
             if (matches.length > 0) {
                 // Found an exact match
-                console.log(`Found exact filename match for ${filename}: ${matches[0].path}`);
+                // console.log(`Found exact filename match for ${filename}: ${matches[0].path}`);
                 return matches[0].path;
             }
         }
@@ -1348,7 +1348,7 @@ ${yaml}---
             }
         }
         
-        console.log(`Potential Zotero IDs: ${JSON.stringify([...potentialIDs])}`);
+        // console.log(`Potential Zotero IDs: ${JSON.stringify([...potentialIDs])}`);
         
         // Look for files in standard Zotero export structure: files/ID/filename.ext
         for (const id of potentialIDs) {
@@ -1361,7 +1361,7 @@ ${yaml}---
                 const containsFolder = folderPatterns.some(pattern => file.path.toLowerCase().includes(`/${pattern.toLowerCase()}/`));
                 
                 if (containsID || (containsFolder && potentialFilenames.some(name => file.name.includes(name)))) {
-                    console.log(`Found potential Zotero attachment match: ${file.path}`);
+                    // console.log(`Found potential Zotero attachment match: ${file.path}`);
                     return file.path;
                 }
             }
@@ -1380,7 +1380,7 @@ ${yaml}---
         });
         
         if (zoteroFolderMatches.length > 0) {
-            console.log(`Found Zotero folder structure match: ${zoteroFolderMatches[0].path}`);
+            // console.log(`Found Zotero folder structure match: ${zoteroFolderMatches[0].path}`);
             return zoteroFolderMatches[0].path;
         }
         
@@ -1403,7 +1403,7 @@ ${yaml}---
         });
         
         if (fuzzyMatches.length > 0) {
-            console.log(`Found fuzzy match: ${fuzzyMatches[0].path}`);
+            // console.log(`Found fuzzy match: ${fuzzyMatches[0].path}`);
             return fuzzyMatches[0].path;
         }
         
@@ -1469,7 +1469,7 @@ ${yaml}---
             const existingTarget = this.app.vault.getAbstractFileByPath(targetPath);
             if (existingTarget instanceof TFile) {
                 // File already exists at the target location with the citekey name
-                console.log(`Attachment already exists at target location: ${targetPath}`);
+                // console.log(`Attachment already exists at target location: ${targetPath}`);
                 return targetPath;
             }
             
@@ -1551,7 +1551,7 @@ ${yaml}---
                         return initialPath; // Return initial path if move failed
                     }
                 } catch (readError) {
-                    console.log(`Referenced attachment not found or could not be read at: ${fullPath}`, readError);
+                    // console.log(`Referenced attachment not found or could not be read at: ${fullPath}`, readError);
                 }
             } catch (error) {
                 console.error(`Error importing attachment: ${filePath}`, error);

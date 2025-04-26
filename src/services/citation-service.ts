@@ -185,7 +185,7 @@ const ZOTERO_CONVERTERS = {
     DATE: {
         toTarget: (date: string | undefined): any => {
             // Debug logging for date conversion issues
-            console.log(`Converting date: "${date}" (type: ${typeof date})`);
+            // console.log(`Converting date: "${date}" (type: ${typeof date})`);
             return parseDateRobust(date);
         }
     },
@@ -666,7 +666,7 @@ export class CitationService {
         };
         
         if (isTodayDate(item.accessDate)) {
-            console.log("Special handling for current date in accessDate:", item.accessDate);
+            // console.log("Special handling for current date in accessDate:", item.accessDate);
             const now = new Date();
             csl.accessed = { 
                 'date-parts': [[now.getFullYear(), now.getMonth() + 1, now.getDate()]] 
@@ -718,10 +718,10 @@ export class CitationService {
                 const sourceValue = sourceData[rule.source];
                 
                 // Special debug for accessDate issues
-                if (rule.source === 'accessDate') {
-                    console.log(`Processing accessDate: "${sourceValue}" (type: ${typeof sourceValue})`);
-                    console.log('Full sourceData:', JSON.stringify(sourceData));
-                }
+                // if (rule.source === 'accessDate') {
+                    // console.log(`Processing accessDate: "${sourceValue}" (type: ${typeof sourceValue})`);
+                    // console.log('Full sourceData:', JSON.stringify(sourceData));
+                // }
 
                 // Proceed only if the source field exists and has a value
                 if (sourceValue !== undefined && sourceValue !== null && sourceValue !== '') {
@@ -807,7 +807,7 @@ export class CitationService {
             };
             
             if (isCurrentDateFormat(csl.accessed)) {
-                console.log("Post-processing fixing current date in accessed field:", csl.accessed);
+                // console.log("Post-processing fixing current date in accessed field:", csl.accessed);
                 const now = new Date();
                 csl.accessed = { 
                     'date-parts': [[now.getFullYear(), now.getMonth() + 1, now.getDate()]] 

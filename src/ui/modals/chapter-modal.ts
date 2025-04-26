@@ -4,6 +4,17 @@ import { Contributor, AdditionalField, Citation, AttachmentData, AttachmentType 
 import { ContributorField } from '../components/contributor-field';
 import { AdditionalFieldComponent } from '../components/additional-field';
 import { CitekeyGenerator } from '../../utils/citekey-generator';
+import { 
+    NoteCreationService,
+    TemplateVariableBuilderService,
+    FrontmatterBuilderService,
+    NoteContentBuilderService,
+    AttachmentManagerService,
+    ReferenceParserService,
+    CitationService
+} from '../../services';
+
+// Legacy import for compatibility
 import { FileManager } from '../../services/file-manager';
 
 // Define type for book entries used in this modal
@@ -11,8 +22,12 @@ import { FileManager } from '../../services/file-manager';
 type BookEntry = { id: string; title: string; path: string; frontmatter: any };
 
 export class ChapterModal extends Modal {
-    // Services
+    // Legacy service
     private fileManager: FileManager;
+    
+    // New services
+    private noteCreationService: NoteCreationService;
+    private citationService: CitationService;
     
     // Data state
     private additionalFields: AdditionalField[] = [];
@@ -49,15 +64,37 @@ export class ChapterModal extends Modal {
 
     constructor(app: App, private settings: BibliographyPluginSettings, initialBookPath?: string) {
         super(app);
+        
+        // Initialize legacy service for backwards compatibility
         this.fileManager = new FileManager(app, settings);
+        
+        // Initialize citation service for citekey generation
+        this.citationService = new CitationService(settings.citekeyOptions);
+        
+        // Set up new service layer
+        const templateVariableBuilder = new TemplateVariableBuilderService();
+        const frontmatterBuilder = new FrontmatterBuilderService(templateVariableBuilder);
+        const noteContentBuilder = new NoteContentBuilderService(frontmatterBuilder, templateVariableBuilder);
+        const attachmentManager = new AttachmentManagerService(app, settings);
+        const referenceParser = new ReferenceParserService(this.citationService);
+        
+        // Create the note creation service
+        this.noteCreationService = new NoteCreationService(
+            app,
+            settings,
+            referenceParser,
+            noteContentBuilder,
+            attachmentManager
+        );
+        
         this.initialBookPath = initialBookPath;
     }
 
     // Load initial book data if path provided
     private async loadInitialBook() {
          if (this.initialBookPath) {
-             // FetchBook returns BookEntry or null (now includes path)
-            const book = await this.fileManager.getBookEntryByPath(this.initialBookPath);
+            // Use noteCreationService for book retrieval
+            const book = await this.noteCreationService.getBookEntryByPath(this.initialBookPath);
             if (book) {
                 this.selectedBook = book; // Assign fetched book (type matches)
                 // Only apply the book data after UI elements are created
@@ -84,7 +121,7 @@ export class ChapterModal extends Modal {
         contentEl.createEl('h2', { text: 'Create Book Chapter Entry' });
         
         // Load available book entries for dropdown
-        this.bookEntries = await this.fileManager.getBookEntries(); // Returns BookEntry[]
+        this.bookEntries = await this.noteCreationService.getBookEntries();
         
         // Create the main form UI
         this.createMainForm(contentEl);
@@ -103,608 +140,580 @@ export class ChapterModal extends Modal {
             .setDesc('Unique identifier for this chapter')
             .addText(text => {
                 this.idInput = text.inputEl;
-                text.setPlaceholder('e.g., authorYEARchapter').onChange(value => {
-                     // Potential validation
-                });
+                text.setPlaceholder('Generated from author and year');
+                
+                // Add regenerate button as separate component
+                const parentElement = text.inputEl.parentElement;
+                if (!parentElement) return text;
+                
+                const regenerateButton = new ButtonComponent(parentElement)
+                    .setIcon('reset')
+                    .setTooltip('Regenerate citekey')
+                    .onClick(() => {
+                        // Get current form data for citekey generation
+                        const formData = this.getFormValues();
+                        
+                        // Only attempt to generate if we have required fields
+                        if (formData.title || (formData.author && formData.author.length)) {
+                            // Generate citekey using current form data
+                            const citekey = CitekeyGenerator.generate(formData, this.settings.citekeyOptions);
+                            // Update ID field
+                            this.idInput.value = citekey;
+                        } else {
+                            new Notice('Add title and contributors first to generate citekey');
+                        }
+                    });
+                
+                return text;
             });
 
-        // Title input (required)
+        // Chapter title (required)
         new Setting(contentEl)
-            .setName('Chapter Title')
+            .setName('Chapter title')
+            .setDesc('Title of this specific chapter')
             .addText(text => {
                 this.titleInput = text.inputEl;
-                text.setPlaceholder('Enter Chapter Title').onChange(value => {
-                    // Auto-generate a citekey if the title is provided and citekey is empty
-                    if (value.trim() && !this.idInput.value.trim() && this.selectedBook) {
-                        const baseCitation = { 
-                            title: value.trim(),
-                            year: this.yearInput?.value.trim() || this.selectedBook?.frontmatter?.year?.toString() || '',
-                            author: this.contributors
-                                .filter(c => c.role === 'author')
-                                .map(c => ({ given: c.given, family: c.family }))
-                        };
-                        // Suggest a key combining book and chapter info
-                        const generatedKey = CitekeyGenerator.generate(baseCitation);
-                        // Sanitize combined key (remove unsafe characters)
-                        const suggestedKey = `${this.selectedBook.id}_${generatedKey}`.replace(/[^a-zA-Z0-9_\-]+/g, '_'); 
-                        this.idInput.value = suggestedKey;
-                        this.idInput.dispatchEvent(new Event('input'));
-                        new Notice(`Generated citekey: ${suggestedKey}`, 3000);
-                    }
-                });
+                text.inputEl.addClass('bibliography-input-full');
+                return text;
             });
 
-        // Title-Short input (optional)
+        // Short title (optional)
         new Setting(contentEl)
-            .setName('Short Title')
+            .setName('Short title')
+            .setDesc('Abbreviated chapter title (optional)')
             .addText(text => {
                 this.titleShortInput = text.inputEl;
-                text.setPlaceholder('Enter Short Title (optional)').onChange(value => {});
+                return text;
             });
 
-        // Page input
+        // Page range (optional)
         new Setting(contentEl)
-            .setName('Page Range')
+            .setName('Pages')
+            .setDesc('Page range of this chapter (e.g., 123-145)')
             .addText(text => {
                 this.pageInput = text.inputEl;
-                text.setPlaceholder('e.g., 45-67').onChange(value => {});
+                return text;
             });
 
-        // --- Container Book Selection --- 
-        new Setting(contentEl).setName('Container Book').setHeading();
+        // --- Book Selection ---
+        new Setting(contentEl).setName('Book Information').setHeading();
 
+        // Book selector (required)
         const bookSetting = new Setting(contentEl)
-            // .setName('Container Book') Name moved to heading
-            .setDesc('Select the book that contains this chapter');
-            
-        // Add the dropdown
-        bookSetting.addDropdown(dropdown => {
-            this.bookDropdown = dropdown.selectEl;
-            dropdown.addOption('', 'Select a Book...'); // Empty default option
-            
-            this.bookEntries.forEach(book => {
-                // Use book path as value, title as display text
-                dropdown.addOption(book.path, `${book.title} (${book.id})`);
-            });
-            
-            // Set initial value if a book is already selected (e.g., from constructor)
-            if (this.selectedBook) {
-                dropdown.setValue(this.selectedBook.path);
-            }
-            
-            dropdown.onChange(async (selectedPath) => {
-                if (selectedPath) {
-                    // Find the full book entry based on the selected path
-                    const book = this.bookEntries.find(b => b.path === selectedPath);
-                    if (book) {
-                        this.selectedBook = book; // Type is correct (BookEntry)
-                        this.populateFromBook(book); // Pass correct type
-                        this.bookPathDisplay.textContent = `Selected book path: ${selectedPath}`;
-                        this.bookPathDisplay.removeClass('setting-hidden');
-                        this.bookPathDisplay.addClass('setting-visible');
-                    } else {
-                        // Selected path not found: show error state
-                        this.selectedBook = null;
-                        this.bookPathDisplay.textContent = 'Error: Could not load selected book.';
-                        this.bookPathDisplay.removeClass('setting-hidden');
-                        this.bookPathDisplay.addClass('setting-visible');
-                    }
-                } else {
-                    this.selectedBook = null;
-                     // TODO: Consider clearing fields populated by the previous book
-                     // this.clearBookPopulatedFields(); 
-                    this.bookPathDisplay.textContent = 'No book selected';
-                    this.bookPathDisplay.removeClass('setting-visible');
-                    this.bookPathDisplay.addClass('setting-hidden');
-                }
+            .setName('Book')
+            .setDesc('Select the book this chapter belongs to');
+        
+        // Create the book dropdown
+        this.bookDropdown = bookSetting.controlEl.createEl('select', { cls: 'dropdown' });
+        
+        // Add empty option first 
+        this.bookDropdown.createEl('option', { value: '', text: 'Select a book' });
+        
+        // Add available books from your literature notes
+        this.bookEntries.forEach(book => {
+            this.bookDropdown.createEl('option', { 
+                value: book.path, 
+                text: book.title || book.id 
             });
         });
-        
-        // Add a display area for the selected book path (initially hidden)
-        this.bookPathDisplay = contentEl.createDiv({ cls: 'bibliography-book-path setting-item-description' });
-        if (this.selectedBook) {
-            this.bookPathDisplay.addClass('setting-visible');
-            this.bookPathDisplay.textContent = `Selected book path: ${this.selectedBook.path}`;
-        } else {
-            this.bookPathDisplay.addClass('setting-hidden');
-            this.bookPathDisplay.textContent = '';
-        }
 
-        // --- Chapter Contributors ---
-        new Setting(contentEl).setName('Chapter Contributors').setHeading();
-        // Container for contributor fields
-        const contributorsContainer = contentEl.createDiv({ cls: 'bibliography-contributors-container' });
-        this.contributorsListContainer = contributorsContainer.createDiv({ cls: 'bibliography-contributors-list' });
-        // Add Contributor button (uses Obsidian Setting for consistent styling)
-        // Add Contributor button
-        new Setting(contributorsContainer)
-            .addButton(button => {
-                button.setButtonText('Add Contributor')
-                    .onClick(() => {
-                        this.addContributor('author', '', '');
-                    });
-            });
+        // Add "book path" display that will be shown when a book is selected
+        this.bookPathDisplay = contentEl.createEl('div', { 
+            cls: 'book-path-display setting-item setting-hidden',
+        });
 
-        // Add initial contributor field if none populated from book
-        if (this.contributors.length === 0) {
-            this.addContributor('author', '', '');
-        }
-
-        // --- Publication Details (Chapter Specific) --- 
-         new Setting(contentEl).setName('Chapter Publication Details').setHeading();
-
-        // Year (may differ from book year)
-        new Setting(contentEl)
-            .setName('Year')
-            .addText(text => {
-                this.yearInput = text.inputEl;
-                text.setPlaceholder('Enter Year (if differs from book)').onChange(value => {});
-            });
-
-        new Setting(contentEl)
-            .setName('Month')
-            .addDropdown(dropdown => {
-                this.monthDropdown = dropdown.selectEl;
-                dropdown.addOptions({
-                    '0': 'Select Month (optional)',
-                    '1': 'January', '2': 'February', '3': 'March', '4': 'April', 
-                    '5': 'May', '6': 'June', '7': 'July', '8': 'August', 
-                    '9': 'September', '10': 'October', '11': 'November', '12': 'December',
-                });
-                dropdown.onChange(value => {});
-            });
-
-        new Setting(contentEl)
-            .setName('Day')
-            .addText(text => {
-                this.dayInput = text.inputEl;
-                text.setPlaceholder('Enter Day (optional)').onChange(value => {});
-            });
+        // Add event listener for book selection
+        this.bookDropdown.addEventListener('change', () => {
+            const selectedPath = this.bookDropdown.value;
             
-        // DOI (Chapter specific DOI, if exists)
+            if (selectedPath) {
+                const selectedBook = this.bookEntries.find(book => book.path === selectedPath);
+                
+                if (selectedBook) {
+                    this.selectedBook = selectedBook;
+                    this.populateFromBook(selectedBook);
+                    
+                    // Show the book path for user reference
+                    this.bookPathDisplay.textContent = `Selected book path: ${selectedPath}`;
+                    this.bookPathDisplay.removeClass('setting-hidden');
+                    this.bookPathDisplay.addClass('setting-visible');
+                }
+            } else {
+                this.selectedBook = null;
+                this.bookPathDisplay.addClass('setting-hidden');
+                this.bookPathDisplay.removeClass('setting-visible');
+            }
+        });
+
+        // DOI field
         new Setting(contentEl)
             .setName('DOI')
-            .setDesc('Chapter-specific DOI, if available')
+            .setDesc('Digital Object Identifier for this chapter (if available)')
             .addText(text => {
                 this.doiInput = text.inputEl;
-                text.setPlaceholder('Enter DOI (optional)').onChange(value => {});
+                return text;
             });
 
-        // Abstract
+        // Create a simple grid for date inputs (apply only to chapter)
+        const dateContainer = contentEl.createDiv({ cls: 'bibliography-date-container' });
+        
+        // Year field (optional override)
+        const yearSetting = new Setting(dateContainer)
+            .setName('Year')
+            .setDesc('Publication year (if different from book)');
+        
+        this.yearInput = yearSetting.controlEl.createEl('input', { type: 'number' });
+        this.yearInput.placeholder = 'YYYY';
+        
+        // Month field (optional)
+        const monthSetting = new Setting(dateContainer)
+            .setName('Month')
+            .setDesc('Publication month (if applicable)');
+        
+        this.monthDropdown = monthSetting.controlEl.createEl('select');
+        // Add month options
+        this.monthDropdown.createEl('option', { value: '', text: '' });
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                       'July', 'August', 'September', 'October', 'November', 'December'];
+        
+        months.forEach((month, index) => {
+            this.monthDropdown.createEl('option', { value: (index + 1).toString(), text: month });
+        });
+        
+        // Day field (optional)
+        const daySetting = new Setting(dateContainer)
+            .setName('Day')
+            .setDesc('Publication day (if applicable)');
+        
+        this.dayInput = daySetting.controlEl.createEl('input', { type: 'number' });
+        this.dayInput.placeholder = 'DD';
+        this.dayInput.min = '1';
+        this.dayInput.max = '31';
+
+        // Abstract field
         new Setting(contentEl)
             .setName('Abstract')
-            .addTextArea(text => {
-                this.abstractInput = text.inputEl;
-                text.setPlaceholder('Enter Abstract (optional)').onChange(value => {});
+            .setDesc('Chapter summary (optional)')
+            .addTextArea(textarea => {
+                this.abstractInput = textarea.inputEl;
+                textarea.inputEl.rows = 4;
+                textarea.inputEl.addClass('bibliography-input-full');
+                return textarea;
             });
 
-        // --- Attachment --- 
-        new Setting(contentEl).setName('Attachment').setHeading();
-        const attachmentSection = new Setting(contentEl)
-            // .setName('Attachment') // Name moved to heading
-            .setDesc('Handle attachment (optional)');
+        // --- Contributors Section ---
+        contentEl.createEl('h3', { text: 'Contributors' });
         
-       // Create import button setting (hidden initially)
-        const importSetting = new Setting(contentEl)
-            .setName('Select File to Import')
-            .addButton(button => {
-                // Store the ButtonComponent instance
-                this.importButtonComponent = button; 
-                button.setButtonText('Choose File').onClick(async () => {
-                    const fileInput = document.createElement('input');
-                    fileInput.type = 'file';
-                    fileInput.accept = '.pdf, .epub';
-                    fileInput.onchange = () => {
-                        if (fileInput.files && fileInput.files.length > 0) {
-                            this.attachmentData = {
-                                type: AttachmentType.IMPORT,
-                                file: fileInput.files[0],
-                                filename: fileInput.files[0].name
-                            };
-                            // Use || '' fallback for potentially undefined filename
-                            button.setButtonText(this.attachmentData.filename || 'Choose File'); 
-                            this.filePathDisplay.textContent = `Selected for import: ${this.attachmentData.filename || ''}`;
-                            this.filePathDisplay.removeClass('setting-hidden');
-                            this.filePathDisplay.addClass('setting-visible');
-                        }
-                    };
-                    fileInput.click();
-                });
-            });
-        this.importSettingEl = importSetting.settingEl; // Store setting element
-            
-        // Define file suggester class for better file selection
-        class FileSuggestModal extends FuzzySuggestModal<TFile> {
-            private files: TFile[];
-            private callback: (file: TFile) => void;
-            private suggestedPath?: string;
-
-            constructor(app: App, callback: (file: TFile) => void, suggestedPath?: string) {
-                super(app);
-                this.files = this.app.vault.getFiles();
-                this.callback = callback;
-                this.suggestedPath = suggestedPath;
-                this.setPlaceholder("Select a file from your vault");
-            }
-
-            getItems(): TFile[] {
-                return this.files;
-            }
-
-            getItemText(file: TFile): string {
-                return file.path;
-            }
-
-            onChooseItem(file: TFile): void {
-                this.callback(file);
-            }
-            
-            onOpen() {
-                super.onOpen();
-                // If there's a suggested path, try to highlight/select it
-                if (this.suggestedPath) {
-                    const suggestedFile = this.files.find(file => file.path === this.suggestedPath);
-                    if (suggestedFile) {
-                        // Set initial query to the filename to help find it
-                        const filename = suggestedFile.name;
-                        this.inputEl.value = filename;
-                        this.inputEl.dispatchEvent(new Event('input'));
-                    }
-                }
-            }
-        }
+        // Container for contributor fields
+        this.contributorsListContainer = contentEl.createDiv({ cls: 'bibliography-contributors' });
         
-        // Create link button setting (hidden initially)
-        const linkSetting = new Setting(contentEl)
-            .setName('Link to Existing File')
-            .addButton(button => {
-                // Store the ButtonComponent instance
-                this.linkButtonComponent = button; 
-                button.setButtonText('Select File').onClick(() => {
-                    // Suggest book's attachment first if available
-                    let suggestedPath = '';
-                    if (this.selectedBook?.frontmatter?.attachment) {
-                         const bookAttachmentLink = this.selectedBook.frontmatter.attachment[0];
-                         // Regex to extract path from [[path]] or [[path|alias]]
-                         const matches = bookAttachmentLink?.match(/\[\[(.*?)(?:\|.*?)?\]\]/);
-                         if (matches && matches[1]) {
-                             suggestedPath = matches[1];
-                         }
-                    }
+        // Start with one author field
+        this.addContributorField('author');
+        
+        // Add button to add more contributors
+        const addContributorButton = new ButtonComponent(contentEl)
+            .setButtonText('Add contributor')
+            .onClick(() => this.addContributorField('author'));
 
-                    new FileSuggestModal(
-                        this.app, 
-                        (file) => {
-                            this.attachmentData = {
-                                type: AttachmentType.LINK,
-                                path: file.path,
-                                filename: file.name
-                            };
-                            this.linkButtonComponent?.setButtonText(file.name || 'Select File');
-                            this.filePathDisplay.textContent = `Linked to: ${file.path}`;
-                            this.filePathDisplay.removeClass('setting-hidden');
-                            this.filePathDisplay.addClass('setting-visible');
-                        },
-                        suggestedPath
-                    ).open();
-                });
-            });
-         this.linkSettingEl = linkSetting.settingEl; // Store setting element
-            
-        // Add dropdown for attachment type
-        attachmentSection.addDropdown(dropdown => {
-            this.attachmentTypeSelect = dropdown.selectEl;
-            dropdown.addOptions({
-                'none': 'No Attachment',
-                'import': 'Import File (Copy to biblib folder)',
-                'link': 'Link to Existing File'
-            });
-            dropdown.onChange(value => {
-                this.attachmentData.type = value as AttachmentType;
-                this.attachmentData.file = undefined;
-                this.attachmentData.path = undefined;
+        // --- Additional Fields Section ---
+        contentEl.createEl('h3', { text: 'Additional fields' });
+        
+        // Container for additional fields
+        this.additionalFieldsContainer = contentEl.createDiv({ cls: 'bibliography-additional-fields' });
+        
+        // Add button to add more fields
+        const addFieldButton = new ButtonComponent(contentEl)
+            .setButtonText('Add field')
+            .onClick(() => this.addAdditionalField('', '', 'standard'));
 
-                // Show/hide appropriate setting element
-                if (value === 'import') {
-                    this.importSettingEl.removeClass('setting-hidden');
-                    this.importSettingEl.addClass('setting-visible');
-                    this.linkSettingEl.removeClass('setting-visible');
-                    this.linkSettingEl.addClass('setting-hidden');
-                } else if (value === 'link') {
-                    this.linkSettingEl.removeClass('setting-hidden');
-                    this.linkSettingEl.addClass('setting-visible');
-                    this.importSettingEl.removeClass('setting-visible');
-                    this.importSettingEl.addClass('setting-hidden');
-                } else {
-                    this.importSettingEl.removeClass('setting-visible');
-                    this.importSettingEl.addClass('setting-hidden');
-                    this.linkSettingEl.removeClass('setting-visible');
-                    this.linkSettingEl.addClass('setting-hidden');
-                }
-                
-                // Reset button texts and file path display using stored components
-                this.importButtonComponent?.setButtonText('Choose File'); 
-                this.linkButtonComponent?.setButtonText('Select File');
-                this.filePathDisplay.textContent = 'No file selected';
-                if (value === 'none') {
-                    this.filePathDisplay.removeClass('setting-visible');
-                    this.filePathDisplay.addClass('setting-hidden');
-                } else {
-                    this.filePathDisplay.removeClass('setting-hidden');
-                    this.filePathDisplay.addClass('setting-visible');
-                }
-            });
+        // --- Attachment Section ---
+        this.createAttachmentSection(contentEl);
+
+        // --- Create final buttons (Cancel and Create Note) ---
+        const finalButtonContainer = contentEl.createDiv({ cls: 'bibliography-form-buttons' });
+        
+        // Cancel button
+        const cancelButton = finalButtonContainer.createEl('button', { 
+            text: 'Cancel',
+            cls: 'bibliography-cancel-button'
         });
+        cancelButton.onclick = () => this.close();
         
-        // Display area for showing the selected/linked file path
-        this.filePathDisplay = contentEl.createDiv({ cls: 'bibliography-file-path setting-item-description' });
-        this.filePathDisplay.addClass('setting-hidden'); // Initially hidden
-        
-         // Add the hidden settings elements to the DOM *after* the dropdown setting
-        attachmentSection.settingEl.insertAdjacentElement('afterend', this.linkSettingEl);
-        attachmentSection.settingEl.insertAdjacentElement('afterend', this.importSettingEl);
-         // Initially hide them
-         this.importSettingEl.addClass('setting-hidden');
-         this.linkSettingEl.addClass('setting-hidden');
-
-
-        // --- Additional CSL fields section --- 
-        new Setting(contentEl).setName('Additional Fields').setHeading();
-        this.additionalFieldsContainer = contentEl.createDiv();
-
-        const addFieldButton = contentEl.createEl('button', { 
-            text: 'Add Field', 
-            cls: 'bibliography-add-field-button' 
-        });
-        addFieldButton.onclick = () => {
-            this.addAdditionalField('standard', '', '');
-        };
-
-        // --- Submit Button --- 
-        const finalButtonContainer = contentEl.createDiv({cls: 'bibliography-submit-container'});
+        // Submit button
         const submitButton = finalButtonContainer.createEl('button', { 
             text: 'Create Chapter Note', 
-            cls: 'mod-cta create-button' 
+            cls: 'mod-cta create-button' // Use call to action style
         });
-        submitButton.onclick = async () => {
-            const citation = this.getFormValues();
+        submitButton.onclick = async () => { // Make async
+            // Get the current form values
+            const citation: Citation = this.getFormValues();
+            
+            // Validate required fields before proceeding
             if (!this.validateForm(citation)) {
                 return;
             }
+            
+            // Disable button during submission
             submitButton.disabled = true;
             submitButton.textContent = 'Creating...';
+
             await this.handleSubmit(citation);
-            // Button state handled in handleSubmit
         };
     }
-    
-    /**
-     * Add a contributor UI component
-     */
-    private addContributor(role: string = 'author', given: string = '', family: string = ''): ContributorField | null {
-        const contributor: Contributor = { role, given, family };
-        // Allow multiple blank contributor entries; only prevent duplicates when both given and family are non-empty
-        const isDuplicate = this.contributors.some(c => c.role === role && c.given === given && c.family === family);
-        if ((given || family) && isDuplicate) {
-            // Only block duplicates for entries where user has filled in a name
-            return null;
-        }
-        this.contributors.push(contributor);
-        
-       return new ContributorField(
-            this.contributorsListContainer, 
-            contributor,
-            (contributorToRemove) => {
-                this.contributors = this.contributors.filter(c => c !== contributorToRemove);
-            }
-        );
-    }
 
     /**
-     * Add an additional field UI component
+     * Create the attachment section of the modal
      */
-    private addAdditionalField(type: AdditionalField['type'] = 'standard', name: string = '', value: any = ''): AdditionalFieldComponent | null {
-        // Avoid adding duplicate fields by name
-        const existingFieldIndex = this.additionalFields.findIndex(f => f.name === name);
-        let field: AdditionalField;
-
-        if (existingFieldIndex === -1) {
-             field = { type, name, value };
-             this.additionalFields.push(field);
-        } else {
-            // Update existing field value and type
-            this.additionalFields[existingFieldIndex].value = value;
-            this.additionalFields[existingFieldIndex].type = type;
-            // Don't add a duplicate UI component
-            return null;
-        }
-
-        return new AdditionalFieldComponent(
-            this.additionalFieldsContainer,
-            field,
-            (fieldToRemove) => {
-                this.additionalFields = this.additionalFields.filter(f => f !== fieldToRemove);
-            }
-        );
-    }
-    
-    /**
-     * Populate form fields based on the selected container book
-     */
-    private populateFromBook(book: BookEntry): void { // Use BookEntry type
-        // --- Clear previous book-related fields --- 
-        const bookRelatedFieldNames = new Set([
-            'container-title', 'container-title-short', 'collection-title', 
-            'collection-number', 'publisher', 'publisher-place', 'ISBN'
-        ]);
-        const bookRelatedContributorRoles = new Set(['editor', 'container-author']);
-
-        this.additionalFields = this.additionalFields.filter(field => !bookRelatedFieldNames.has(field.name));
-        this.contributors = this.contributors.filter(c => !bookRelatedContributorRoles.has(c.role)); 
-
-        // --- Re-render fields/contributors --- 
-        this.additionalFieldsContainer.empty(); 
-        this.additionalFields.forEach(f => this.addAdditionalField(f.type, f.name, f.value));
-        this.contributorsListContainer.empty();
-        this.contributors.forEach(c => this.addContributor(c.role, c.given, c.family));
-        // Ensure at least one author field exists for the chapter if none remain
-        if (!this.contributors.some(c => c.role === 'author')) {
-             this.addContributor('author', '', '');
-        }
-
-        // --- Populate fields from book --- 
-        this.addAdditionalField('standard', 'container-title', book.title);
-        if (book.frontmatter['title-short']) {
-            this.addAdditionalField('standard', 'container-title-short', book.frontmatter['title-short']);
-        }
-        if (book.frontmatter['collection-title']) {
-            this.addAdditionalField('standard', 'collection-title', book.frontmatter['collection-title']);
-        }
-        if (book.frontmatter['collection-number']) {
-            this.addAdditionalField('number', 'collection-number', book.frontmatter['collection-number']);
-        }
-        if (book.frontmatter.publisher) {
-            this.addAdditionalField('standard', 'publisher', book.frontmatter.publisher);
-        }
-        if (book.frontmatter['publisher-place']) {
-            this.addAdditionalField('standard', 'publisher-place', book.frontmatter['publisher-place']);
-        }
-        if (book.frontmatter.ISBN) {
-            this.addAdditionalField('standard', 'ISBN', book.frontmatter.ISBN);
-        }
+    private createAttachmentSection(contentEl: HTMLElement) {
+        const attachmentContainer = contentEl.createDiv({ cls: 'attachment-container' });
         
-        // Set year/date info only if chapter fields are empty
-        if (!this.yearInput.value && book.frontmatter.year) {
-            this.yearInput.value = book.frontmatter.year.toString();
-            this.yearInput.dispatchEvent(new Event('input'));
-        }
-        if (this.monthDropdown.value === '0' && book.frontmatter.issued?.['date-parts']?.[0]?.[1]) {
-             this.monthDropdown.value = book.frontmatter.issued['date-parts'][0][1].toString();
-             this.monthDropdown.dispatchEvent(new Event('change'));
-        }
-         if (!this.dayInput.value && book.frontmatter.issued?.['date-parts']?.[0]?.[2]) {
-             this.dayInput.value = book.frontmatter.issued['date-parts'][0][2].toString();
-             this.dayInput.dispatchEvent(new Event('input'));
-        }
-
-        // Add book editors as chapter editors (CSL 'editor')
-        let foundEditors = false;
-        const processEditor = (editor: any) => {
-             if (editor && typeof editor === 'object') {
-                 if (editor.literal) {
-                     // Add contributor returns null if duplicate, which is fine
-                      this.addContributor('editor', '', editor.literal);
-                      foundEditors = true;
-                 } else if (editor.family || editor.given) { // Check if either part exists
-                     // Add contributor returns null if duplicate
-                     this.addContributor('editor', editor.given || '', editor.family || '');
-                     foundEditors = true;
-                 }
-             }
-        };
-
-        const editorRolesToCheck = ['editor', 'collection-editor', 'container-author'];
-        editorRolesToCheck.forEach(role => {
-             if (book.frontmatter[role] && Array.isArray(book.frontmatter[role])) {
-                 book.frontmatter[role].forEach(processEditor);
-             }
-        });
-
-        if (foundEditors) {
-            new Notice('Populated editors from container book.', 3000);
-        }
+        // Add section heading
+        attachmentContainer.createEl('div', { cls: 'setting-item-heading', text: 'Chapter Attachment' });
         
-        // Offer to use book's attachment
-        if (book.frontmatter.attachment && Array.isArray(book.frontmatter.attachment) && book.frontmatter.attachment.length > 0) {
-            const attachmentLink = book.frontmatter.attachment[0]; 
-            const matches = attachmentLink.match(/\[\[(.*?)(?:\|.*?)?\]\]/);
+        // Create attachment setting
+        const attachmentSetting = new Setting(attachmentContainer)
+            .setDesc('Optionally attach a PDF/EPUB for this specific chapter');
+        
+        // Create attachment type dropdown
+        this.attachmentTypeSelect = attachmentSetting.controlEl.createEl('select', { cls: 'dropdown' });
+        
+        // Add options for None, Import, Link
+        this.attachmentTypeSelect.createEl('option', { value: AttachmentType.NONE, text: 'None' });
+        this.attachmentTypeSelect.createEl('option', { value: AttachmentType.IMPORT, text: 'Import new file' });
+        this.attachmentTypeSelect.createEl('option', { value: AttachmentType.LINK, text: 'Link to existing file' });
+        
+        // Container for import file option
+        this.importSettingEl = attachmentContainer.createDiv({ cls: 'setting' });
+        this.importSettingEl.style.display = 'none'; // Hide initially
+        
+        const importSetting = new Setting(this.importSettingEl)
+            .setDesc('Select a PDF or EPUB file to import');
             
-            if (matches && matches[1]) {
-                const filePath = matches[1];
-                // Set the select dropdown to "link" option
-                this.attachmentTypeSelect.value = 'link';
-                this.attachmentTypeSelect.dispatchEvent(new Event('change')); // Trigger onChange to show correct button
+        // Add button to select file for import
+        importSetting.addButton(button => {
+            this.importButtonComponent = button; // Store reference to button
+            button.setButtonText('Choose file');
+            button.onClick(() => {
+                // Create file input element
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = '.pdf,.epub';
                 
-                // Setup the attachment data
+                // Handle file selection
+                fileInput.addEventListener('change', () => {
+                    if (fileInput.files && fileInput.files.length > 0) {
+                        const file = fileInput.files[0];
+                        
+                        // Update button text
+                        button.setButtonText(file.name);
+                        
+                        // Store file data for later use
+                        this.attachmentData = {
+                            type: AttachmentType.IMPORT,
+                            file: file
+                        };
+                    }
+                });
+                
+                // Trigger file dialog
+                fileInput.click();
+            });
+            return button;
+        });
+        
+        // Create link to existing file option
+        this.linkSettingEl = attachmentContainer.createDiv({ cls: 'setting' });
+        this.linkSettingEl.style.display = 'none'; // Hide initially
+        
+        const linkSetting = new Setting(this.linkSettingEl)
+            .setDesc('Select an existing file in your vault');
+            
+        // Add button to select file to link
+        linkSetting.addButton(button => {
+            this.linkButtonComponent = button; // Store reference to button
+            button.setButtonText('Choose file');
+            button.onClick(() => {
+                // Create a modal to select file from vault
+                new FileSuggestModal(this.app, (file) => {
+                    // Update button text
+                    button.setButtonText(file.name);
+                    
+                    // Store file data for later use
+                    this.attachmentData = {
+                        type: AttachmentType.LINK,
+                        path: file.path
+                    };
+                }).open();
+            });
+            return button;
+        });
+        
+        // Add event listener to show/hide appropriate containers based on selection
+        this.attachmentTypeSelect.addEventListener('change', () => {
+            const selectedType = this.attachmentTypeSelect.value as AttachmentType;
+            
+            // Hide all containers first
+            this.importSettingEl.style.display = 'none';
+            this.linkSettingEl.style.display = 'none';
+            
+            // Show selected container
+            if (selectedType === AttachmentType.IMPORT) {
+                this.importSettingEl.style.display = 'block';
+                
+                // Reset attachment data if type changed but no specific file selected yet
+                if (this.attachmentData.type !== AttachmentType.IMPORT || !this.attachmentData.file) {
+                    this.attachmentData = {
+                        type: AttachmentType.IMPORT
+                    };
+                    // Reset button text if needed
+                    if (this.importButtonComponent)
+                        this.importButtonComponent.setButtonText('Choose file');
+                }
+            } else if (selectedType === AttachmentType.LINK) {
+                this.linkSettingEl.style.display = 'block';
+                
+                // Reset attachment data if type changed but no path selected yet
+                if (this.attachmentData.type !== AttachmentType.LINK || !this.attachmentData.path) {
+                    this.attachmentData = {
+                        type: AttachmentType.LINK
+                    };
+                    // Reset button text if needed
+                    if (this.linkButtonComponent)
+                        this.linkButtonComponent.setButtonText('Choose file');
+                }
+            } else {
+                // No attachment
                 this.attachmentData = {
-                    type: AttachmentType.LINK,
-                    path: filePath,
-                    filename: filePath.split('/').pop() || filePath
+                    type: AttachmentType.NONE
                 };
+            }
+        });
+    }
+
+    /**
+     * Add a contributor field to the UI and data model
+     */
+    private addContributorField(
+        role: string = 'author', 
+        family: string = '', 
+        given: string = '',
+        literal: string = ''
+    ): void {
+        // Create contributor object
+        const contributor: Contributor = {
+            role,
+            family,
+            given,
+            literal
+        };
+        
+        // Create and append the component
+        const component = new ContributorField(
+            this.contributorsListContainer,
+            contributor,
+            (contributor) => {
+                // Remove from contributors array
+                const index = this.contributors.findIndex(c => 
+                    c.role === contributor.role &&
+                    c.family === contributor.family &&
+                    c.given === contributor.given &&
+                    c.literal === contributor.literal
+                );
                 
-                // Update the link button text and file path display
-                // Use stored ButtonComponent instance
-                this.linkButtonComponent?.setButtonText(this.attachmentData.filename || 'Select File Path');
-                this.filePathDisplay.textContent = `Linked to: ${filePath}`;
-                this.filePathDisplay.removeClass('setting-hidden');
-                this.filePathDisplay.addClass('setting-visible');
-                new Notice(`Pre-filled attachment link from book: ${filePath}`, 3000);
+                if (index !== -1) {
+                    this.contributors.splice(index, 1);
+                }
+            }
+        );
+        
+        // Add to contributors array if values provided
+        if (role || family || given || literal) {
+            this.contributors.push({
+                role,
+                family,
+                given,
+                literal
+            });
+        }
+    }
+
+    /**
+     * Add an additional field to the UI and data model
+     */
+    private addAdditionalField(name: string = '', value: any = '', type: string = 'standard'): void {
+        // Create field object
+        const additionalField: AdditionalField = {
+            name,
+            value,
+            type
+        };
+        
+        // Create and append the component
+        const component = new AdditionalFieldComponent(
+            this.additionalFieldsContainer,
+            additionalField,
+            (field) => {
+                // Remove from additionalFields array
+                const index = this.additionalFields.findIndex(f => 
+                    f.name === field.name &&
+                    f.value === field.value &&
+                    f.type === field.type
+                );
+                
+                if (index !== -1) {
+                    this.additionalFields.splice(index, 1);
+                }
+            }
+        );
+        
+        // Add to additionalFields array if name provided
+        if (name) {
+            this.additionalFields.push(additionalField);
+        }
+    }
+
+    /**
+     * Populate form fields from book data for chapter creation
+     */
+    private populateFromBook(book: BookEntry) {
+        if (!book) return;
+        
+        // Some types are duplicated on this.additionalFields (it holds different data)
+        const fm = book.frontmatter;
+        
+        // Auto-generate citekey for chapter based on book ID
+        // Only if ID field is empty or matches a previous book's pattern
+        if (!this.idInput.value || this.idInput.value.includes('.ch')) {
+            // Generate chapter citekey based on book ID
+            this.idInput.value = `${book.id}.ch1`;
+        }
+        
+        // We don't populate the title, as this is for the chapter title
+        
+        // If no contributors have been added yet, copy the book's authors as default
+        if (this.contributors.length === 0 || 
+            (this.contributors.length === 1 && !this.contributors[0].family && !this.contributors[0].given)) {
+            
+            // Clear existing contributors from UI
+            this.contributorsListContainer.empty();
+            this.contributors = [];
+            
+            // Copy book authors if available
+            if (fm.author && Array.isArray(fm.author)) {
+                fm.author.forEach((author: any) => {
+                    this.addContributorField('author', author.family, author.given, author.literal);
+                });
             }
         }
     }
-    
+
     /**
-     * Get all form values as a Citation object (ready for FileManager)
+     * Get all form values as a Citation object
      */
     private getFormValues(): Citation {
+        if (!this.selectedBook) {
+            throw new Error("No book selected");
+        }
+        
+        // Get selected book data
+        const bookData = this.selectedBook.frontmatter;
+        
+        // Build citation object from form fields
         const citation: Citation = {
-            // Required fields
-            id: this.idInput.value.trim(),
-            type: 'chapter', // Fixed type for this modal
-            title: this.titleInput.value.trim(),
-            year: this.yearInput.value.trim(), // Required by validation
-            // Optional chapter-specific fields
-            'title-short': this.titleShortInput.value.trim() || undefined,
-            page: this.pageInput.value.trim() || undefined,
-            abstract: this.abstractInput.value.trim() || undefined,
-            month: this.monthDropdown.value !== '0' ? this.monthDropdown.value : undefined,
-            day: this.dayInput.value.trim() || undefined,
-            DOI: this.doiInput.value.trim() || undefined,
-             // Container info (conditionally added)
-            'container-title': this.selectedBook?.title || undefined, 
-            // Inherit tags from container book, excluding the literature note tag
-            tags: this.selectedBook?.frontmatter?.tags && Array.isArray(this.selectedBook.frontmatter.tags)
-                ? [...new Set(
-                    this.selectedBook.frontmatter.tags
-                        .filter((tag: string) => tag !== this.settings.literatureNoteTag)
-                )]
-                : []
+            id: this.idInput.value,
+            type: 'chapter', // Fixed as chapter type
+            title: this.titleInput.value,
+            'title-short': this.titleShortInput.value || undefined,
+            'container-title': bookData.title, // Book title
+            publisher: bookData.publisher, // Book publisher
+            'publisher-place': bookData['publisher-place'], // Book publisher place
+            page: this.pageInput.value || undefined,
+            DOI: this.doiInput.value || undefined,
+            abstract: this.abstractInput.value || undefined,
+            // Chapter-specific fields we may want to include
+            'container-author': bookData.author, // Book author
+            volume: bookData.volume,
+            edition: bookData.edition,
+            isbn: bookData.ISBN,
         };
         
-        // Ensure container-title is present if a book is selected
-        if (!citation['container-title'] && this.selectedBook) {
-            citation['container-title'] = this.selectedBook.title; // Fallback
+        // Handle date fields - prioritize chapter date if provided, otherwise use book date
+        const year = this.yearInput.value.trim();
+        const month = this.monthDropdown.value.trim();
+        const day = this.dayInput.value.trim();
+        
+        if (year) {
+            // If chapter has its own date info, use that
+            citation.year = year;
+            if (month) {
+                citation.month = month;
+                if (day) {
+                    citation.day = day;
+                }
+            }
+            
+            // Build CSL issued field
+            citation.issued = {
+                'date-parts': [[
+                    year ? Number(year) : undefined,
+                    month ? Number(month) : undefined,
+                    day ? Number(day) : undefined
+                ].filter(v => v !== undefined) as number[]]
+            };
+        } else if (bookData.issued) {
+            // Otherwise use the book's date info
+            citation.issued = bookData.issued;
+            
+            // Extract simple fields too
+            if (bookData.year) {
+                citation.year = bookData.year;
+            }
+            if (bookData.month) {
+                citation.month = bookData.month;
+            }
+            if (bookData.day) {
+                citation.day = bookData.day;
+            }
         }
+        
+        // Add the book ID as a related publication
+        citation.bookID = this.selectedBook.id;
         
         return citation;
     }
-    
+
     /**
-     * Validate the form before submission
+     * Validate form fields before submission
      */
     private validateForm(citation: Citation): boolean {
         let isValid = true;
-        let message = '';
-
-        // Helper to add/remove invalid class
-        const validateField = (inputEl: HTMLElement | null, condition: boolean, errorMsg: string): boolean => {
-            if (!inputEl) return true; // Skip if element doesn't exist, assume valid
-            if (!condition) {
-                isValid = false;
-                message = message || errorMsg;
-                inputEl.addClass('invalid');
-            } else {
-                inputEl.removeClass('invalid');
-            }
-            return condition; // Return condition for chaining checks
-        };
-
-        validateField(this.idInput, !!citation.id, 'Citekey is required.');
-        validateField(this.titleInput, !!citation.title, 'Chapter Title is required.');
-        validateField(this.bookDropdown, !!this.selectedBook, 'Container book selection is required.');
-
-        if (validateField(this.yearInput, !!citation.year, 'Year is required.')) {
-             validateField(this.yearInput, !isNaN(Number(citation.year)), 'Year must be a number.');
+        let message = 'Please complete all required fields:';
+        
+        // Check required fields
+        if (!citation.title) {
+            isValid = false;
+            message += '\n- Chapter title is required';
+        }
+        
+        if (!this.selectedBook) {
+            isValid = false;
+            message += '\n- You must select a book';
+        }
+        
+        if (!citation.id) {
+            isValid = false;
+            message += '\n- Citekey is required';
+        }
+        
+        // Check for at least one author
+        const hasAuthor = this.contributors.some(contributor => 
+            contributor.role === 'author' && 
+            (contributor.family || contributor.given || contributor.literal)
+        );
+        
+        if (!hasAuthor) {
+            isValid = false;
+            message += '\n- At least one author is required';
         }
 
         if (!isValid) {
@@ -712,41 +721,116 @@ export class ChapterModal extends Modal {
         }
         return isValid;
     }
-    
+
     /**
-     * Handle form submission: call FileManager to create the note
+     * Handle form submission to create the chapter note
      */
     private async handleSubmit(citation: Citation): Promise<void> {
-         // Combine chapter contributors and additional fields with book info
-         const finalContributors = [...this.contributors];
-         const finalAdditionalFields = [...this.additionalFields];
-
-         // Add book editors (handled by populateFromBook adding them with role 'editor')
-         // Add book-level fields from additionalFields (already added by populateFromBook)
-
+        if (!this.selectedBook) {
+            new Notice('No book selected');
+            return;
+        }
+        
         try {
-            await this.fileManager.createLiteratureNote(
+            // Get book author info for merging contributors
+            let bookContributors: Contributor[] = [];
+            
+            if (this.selectedBook.frontmatter) {
+                const roles = ['editor', 'translator', 'director', 'contributor'];
+                
+                // Extract contributors from book frontmatter
+                for (const role of roles) {
+                    const contributors = this.selectedBook.frontmatter[role];
+                    if (contributors && Array.isArray(contributors)) {
+                        contributors.forEach((person: any) => {
+                            // Add as contributor with book role
+                            bookContributors.push({
+                                role: role,
+                                family: person.family || '',
+                                given: person.given || '',
+                                literal: person.literal || ''
+                            });
+                        });
+                    }
+                }
+            }
+            
+            // Combine contributors, adding book-level contributors
+            // (Note: we only handle specific roles, and avoid duplicating author roles)
+            const finalContributors = [
+                ...this.contributors,
+                ...bookContributors
+            ];
+            
+            // Add book path as additional field
+            const bookPathField: AdditionalField = {
+                name: 'book_path',
+                value: this.selectedBook.path,
+                type: 'standard'
+            };
+            
+            const finalAdditionalFields = [
+                ...this.additionalFields,
+                bookPathField
+            ];
+            
+            // Use the noteCreationService to create the chapter
+            const result = await this.noteCreationService.createLiteratureNote({
                 citation,
-                finalContributors,
-                finalAdditionalFields,
-                this.attachmentData.type !== AttachmentType.NONE ? this.attachmentData : null
-            );
-            this.close(); // Close modal on success
-        } catch (error) { 
-            // Error notice shown by FileManager
+                contributors: finalContributors,
+                additionalFields: finalAdditionalFields,
+                attachmentData: this.attachmentData.type !== AttachmentType.NONE ? this.attachmentData : null
+            });
+            
+            if (result.success) {
+                this.close(); // Close modal on success
+            } else {
+                throw result.error || new Error('Unknown error creating chapter note');
+            }
+            
+        } catch (error) {
             console.error('Error creating chapter note:', error);
-            // Re-enable the submit button
-             const submitButton = this.contentEl.querySelector('.create-button') as HTMLButtonElement | null;
-             if (submitButton) {
-                 submitButton.disabled = false;
-                 submitButton.textContent = 'Create Chapter Note';
-             }
+            
+            // Re-enable the submit button if it exists
+            const submitButton = this.contentEl.querySelector('.create-button') as HTMLButtonElement | null;
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Create Chapter Note';
+            }
+            
+            new Notice(`Error creating chapter note: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
     onClose() {
         const { contentEl } = this;
-        // Clean up DOM elements
         contentEl.empty();
+    }
+}
+
+/**
+ * Modal for selecting a file from the vault
+ */
+class FileSuggestModal extends FuzzySuggestModal<TFile> {
+    private files: TFile[];
+    private onSelect: (file: TFile) => void;
+    
+    constructor(app: App, onSelect: (file: TFile) => void) {
+        super(app);
+        this.files = this.app.vault.getFiles().filter(file => 
+            file.extension === 'pdf' || file.extension === 'epub');
+        this.onSelect = onSelect;
+    }
+    
+    getItems(): TFile[] {
+        return this.files;
+    }
+    
+    getItemText(file: TFile): string {
+        return file.path;
+    }
+    
+    onChooseItem(file: TFile, evt: MouseEvent | KeyboardEvent): void {
+        this.onSelect(file);
     }
 }

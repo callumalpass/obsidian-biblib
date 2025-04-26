@@ -1,28 +1,23 @@
 import { App, Modal, Setting, Notice, normalizePath } from 'obsidian';
 import { BibliographyPluginSettings } from '../../types/settings';
-import { FileManager } from '../../services/file-manager';
+import { NoteCreationService, BulkImportSettings } from '../../services/note-creation-service';
 
 /**
  * Modal for configuring and initiating a bulk import operation
  */
 export class BulkImportModal extends Modal {
     private settings: BibliographyPluginSettings;
-    private fileManager: FileManager;
+    private noteCreationService: NoteCreationService;
     private selectedFile: File | null = null;
     private selectedFileName: string = '';
 
     // Current state for settings within this modal
-    private importSettings: {
-        attachmentHandling: 'none' | 'import';
-        annoteToBody: boolean;
-        citekeyPreference: 'imported' | 'generate';
-        conflictResolution: 'skip' | 'overwrite';
-    };
+    private importSettings: BulkImportSettings;
 
-    constructor(app: App, settings: BibliographyPluginSettings) {
+    constructor(app: App, settings: BibliographyPluginSettings, noteCreationService: NoteCreationService) {
         super(app);
         this.settings = settings;
-        this.fileManager = new FileManager(app, settings);
+        this.noteCreationService = noteCreationService;
         
         // Initialize import settings from plugin settings
         this.importSettings = {
@@ -199,7 +194,7 @@ export class BulkImportModal extends Modal {
                 }
                 
                 // Start the import process
-                await this.fileManager.importReferencesFromContent(
+                await this.noteCreationService.bulkImportFromString(
                     fileContent, 
                     fileExt || '', 
                     this.selectedFileName,

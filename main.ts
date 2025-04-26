@@ -8,6 +8,12 @@ import { BibliographyBuilder } from './src/services/bibliography-builder';
 import { ConnectorServer } from './src/services/connector-server';
 import { CitationService } from './src/services/citation-service';
 import { AttachmentData, AttachmentType } from './src/types/citation';
+import { ReferenceParserService } from './src/services/reference-parser-service';
+import { TemplateVariableBuilderService } from './src/services/template-variable-builder-service';
+import { FrontmatterBuilderService } from './src/services/frontmatter-builder-service';
+import { NoteContentBuilderService } from './src/services/note-content-builder-service';
+import { AttachmentManagerService } from './src/services/attachment-manager-service';
+import { NoteCreationService } from './src/services/note-creation-service';
 import './styles.css';
 
 // Uncomment to suppress non-error console logging in production
@@ -18,11 +24,49 @@ export default class BibliographyPlugin extends Plugin {
     settings: BibliographyPluginSettings;
     private connectorServer: ConnectorServer | null = null;
     private citationService: CitationService;
+    
+    // New service instances
+    private referenceParserService: ReferenceParserService;
+    private templateVariableBuilder: TemplateVariableBuilderService;
+    private frontmatterBuilder: FrontmatterBuilderService;
+    private noteContentBuilder: NoteContentBuilderService;
+    private attachmentManager: AttachmentManagerService;
+    private noteCreationService: NoteCreationService;
 
     async onload() {
         await this.loadSettings();
         
+        // Initialize all services
         this.citationService = new CitationService(this.settings.citekeyOptions);
+        
+        // Initialize the service layer
+        this.templateVariableBuilder = new TemplateVariableBuilderService();
+        
+        this.frontmatterBuilder = new FrontmatterBuilderService(
+            this.templateVariableBuilder
+        );
+        
+        this.noteContentBuilder = new NoteContentBuilderService(
+            this.frontmatterBuilder,
+            this.templateVariableBuilder
+        );
+        
+        this.attachmentManager = new AttachmentManagerService(
+            this.app,
+            this.settings
+        );
+        
+        this.referenceParserService = new ReferenceParserService(
+            this.citationService
+        );
+        
+        this.noteCreationService = new NoteCreationService(
+            this.app,
+            this.settings,
+            this.referenceParserService,
+            this.noteContentBuilder,
+            this.attachmentManager
+        );
 
         // Add command to create a literature note
         this.addCommand({
@@ -47,7 +91,7 @@ export default class BibliographyPlugin extends Plugin {
             id: 'bulk-import-references',
             name: 'Bulk import references',
             callback: () => {
-                new BulkImportModal(this.app, this.settings).open();
+                new BulkImportModal(this.app, this.settings, this.noteCreationService).open();
             },
         });
         
@@ -297,6 +341,20 @@ export default class BibliographyPlugin extends Plugin {
         // Update citation service with new options if it exists
         if (this.citationService) {
             this.citationService = new CitationService(this.settings.citekeyOptions);
+            
+            // Re-initialize the service layer with updated settings
+            this.referenceParserService = new ReferenceParserService(this.citationService);
+            
+            // Recreate the services that depend on settings
+            this.attachmentManager = new AttachmentManagerService(this.app, this.settings);
+            
+            this.noteCreationService = new NoteCreationService(
+                this.app,
+                this.settings,
+                this.referenceParserService,
+                this.noteContentBuilder,
+                this.attachmentManager
+            );
         }
     }
 }
