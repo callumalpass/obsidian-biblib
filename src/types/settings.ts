@@ -118,6 +118,11 @@ export interface BibliographyPluginSettings {
         // Template systems
         customFrontmatterFields: CustomFrontmatterField[]; // Custom frontmatter fields with templating
         citekeyOptions: CitekeyOptions; // Uses the interface defined above
+        // Bulk import settings
+        bulkImportAttachmentHandling: 'none' | 'import';
+        bulkImportAnnoteToBody: boolean;
+        bulkImportCitekeyPreference: 'imported' | 'generate';
+        bulkImportConflictResolution: 'skip' | 'overwrite';
 }
 
 // --- Default Plugin Settings ---
@@ -197,6 +202,11 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
                 authorYearDelimiter: '',
                 shortCitekeyDelimiter: '',
                 minCitekeyLength: 6
-        }
+        },
+        // Default bulk import settings
+        bulkImportAttachmentHandling: 'none',
+        bulkImportAnnoteToBody: true,
+        bulkImportCitekeyPreference: 'imported',
+        bulkImportConflictResolution: 'skip'
 };
 

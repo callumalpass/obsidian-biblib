@@ -1,6 +1,7 @@
 import { App, Plugin, Notice, Platform, TFile } from 'obsidian';
 import { BibliographyModal } from './src/ui/modals/bibliography-modal';
 import { ChapterModal } from './src/ui/modals/chapter-modal';
+import { BulkImportModal } from './src/ui/modals/bulk-import-modal';
 import { BibliographySettingTab } from './src/ui/settings-tab';
 import { BibliographyPluginSettings, DEFAULT_SETTINGS } from './src/types/settings';
 import { BibliographyBuilder } from './src/services/bibliography-builder';
@@ -38,6 +39,15 @@ export default class BibliographyPlugin extends Plugin {
             name: 'Create book chapter entry',
             callback: () => {
                 new ChapterModal(this.app, this.settings).open();
+            },
+        });
+        
+        // Add command for bulk import
+        this.addCommand({
+            id: 'bulk-import-references',
+            name: 'Bulk import references',
+            callback: () => {
+                new BulkImportModal(this.app, this.settings).open();
             },
         });
         

@@ -276,6 +276,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 		this.createListItem(basicVarsUl, '{{volume}}, {{number}}, {{page}}', 'Publication details');
 		this.createListItem(basicVarsUl, '{{language}}, {{abstract}}, {{edition}}', 'Additional metadata');
 		this.createListItem(basicVarsUl, '{{currentDate}}', "Today's date (YYYY-MM-DD)");
+		this.createListItem(basicVarsUl, '{{annote_content}}', "Content from BibTeX annote field (bulk import only)");
 
 		guideDiv.createEl('strong', { text: 'Contributor variables', cls:'setting-guide-subtitle' });
 		const contribVarsUl = guideDiv.createEl('ul');
@@ -825,6 +826,72 @@ export class BibliographySettingTab extends PluginSettingTab {
 
 		} // End of legacy options block (if !citekeyTemplate)
 
+		// --- Bulk Import Settings ---
+		new Setting(containerEl).setName('Bulk import').setHeading();
+		containerEl.createEl('p', {
+			text: 'Configure how bulk imports from BibTeX (.bib) or CSL-JSON (.json) files behave.',
+			cls: 'setting-item-description'
+		});
+
+		// Attachment handling
+		new Setting(containerEl)
+			.setName('Attachment handling')
+			.setDesc('Choose how to handle attachments during bulk import')
+			.addDropdown(dropdown => dropdown
+				.addOptions({
+					'none': 'Ignore attachments',
+					'import': 'Import attachments to vault'
+				})
+				.setValue(this.plugin.settings.bulkImportAttachmentHandling)
+				.onChange(async (value: 'none' | 'import') => {
+					this.plugin.settings.bulkImportAttachmentHandling = value;
+					await this.plugin.saveSettings();
+				})
+			);
+
+		// Annote to body
+		new Setting(containerEl)
+			.setName('Include annotations in note body')
+			.setDesc('Include content from BibTeX "annote" field in the body of literature notes')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.bulkImportAnnoteToBody)
+				.onChange(async (value) => {
+					this.plugin.settings.bulkImportAnnoteToBody = value;
+					await this.plugin.saveSettings();
+				})
+			);
+
+		// Citekey preference
+		new Setting(containerEl)
+			.setName('Citekey preference')
+			.setDesc('Choose whether to use citekeys from the import file or generate new ones')
+			.addDropdown(dropdown => dropdown
+				.addOptions({
+					'imported': 'Use imported citekeys',
+					'generate': 'Generate new citekeys'
+				})
+				.setValue(this.plugin.settings.bulkImportCitekeyPreference)
+				.onChange(async (value: 'imported' | 'generate') => {
+					this.plugin.settings.bulkImportCitekeyPreference = value;
+					await this.plugin.saveSettings();
+				})
+			);
+
+		// Conflict resolution
+		new Setting(containerEl)
+			.setName('Conflict resolution')
+			.setDesc('What to do when a literature note with the same citekey already exists')
+			.addDropdown(dropdown => dropdown
+				.addOptions({
+					'skip': 'Skip existing notes',
+					'overwrite': 'Overwrite existing notes'
+				})
+				.setValue(this.plugin.settings.bulkImportConflictResolution)
+				.onChange(async (value: 'skip' | 'overwrite') => {
+					this.plugin.settings.bulkImportConflictResolution = value;
+					await this.plugin.saveSettings();
+				})
+			);
+
 	} // End of display()
 } // End of class BibliographySettingTab
-
