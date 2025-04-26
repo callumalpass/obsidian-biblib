@@ -8,21 +8,11 @@ export class FileManager {
     private app: App;
     private settings: BibliographyPluginSettings;
 
-    // Node.js modules
-    private fs = require('fs');
-    
     constructor(app: App, settings: BibliographyPluginSettings) {
         this.app = app;
         this.settings = settings;
     }
-    
-    /**
-     * Import references from file content directly
-     * @param fileContent Content of the BibTeX or CSL-JSON file
-     * @param fileExt File extension ('bib' or 'json')
-     * @param fileName Original file name (for display purposes)
-     * @param importSettings Settings for the import operation
-     */
+
     async importReferencesFromContent(
         fileContent: string,
         fileExt: string,
@@ -34,189 +24,122 @@ export class FileManager {
             conflictResolution: 'skip' | 'overwrite';
         }
     ): Promise<{created: number, skipped: number, attachmentsImported: number}> {
-        // Track statistics
         let created = 0;
         let skipped = 0;
         let attachmentsImported = 0;
-        
+
         try {
-            // Check file extension
             if (fileExt !== 'bib' && fileExt !== 'json') {
                 throw new Error('Only .bib (BibTeX) and .json (CSL-JSON) files are supported');
             }
-            
-            // Check if content is empty
             if (!fileContent.trim()) {
                 throw new Error('File content is empty');
             }
-            
-            // Parse the content based on its format
+
             let references: any[] = [];
             if (fileExt === 'bib') {
                 references = this.parseBibTeXFile(fileContent);
             } else {
                 references = this.parseCslJsonFile(fileContent);
             }
-            
-            // Show the total number of references found
+
             const totalReferences = references.length;
             if (totalReferences === 0) {
                 throw new Error('No valid references found in the file');
             }
-            
+
             new Notice(`Found ${totalReferences} references in ${fileName}`);
-            
-            // We can't resolve attachment paths relative to the file
-            // since we're working with file content directly, not a file path
-            const baseDir = '';
-            
-            // If attachment handling is enabled but we can't resolve paths,
-            // show a warning to the user
-            if (importSettings.attachmentHandling === 'import' && totalReferences > 0) {
-                new Notice('Note: Attachments cannot be imported when using file content directly. Attachments will be ignored.', 5000);
-                // Override the setting to avoid errors
-                importSettings.attachmentHandling = 'none';
-            }
-            
-            // Process each reference
+
+            const useVaultAttachmentLookup = true;
+
             for (let i = 0; i < references.length; i++) {
                 const cslObject = references[i];
-                
-                // Show progress
                 new Notice(`Importing reference ${i + 1} of ${totalReferences}...`, 2000);
-                
+
                 try {
-                    // Determine citekey
                     let citekey: string;
                     if (importSettings.citekeyPreference === 'imported' && cslObject.id) {
                         citekey = cslObject.id;
                     } else {
-                        // Generate citekey based on plugin settings
                         citekey = this.generateCitekey(cslObject);
                     }
-                    
-                    // Sanitize citekey
                     citekey = citekey.replace(/[^a-zA-Z0-9_\-]+/g, '_');
-                    
-                    // Check for existing note with the same citekey
+
                     const notePath = this.getLiteratureNotePath(citekey);
                     const existingFile = this.app.vault.getAbstractFileByPath(notePath);
                     if (existingFile instanceof TFile) {
                         if (importSettings.conflictResolution === 'skip') {
-                            // Skip existing note
                             new Notice(`Skipping existing note: ${citekey}`, 2000);
                             skipped++;
                             continue;
                         }
-                        // Otherwise, we'll overwrite it (handled by vault.create)
                     }
-                    
-                    // Handle attachment if specified
+
                     let attachmentPath = '';
                     if (importSettings.attachmentHandling === 'import') {
-                        // Extract file paths from BibTeX data
                         const filePaths = this.extractAttachmentPaths(cslObject, fileExt);
-                        
-                        // If we have file paths, try to import the first one
                         if (filePaths.length > 0) {
                             try {
-                                const fullPath = normalizePath(`${baseDir}${filePaths[0]}`);
-                                if (this.fs.existsSync(fullPath)) {
-                                    // Create an attachment data object
-                                    const fileName = fullPath.split('/').pop() || '';
-                                    const fileData = this.fs.readFileSync(fullPath);
-                                    const file = new File([fileData], fileName);
-                                    
-                                    const attachmentData = {
-                                        type: AttachmentType.IMPORT,
-                                        file,
-                                        filename: fileName
-                                    };
-                                    
-                                    // Handle the attachment
-                                    attachmentPath = await this.handleAttachment(citekey, attachmentData);
-                                    if (attachmentPath) {
-                                        attachmentsImported++;
+                                if (useVaultAttachmentLookup) {
+                                    const foundAttachmentPath = await this.findZoteroAttachmentInVault(filePaths, citekey);
+                                    if (foundAttachmentPath) {
+                                        attachmentPath = await this.moveAttachmentToProperLocation(foundAttachmentPath, citekey);
+                                        if (attachmentPath) attachmentsImported++;
                                     }
                                 }
-                            } catch (attachError) {
-                                console.error(`Error importing attachment for ${citekey}:`, attachError);
-                                // Continue with the note creation even if attachment fails
-                            }
+                                if (!attachmentPath) {
+                                    console.log(`Unable to import attachments for ${citekey}. File paths: ${JSON.stringify(filePaths)}`);
+                                }
+                            } catch {}
                         }
                     }
-                    
-                    // Extract annotations/notes
+
                     let annotationContent = '';
                     if (importSettings.annoteToBody) {
-                        annotationContent = this.extractAnnoteContent(cslObject, fileExt);
+                        annotationContent = this.extractAllAnnoteContent(cslObject, fileExt);
                     }
-                    
-                    // Convert CSL object to Citation, Contributors, AdditionalFields, etc.
+
                     const { citation, contributors, additionalFields } = this.convertCslToFormData(cslObject, citekey);
-                    
-                    // Create attachment data if we found an attachment
-                    let attachmentData = null;
-                    if (attachmentPath) {
-                        attachmentData = {
-                            type: AttachmentType.LINK,
-                            path: attachmentPath
-                        };
-                    }
-                    
-                    // Create frontmatter YAML
-                    const frontmatter = this.createFrontmatter(citation, contributors, additionalFields);
-                    
-                    // Create template variables including annotations
+
+                    // Pass attachment path to createFrontmatter
+                    const frontmatter = this.createFrontmatter(citation, contributors, additionalFields, attachmentPath);
+
                     const templateVars = this.buildTemplateVariables(citation, contributors, attachmentPath);
-                    if (annotationContent) {
-                        templateVars.annote_content = annotationContent;
-                    }
-                    
-                    // Render the header template
-                    const headerContent = this.renderTemplate(
-                        this.settings.headerTemplate,
-                        templateVars
-                    );
-                    
-                    // Build the note content
+                    if (annotationContent) templateVars.annote_content = annotationContent;
+
+                    const headerContent = this.renderTemplate(this.settings.headerTemplate, templateVars);
+
                     let content = `---\n${frontmatter}---\n\n${headerContent}\n\n`;
-                    
-                    // Add annotations if available
-                    if (annotationContent) {
-                        content += `## Notes\n\n${annotationContent}\n\n`;
+
+                    if (annotationContent && !this.settings.headerTemplate.includes('{{annote_content}}')) {
+                        const addToBody = !annotationContent.split('\n\n---\n\n').some(chunk => chunk.length > 20 && headerContent.includes(chunk.substring(0, 20)));
+                        if (addToBody) content += `## Notes\n\n${annotationContent}\n\n`;
                     }
-                    
-                    // Create the note
-                    await this.app.vault.create(notePath, content);
+
+                    if (existingFile instanceof TFile && importSettings.conflictResolution === 'overwrite') {
+                        await this.app.vault.modify(existingFile, content);
+                        new Notice(`Overwritten existing note: ${citekey}`, 2000);
+                    } else {
+                        await this.app.vault.create(notePath, content);
+                    }
                     created++;
-                    
+
                 } catch (referenceError) {
                     console.error(`Error processing reference ${i + 1}:`, referenceError);
-                    // Continue with the next reference
                 }
             }
-            
-            // Show completion message
-            const summaryMessage = `Bulk import finished. ${created} notes created, ${skipped} skipped, ${attachmentsImported} attachments imported.`;
-            new Notice(summaryMessage);
-            console.log(summaryMessage);
-            
+
+            new Notice(`Bulk import finished. ${created} notes created, ${skipped} skipped, ${attachmentsImported} attachments imported.`);
             return { created, skipped, attachmentsImported };
-            
+
         } catch (error) {
             console.error('Error during bulk import:', error);
             throw error;
         }
     }
-    
-    /**
-     * Import references from a BibTeX or CSL-JSON file path
-     * @param filePath Path to the file to import
-     * @param importSettings Settings for the import operation
-     */
+
     async importReferences(
-        filePath: string, 
+        filePath: string,
         importSettings: {
             attachmentHandling: 'none' | 'import';
             annoteToBody: boolean;
@@ -225,189 +148,188 @@ export class FileManager {
         }
     ): Promise<{created: number, skipped: number, attachmentsImported: number}> {
         try {
-            // Check if the file exists and get its extension
-            if (!this.fs.existsSync(filePath)) {
-                throw new Error(`File not found: ${filePath}`);
-            }
-            
-            // Get the file extension to determine the format
             const fileExt = filePath.split('.').pop()?.toLowerCase();
             if (fileExt !== 'bib' && fileExt !== 'json') {
                 throw new Error('Only .bib (BibTeX) and .json (CSL-JSON) files are supported');
             }
-            
-            // Read the file content
-            const fileContent = this.fs.readFileSync(filePath, 'utf8');
-            if (!fileContent) {
-                throw new Error('File is empty');
+            let fileContent;
+            try {
+                fileContent = await this.app.vault.adapter.read(filePath);
+                if (!fileContent) throw new Error('File is empty');
+            } catch (readError) {
+                throw new Error(`Failed to read file: ${readError.message}`);
             }
-            
-            // Get the filename for display
             const fileName = filePath.split('/').pop() || filePath;
-            
-            // For file path imports, we need to use a different approach
-            // since we need access to the base directory for resolving attachment paths
-            
-            // Use the class's fs instance
-            
-            // Parse the content based on its format
             let references: any[] = [];
-            if (fileExt === 'bib') {
-                references = this.parseBibTeXFile(fileContent);
-            } else {
-                references = this.parseCslJsonFile(fileContent);
-            }
-            
-            // Show the total number of references found
+            if (fileExt === 'bib') references = this.parseBibTeXFile(fileContent);
+            else references = this.parseCslJsonFile(fileContent);
             const totalReferences = references.length;
-            if (totalReferences === 0) {
-                throw new Error('No valid references found in the file');
-            }
-            
+            if (totalReferences === 0) throw new Error('No valid references found in the file');
             new Notice(`Found ${totalReferences} references in ${fileName}`);
-            
-            // Set the base directory for resolving attachment paths
-            // (directory containing the .bib file)
             const baseDir = filePath.substring(0, filePath.lastIndexOf('/') + 1);
-            
-            // Create a duplicate of the importReferencesFromContent method functionality
-            // but with the baseDir set correctly
-            let created = 0;
-            let skipped = 0;
-            let attachmentsImported = 0;
-            
-            // Process each reference
+            const useVaultAttachmentLookup = true;
+            let created = 0, skipped = 0, attachmentsImported = 0;
             for (let i = 0; i < references.length; i++) {
                 const cslObject = references[i];
-                
-                // Show progress
                 new Notice(`Importing reference ${i + 1} of ${totalReferences}...`, 2000);
-                
                 try {
-                    // Determine citekey
                     let citekey: string;
-                    if (importSettings.citekeyPreference === 'imported' && cslObject.id) {
-                        citekey = cslObject.id;
-                    } else {
-                        // Generate citekey based on plugin settings
-                        citekey = this.generateCitekey(cslObject);
-                    }
-                    
-                    // Sanitize citekey
+                    if (importSettings.citekeyPreference === 'imported' && cslObject.id) citekey = cslObject.id;
+                    else citekey = this.generateCitekey(cslObject);
                     citekey = citekey.replace(/[^a-zA-Z0-9_\-]+/g, '_');
-                    
-                    // Check for existing note with the same citekey
                     const notePath = this.getLiteratureNotePath(citekey);
                     const existingFile = this.app.vault.getAbstractFileByPath(notePath);
-                    if (existingFile instanceof TFile) {
-                        if (importSettings.conflictResolution === 'skip') {
-                            // Skip existing note
-                            new Notice(`Skipping existing note: ${citekey}`, 2000);
-                            skipped++;
-                            continue;
-                        }
-                        // Otherwise, we'll overwrite it (handled by vault.create)
+                    if (existingFile instanceof TFile && importSettings.conflictResolution === 'skip') {
+                        new Notice(`Skipping existing note: ${citekey}`, 2000);
+                        skipped++;
+                        continue;
                     }
-                    
-                    // Handle attachment if specified
                     let attachmentPath = '';
                     if (importSettings.attachmentHandling === 'import') {
-                        // Extract file paths from BibTeX data
                         const filePaths = this.extractAttachmentPaths(cslObject, fileExt);
-                        
-                        // If we have file paths, try to import the first one
                         if (filePaths.length > 0) {
                             try {
-                                const fullPath = normalizePath(`${baseDir}${filePaths[0]}`);
-                                if (this.fs.existsSync(fullPath)) {
-                                    // Create an attachment data object
-                                    const fileName = fullPath.split('/').pop() || '';
-                                    const fileData = this.fs.readFileSync(fullPath);
-                                    const file = new File([fileData], fileName);
-                                    
-                                    const attachmentData = {
-                                        type: AttachmentType.IMPORT,
-                                        file,
-                                        filename: fileName
-                                    };
-                                    
-                                    // Handle the attachment
-                                    attachmentPath = await this.handleAttachment(citekey, attachmentData);
-                                    if (attachmentPath) {
-                                        attachmentsImported++;
+                                if (useVaultAttachmentLookup) {
+                                    const foundAttachmentPath = await this.findZoteroAttachmentInVault(filePaths, citekey);
+                                    if (foundAttachmentPath) {
+                                        attachmentPath = await this.moveAttachmentToProperLocation(foundAttachmentPath, citekey);
+                                        if (attachmentPath) attachmentsImported++;
                                     }
                                 }
-                            } catch (attachError) {
-                                console.error(`Error importing attachment for ${citekey}:`, attachError);
-                                // Continue with the note creation even if attachment fails
-                            }
+                                if (!attachmentPath) {
+                                    attachmentPath = await this.importAttachmentsFromReferences(filePaths, citekey, baseDir);
+                                    if (attachmentPath) attachmentsImported++;
+                                }
+                            } catch {}
                         }
                     }
-                    
-                    // Extract annotations/notes
                     let annotationContent = '';
-                    if (importSettings.annoteToBody) {
-                        annotationContent = this.extractAnnoteContent(cslObject, fileExt);
-                    }
-                    
-                    // Convert CSL object to Citation, Contributors, AdditionalFields, etc.
+                    if (importSettings.annoteToBody) annotationContent = this.extractAllAnnoteContent(cslObject, fileExt);
                     const { citation, contributors, additionalFields } = this.convertCslToFormData(cslObject, citekey);
-                    
-                    // Create attachment data if we found an attachment
-                    let attachmentData = null;
-                    if (attachmentPath) {
-                        attachmentData = {
-                            type: AttachmentType.LINK,
-                            path: attachmentPath
-                        };
-                    }
-                    
-                    // Create frontmatter YAML
-                    const frontmatter = this.createFrontmatter(citation, contributors, additionalFields);
-                    
-                    // Create template variables including annotations
+                    // Pass attachment path to createFrontmatter
+                    const frontmatter = this.createFrontmatter(citation, contributors, additionalFields, attachmentPath);
                     const templateVars = this.buildTemplateVariables(citation, contributors, attachmentPath);
-                    if (annotationContent) {
-                        templateVars.annote_content = annotationContent;
-                    }
-                    
-                    // Render the header template
-                    const headerContent = this.renderTemplate(
-                        this.settings.headerTemplate,
-                        templateVars
-                    );
-                    
-                    // Build the note content
+                    if (annotationContent) templateVars.annote_content = annotationContent;
+                    const headerContent = this.renderTemplate(this.settings.headerTemplate, templateVars);
                     let content = `---\n${frontmatter}---\n\n${headerContent}\n\n`;
-                    
-                    // Add annotations if available
-                    if (annotationContent) {
-                        content += `## Notes\n\n${annotationContent}\n\n`;
+                    if (annotationContent && !this.settings.headerTemplate.includes('{{annote_content}}')) {
+                        const addToBody = !annotationContent.split('\n\n---\n\n').some(chunk => chunk.length > 20 && headerContent.includes(chunk.substring(0, 20)));
+                        if (addToBody) content += `## Notes\n\n${annotationContent}\n\n`;
                     }
-                    
-                    // Create the note
-                    await this.app.vault.create(notePath, content);
+                    if (existingFile instanceof TFile && importSettings.conflictResolution === 'overwrite') {
+                        await this.app.vault.modify(existingFile, content);
+                        new Notice(`Overwritten existing note: ${citekey}`, 2000);
+                    } else {
+                        await this.app.vault.create(notePath, content);
+                    }
                     created++;
-                    
                 } catch (referenceError) {
                     console.error(`Error processing reference ${i + 1}:`, referenceError);
-                    // Continue with the next reference
                 }
             }
-            
-            // Show completion message
-            const summaryMessage = `Bulk import finished. ${created} notes created, ${skipped} skipped, ${attachmentsImported} attachments imported.`;
-            new Notice(summaryMessage);
-            console.log(summaryMessage);
-            
+            new Notice(`Bulk import finished. ${created} notes created, ${skipped} skipped, ${attachmentsImported} attachments imported.`);
             return { created, skipped, attachmentsImported };
-            
         } catch (error) {
             console.error('Error during bulk import:', error);
             throw error;
         }
     }
-    
+
+    private createFrontmatter(
+        citation: any,
+        contributors: any[],
+        additionalFields: any[],
+        attachmentPath: string = ''
+    ): string {
+        try {
+            const frontmatter: any = {
+                id: citation.id,
+                type: citation.type,
+                title: citation.title,
+                issued: {
+                    'date-parts': [[
+                        citation.year ? Number(citation.year) : undefined,
+                        citation.month ? Number(citation.month) : undefined,
+                        citation.day ? Number(citation.day) : undefined
+                    ].filter(v => v !== undefined)],
+                },
+                ...(citation['title-short'] && { 'title-short': citation['title-short'] }),
+                ...(citation.page && { page: citation.page }),
+                ...(citation.URL && { URL: citation.URL }),
+                ...(citation.DOI && { DOI: citation.DOI }),
+                ...(citation['container-title'] && { 'container-title': citation['container-title'] }),
+                ...(citation.publisher && { publisher: citation.publisher }),
+                ...(citation['publisher-place'] && { 'publisher-place': citation['publisher-place'] }),
+                ...(citation.edition && { edition: isNaN(Number(citation.edition)) ? citation.edition : Number(citation.edition) }),
+                ...(citation.volume && { volume: isNaN(Number(citation.volume)) ? citation.volume : Number(citation.volume) }),
+                ...(citation.number && { number: isNaN(Number(citation.number)) ? citation.number : Number(citation.number) }),
+                ...(citation.language && { language: citation.language }),
+                ...(citation.abstract && { abstract: citation.abstract }),
+                tags: citation.tags && Array.isArray(citation.tags)
+                    ? [...new Set([...citation.tags, this.settings.literatureNoteTag])]
+                    : [this.settings.literatureNoteTag]
+            };
+
+            contributors.forEach(contributor => {
+                if (contributor.family || contributor.given || contributor.literal) {
+                    if (!frontmatter[contributor.role]) frontmatter[contributor.role] = [];
+                    const { role, ...personData } = contributor;
+                    frontmatter[contributor.role].push(personData);
+                }
+            });
+
+            additionalFields.forEach(field => {
+                if (field.name && field.value != null && field.value !== '') {
+                    let valueToAdd = field.value;
+                    if (field.type === 'date') {
+                        if (typeof field.value === 'object' && 'date-parts' in field.value) valueToAdd = field.value;
+                        else if (typeof field.value === 'string') {
+                            const parts = field.value.split('-').map(Number).filter((n: number) => !isNaN(n));
+                            valueToAdd = parts.length ? { 'date-parts': [parts] } : field.value;
+                        }
+                    } else if (field.type === 'number') {
+                        const num = parseFloat(field.value as any);
+                        valueToAdd = isNaN(num) ? field.value : num;
+                    }
+                    frontmatter[field.name] = valueToAdd;
+                }
+            });
+
+            const templateVariables = this.buildTemplateVariables(citation, contributors, attachmentPath);
+
+            if (this.settings.customFrontmatterFields) {
+                const enabled = this.settings.customFrontmatterFields.filter(f => f.enabled);
+                enabled.forEach(field => {
+                    if (field.name === 'pdflink' && field.template === '{{pdflink}}') {
+                        if (templateVariables.pdflink?.trim()) frontmatter[field.name] = templateVariables.pdflink;
+                        return;
+                    }
+                    if (field.name === 'attachment' && field.template === '{{attachment}}') {
+                        if (templateVariables.attachment?.trim()) frontmatter[field.name] = templateVariables.attachment;
+                        return;
+                    }
+                    const isArray = field.template.trim().startsWith('[') && field.template.trim().endsWith(']');
+                    const val = this.renderTemplate(field.template, templateVariables, { yamlArray: isArray });
+                    if (!frontmatter.hasOwnProperty(field.name)) {
+                        if ((val.startsWith('[') && val.endsWith(']')) || (val.startsWith('{') && val.endsWith('}'))) {
+                            try { frontmatter[field.name] = JSON.parse(val); }
+                            catch { if (isArray) frontmatter[field.name] = []; else frontmatter[field.name] = val; }
+                        } else if (val.trim() === '' && isArray) {
+                            frontmatter[field.name] = [];
+                        } else if (!val.includes('{{pdflink}}') && !val.includes('{{attachment}}')) {
+                            frontmatter[field.name] = val;
+                        }
+                    }
+                });
+            }
+
+            return jsyaml.dump(frontmatter, { noRefs: true, sortKeys: true });
+        } catch (error) {
+            console.error('Error creating frontmatter:', error);
+            throw error;
+        }
+    }    
+
     /**
      * Parse a BibTeX file and extract CSL-JSON objects
      */
@@ -431,12 +353,18 @@ export class FileManager {
                     const fileField = this.extractBibTeXField(entry, 'file');
                     const annoteField = this.extractBibTeXField(entry, 'annote');
                     
+                    // Extract all annote fields (there might be multiple)
+                    const annoteFields = this.extractAllBibTeXFields(entry, 'annote');
+                    
                     // Augment the CSL data with these fields
                     if (fileField) {
                         cslData._fileField = fileField;
                     }
                     if (annoteField) {
                         cslData._annoteField = annoteField;
+                    }
+                    if (annoteFields && annoteFields.length > 0) {
+                        cslData._annoteFields = annoteFields;
                     }
                     
                     return cslData;
@@ -497,6 +425,18 @@ export class FileManager {
     }
     
     /**
+     * Extract all occurrences of a specific field from a BibTeX entry
+     */
+    private extractAllBibTeXFields(entry: string, fieldName: string): string[] {
+        // Match the field pattern like 'fieldName = {...}' or 'fieldName = "..."' globally
+        const regex = new RegExp(`${fieldName}\\s*=\\s*(?:{((?:[^{}]|{[^{}]*})*)}|"([^"]*)")`, 'gi');
+        const matches = [...entry.matchAll(regex)];
+        
+        // Extract all values
+        return matches.map(match => match[1] || match[2] || '').filter(Boolean);
+    }
+    
+    /**
      * Extract attachment paths from CSL data
      */
     private extractAttachmentPaths(cslObject: any, fileType: string): string[] {
@@ -505,16 +445,32 @@ export class FileManager {
         if (fileType === 'bib') {
             // For BibTeX, check the custom _fileField we stored
             if (cslObject._fileField) {
-                // BibTeX file field format is often: description:path:type
-                // Split by colons, but handle escaped colons in the path
-                const parts = cslObject._fileField.split(':').filter(Boolean);
+                // Zotero BibTeX exports use a specific format for file paths
+                // Format: description:path:type; may include multiple entries separated by semicolons
                 
-                // Take the middle part if we have multiple parts (should be the path)
-                if (parts.length >= 2) {
-                    paths.push(parts[1]);
-                } else if (parts.length === 1) {
-                    // If only one part, assume it's the path directly
-                    paths.push(parts[0]);
+                // First split by semicolons to handle multiple files
+                const fileEntries = cslObject._fileField.split(';').map((entry: string) => entry.trim()).filter(Boolean);
+                
+                for (const entry of fileEntries) {
+                    // Then split by colons to extract the path component
+                    const parts = entry.split(':').filter(Boolean);
+                    
+                    // Take the middle part if we have multiple parts (should be the path)
+                    if (parts.length >= 2) {
+                        paths.push(parts[1]);
+                    } else if (parts.length === 1) {
+                        // If only one part, assume it's the path directly
+                        paths.push(parts[0]);
+                    }
+                }
+            }
+            
+            // Also check for any other file fields that might be present
+            // Some exporters use different field names
+            const alternateFileFields = ['file', 'pdf', 'attachment'];
+            for (const field of alternateFileFields) {
+                if (cslObject[field] && typeof cslObject[field] === 'string') {
+                    paths.push(cslObject[field]);
                 }
             }
         } else if (fileType === 'json') {
@@ -530,10 +486,22 @@ export class FileManager {
                     }
                 }
             }
+            
+            // Some CSL-JSON exporters might include a 'file' or 'attachment' field
+            if (cslObject.file) {
+                if (Array.isArray(cslObject.file)) {
+                    paths.push(...cslObject.file.filter((f: any) => typeof f === 'string'));
+                } else if (typeof cslObject.file === 'string') {
+                    paths.push(cslObject.file);
+                }
+            }
         }
         
-        // Remove any quotes from the paths
-        return paths.map(p => p.replace(/^["']|["']$/g, ''));
+        // Normalize and clean up paths
+        return paths
+            .map(p => p.replace(/^["']|["']$/g, '')) // Remove quotes
+            .map(p => p.replace(/\\:/g, ':'))        // Handle escaped colons
+            .filter(Boolean);                        // Remove empty paths
     }
     
     /**
@@ -555,6 +523,68 @@ export class FileManager {
         }
         
         return '';
+    }
+    
+    /**
+     * Extract all annote content from CSL data, combining multiple annotations if present
+     */
+    private extractAllAnnoteContent(cslObject: any, fileType: string): string {
+        // Use a Map to normalize and deduplicate annotations - key is normalized content, value is original content
+        const uniqueAnnotations = new Map<string, string>();
+        
+        // Function to normalize annotation text for comparison (lowercase, remove extra whitespace)
+        const normalizeForComparison = (text: string): string => {
+            return text.toLowerCase().replace(/\s+/g, ' ').trim();
+        };
+        
+        // Function to add annotation to the set if it's not a duplicate
+        const addAnnotation = (text: string) => {
+            if (!text || text.trim() === '') return;
+            
+            const originalText = text.trim();
+            const normalizedText = normalizeForComparison(originalText);
+            
+            // Only add if we don't already have a version of this annotation
+            if (!uniqueAnnotations.has(normalizedText)) {
+                uniqueAnnotations.set(normalizedText, originalText);
+            }
+        };
+        
+        // Extract from _annoteField (could be an array in some BibTeX exporters)
+        if (fileType === 'bib' && cslObject._annoteField) {
+            if (Array.isArray(cslObject._annoteField)) {
+                cslObject._annoteField.forEach(addAnnotation);
+            } else {
+                addAnnotation(cslObject._annoteField);
+            }
+        }
+        
+        // Extract from _annoteFields array if it exists (multiple annotations)
+        if (fileType === 'bib' && cslObject._annoteFields && Array.isArray(cslObject._annoteFields)) {
+            cslObject._annoteFields.forEach(addAnnotation);
+        }
+        
+        // CSL-JSON might store notes in different places
+        if (cslObject.note) {
+            if (Array.isArray(cslObject.note)) {
+                cslObject.note.forEach(addAnnotation);
+            } else {
+                addAnnotation(cslObject.note);
+            }
+        }
+        
+        // Check the 'annote' field directly (non-standard but sometimes used)
+        if (cslObject.annote) {
+            if (Array.isArray(cslObject.annote)) {
+                cslObject.annote.forEach(addAnnotation);
+            } else {
+                addAnnotation(cslObject.annote);
+            }
+        }
+        
+        // Convert the Map values (original content) back to an array and join with separator
+        const annotations = Array.from(uniqueAnnotations.values());
+        return annotations.join('\n\n---\n\n');
     }
     
     /**
@@ -604,7 +634,13 @@ export class FileManager {
             'id', 'type', 'title', 'year', 'month', 'day', 'title-short',
             'URL', 'DOI', 'container-title', 'publisher', 'publisher-place',
             'edition', 'volume', 'number', 'issue', 'page', 'language', 'abstract',
-            'issued', 'author', 'editor', 'translator', 'tags', '_fileField', '_annoteField'
+            'issued', 'author', 'editor', 'translator', 'tags', 
+            // Skip internal fields
+            '_fileField', '_annoteField', '_annoteFields', 
+            // Skip citation.js internal fields
+            '_graph', '_item', '_attachment',
+            // Skip non-CSL fields that should not be in frontmatter
+            'annote', 'file', 'attachment', 'note'
         ]);
         
         const additionalFields = Object.entries(cslObject)
@@ -709,134 +745,8 @@ export class FileManager {
         return contributors;
     }
     
-    /**
-     * Create YAML frontmatter from citation data
-     */
-    private createFrontmatter(citation: any, contributors: any[], additionalFields: any[]): string {
-        try {
-            // Create base frontmatter in CSL-compatible format
-            const frontmatter: any = {
-                id: citation.id,
-                type: citation.type,
-                title: citation.title,
-                // Use CSL date format for issued date
-                issued: {
-                    'date-parts': [[
-                        citation.year ? Number(citation.year) : undefined,
-                        citation.month ? Number(citation.month) : undefined, 
-                        citation.day ? Number(citation.day) : undefined
-                    ].filter(v => v !== undefined)], // Filter out undefined parts
-                },
-                // Add standard CSL fields (only if they have values)
-                ...(citation['title-short'] && { 'title-short': citation['title-short'] }),
-                ...(citation.page && { page: citation.page }),
-                ...(citation.URL && { URL: citation.URL }),
-                ...(citation.DOI && { DOI: citation.DOI }),
-                ...(citation['container-title'] && { 'container-title': citation['container-title'] }),
-                ...(citation.publisher && { publisher: citation.publisher }),
-                ...(citation['publisher-place'] && { 'publisher-place': citation['publisher-place'] }),
-                ...(citation.edition && { edition: isNaN(Number(citation.edition)) ? citation.edition : Number(citation.edition) }),
-                ...(citation.volume && { volume: isNaN(Number(citation.volume)) ? citation.volume : Number(citation.volume) }),
-                ...(citation.number && { number: isNaN(Number(citation.number)) ? citation.number : Number(citation.number) }),
-                ...(citation.language && { language: citation.language }),
-                ...(citation.abstract && { abstract: citation.abstract }),
-                // Add metadata fields (non-CSL)
-                // Ensure literature note tag is always present, while preserving any existing tags
-                tags: citation.tags && Array.isArray(citation.tags)
-                    ? [...new Set([...citation.tags, this.settings.literatureNoteTag])]
-                    : [this.settings.literatureNoteTag],
-            };
-            
-            // Add contributors to frontmatter, preserving all CSL contributor properties
-            contributors.forEach(contributor => {
-                // Only include entries with at least one name or other identifier
-                if (contributor.family || contributor.given || contributor.literal) {
-                    if (!frontmatter[contributor.role]) {
-                        frontmatter[contributor.role] = [];
-                    }
-                    // Copy all contributor properties except the role
-                    const { role, ...personData } = contributor;
-                    frontmatter[contributor.role].push(personData);
-                }
-            });
-            
-            // Add additional fields to frontmatter
-            additionalFields.forEach((field) => {
-                if (field.name && field.value != null && field.value !== '') { // Check for null/undefined too
-                    let valueToAdd = field.value; // Keep track of the potentially modified value
-                    // Assign based on type
-                    if (field.type === 'date') {
-                        // For date type fields, ensure they have the proper CSL date-parts structure
-                        if (typeof field.value === 'object' && field.value['date-parts']) {
-                            // It's already in CSL format
-                            valueToAdd = field.value;
-                        } else if (typeof field.value === 'string') {
-                            // Try parsing date string (YYYY-MM-DD or YYYY)
-                            const dateParts = field.value.split('-').map(Number).filter((part: number) => !isNaN(part));
-                            if (dateParts.length > 0) {
-                                valueToAdd = { 'date-parts': [dateParts] };
-                            } else {
-                                // If parsing fails, store as string
-                                valueToAdd = field.value;
-                            }
-                        }
-                    } else if (field.type === 'number') {
-                        // Ensure numbers are stored as numbers, not strings
-                        const numValue = parseFloat(field.value);
-                        valueToAdd = isNaN(numValue) ? field.value : numValue;
-                    }
-                    // Add the potentially modified value to frontmatter
-                    frontmatter[field.name] = valueToAdd;
-                }
-            });
-            
-            // Create template variables for custom frontmatter fields
-            const templateVariables = this.buildTemplateVariables(citation, contributors);
-            
-            // Process custom frontmatter fields if any are enabled
-            if (this.settings.customFrontmatterFields && this.settings.customFrontmatterFields.length > 0) {
-                const enabledFields = this.settings.customFrontmatterFields.filter(field => field.enabled);
-                
-                enabledFields.forEach(field => {
-                    // Determine if this looks like an array/object template
-                    const isArrayTemplate = field.template.trim().startsWith('[') && field.template.trim().endsWith(']');
-                    const isObjectTemplate = field.template.trim().startsWith('{') && field.template.trim().endsWith('}');
-                    
-                    // Render the template with appropriate options
-                    const fieldValue = this.renderTemplate(
-                        field.template, 
-                        templateVariables, 
-                        { yamlArray: isArrayTemplate }
-                    );
-                    
-                    // Add to frontmatter if field name not already used and value isn't empty
-                    if (fieldValue && !frontmatter.hasOwnProperty(field.name)) {
-                        // Try to parse as JSON if it looks like an array or object
-                        if ((fieldValue.startsWith('[') && fieldValue.endsWith(']')) || 
-                            (fieldValue.startsWith('{') && fieldValue.endsWith('}'))) {
-                            try {
-                                frontmatter[field.name] = JSON.parse(fieldValue);
-                            } catch (e) {
-                                console.error(`Failed to parse field "${field.name}" as JSON:`, e);
-                                // If parsing fails, use as string
-                                frontmatter[field.name] = fieldValue;
-                            }
-                        } else {
-                            // Use as string
-                            frontmatter[field.name] = fieldValue;
-                        }
-                    }
-                });
-            }
-            
-            // Generate YAML
-            const jsyaml = require('js-yaml');
-            return jsyaml.dump(frontmatter, { noRefs: true, sortKeys: true });
-        } catch (error) {
-            console.error('Error creating frontmatter:', error);
-            throw error;
-        }
-    }
+    // Note: The createFrontmatter implementation is defined elsewhere in this file
+    // and includes attachmentPath as a parameter
 
     /**
      * Create a literature note with the provided citation data
@@ -941,6 +851,23 @@ export class FileManager {
                 const enabledFields = this.settings.customFrontmatterFields.filter(field => field.enabled);
                 
                 enabledFields.forEach(field => {
+                    // Special case handling for certain field names
+                    if (field.name === 'pdflink' && field.template === '{{pdflink}}') {
+                        // Direct passthrough of raw pdflink from variables
+                        if (templateVariables.pdflink && templateVariables.pdflink.trim()) {
+                            frontmatter[field.name] = templateVariables.pdflink;
+                        }
+                        return;
+                    }
+
+                    if (field.name === 'attachment' && field.template === '{{attachment}}') {
+                        // Direct passthrough of attachment from variables
+                        if (templateVariables.attachment && templateVariables.attachment.trim()) {
+                            frontmatter[field.name] = templateVariables.attachment;
+                        }
+                        return;
+                    }
+                    
                     // Determine if this looks like an array/object template
                     const isArrayTemplate = field.template.trim().startsWith('[') && field.template.trim().endsWith(']');
                     const isObjectTemplate = field.template.trim().startsWith('{') && field.template.trim().endsWith('}');
@@ -952,21 +879,49 @@ export class FileManager {
                         { yamlArray: isArrayTemplate }
                     );
                     
-                    // Add to frontmatter if field name not already used and value isn't empty
-                    if (fieldValue && !frontmatter.hasOwnProperty(field.name)) {
-                        // Try to parse as JSON if it looks like an array or object
+                    // Add to frontmatter if the field name is not already used
+                    if (!frontmatter.hasOwnProperty(field.name)) {
+                        // Handle different types of values
                         if ((fieldValue.startsWith('[') && fieldValue.endsWith(']')) || 
                             (fieldValue.startsWith('{') && fieldValue.endsWith('}'))) {
                             try {
-                                frontmatter[field.name] = JSON.parse(fieldValue);
+                                // Parse as JSON for arrays and objects
+                                const parsedValue = JSON.parse(fieldValue);
+                                frontmatter[field.name] = parsedValue;
                             } catch (e) {
-                                console.error(`Failed to parse field "${field.name}" as JSON:`, e);
-                                // If parsing fails, use as string
-                                frontmatter[field.name] = fieldValue;
+                                // Special handling for array templates that should be empty arrays
+                                if (isArrayTemplate && (fieldValue.trim() === '[]' || fieldValue.trim() === '[ ]')) {
+                                    frontmatter[field.name] = [];
+                                } else {
+                                    // Handle array template containing a link to pdflink
+                                    if (isArrayTemplate && 
+                                        (fieldValue.includes('{{pdflink}}') || fieldValue.includes('{{attachment}}')) && 
+                                        templateVariables.pdflink) {
+                                        
+                                        // Create array with attachment link manually
+                                        frontmatter[field.name] = templateVariables.pdflink ? 
+                                            [templateVariables.attachment] : [];
+                                    } else {
+                                        // Use as string if JSON parsing fails and no special case
+                                        frontmatter[field.name] = fieldValue;
+                                    }
+                                }
+                            }
+                        } else if (fieldValue.trim() === '') {
+                            // For truly empty values, don't add the field at all
+                            // But, ensure we add empty arrays for array templates
+                            if (isArrayTemplate) {
+                                frontmatter[field.name] = [];
                             }
                         } else {
-                            // Use as string
-                            frontmatter[field.name] = fieldValue;
+                            // If the field value contains pdflink/attachment variable references that didn't render
+                            if (fieldValue.includes('{{pdflink}}') || fieldValue.includes('{{attachment}}')) {
+                                // Don't add the field if the template wasn't properly rendered
+                                // This indicates the attachment variable wasn't available
+                            } else {
+                                // Use as string for non-array/object values
+                                frontmatter[field.name] = fieldValue;
+                            }
                         }
                     }
                 });
@@ -1184,9 +1139,6 @@ ${yaml}---
             // Formatted author list for display
             authors: this.formatAuthorsForTemplate(contributors),
             
-            // Raw path for attachment
-            pdflink: attachmentPath || '',
-            
             // Add all citation fields directly (for access to any field)
             ...citation,
             
@@ -1197,6 +1149,33 @@ ${yaml}---
             // These ensure consistent access even if the citation object structure changes
             citekey: citation.id || '',
         };
+        
+        // Handle attachment paths without conditionals
+        // IMPORTANT: We always set these, even if empty, to ensure templates work
+        if (attachmentPath && attachmentPath.trim()) {
+            variables.pdflink = attachmentPath;
+            
+            // Create attachment link format based on file type
+            if (attachmentPath.endsWith('.pdf')) {
+                variables.attachment = `[[${attachmentPath}|PDF]]`;
+            } else if (attachmentPath.endsWith('.epub')) {
+                variables.attachment = `[[${attachmentPath}|EPUB]]`;
+            } else {
+                variables.attachment = `[[${attachmentPath}|attachment]]`;
+            }
+            
+            // Also provide just the raw path without Obsidian link formatting
+            variables.raw_pdflink = attachmentPath;
+            
+            // For use in frontmatter arrays, prepare a properly quoted version 
+            variables.quoted_attachment = `"${variables.attachment}"`;
+        } else {
+            // Set empty values to ensure templates can reference these keys
+            variables.pdflink = '';
+            variables.attachment = '';
+            variables.raw_pdflink = '';
+            variables.quoted_attachment = '';
+        }
         
         return variables;
     }
@@ -1323,5 +1302,267 @@ ${yaml}---
             console.error(`Error getting book entry by path ${path}:`, error);
             return null;
         }
+    }
+
+    /**
+     * Find Zotero attachments in the vault based on typical export structures
+     * @param filePaths Array of file paths from BibTeX entry
+     * @param citekey The citekey for the reference
+     * @returns Path to the found attachment in the vault or empty string if not found
+     */
+    private async findZoteroAttachmentInVault(filePaths: string[], citekey: string): Promise<string> {
+        if (!filePaths.length) return '';
+        
+        // Get all files in the vault
+        const files = this.app.vault.getFiles();
+        console.log(`Total files in vault: ${files.length}`);
+        
+        // First, extract all potential filenames from the paths
+        const potentialFilenames = filePaths.map(path => {
+            const parts = path.split('/');
+            return parts[parts.length - 1]; // Get the last part (the filename)
+        }).filter(Boolean);
+        
+        console.log(`Potential attachment filenames: ${JSON.stringify(potentialFilenames)}`);
+        
+        // Look for exact filename matches in the vault
+        for (const filename of potentialFilenames) {
+            const matches = files.filter(file => file.name === filename);
+            if (matches.length > 0) {
+                // Found an exact match
+                console.log(`Found exact filename match for ${filename}: ${matches[0].path}`);
+                return matches[0].path;
+            }
+        }
+        
+        // No exact matches found - look for characteristic Zotero export structure
+        // Typical structure: files/ID/filename.pdf
+        
+        // Extract potential IDs from the file paths
+        const potentialIDs = new Set<string>();
+        for (const path of filePaths) {
+            // Extract ID from patterns like "files/12345/filename.pdf" or "attachments/12345/filename.pdf"
+            const match = path.match(/(?:files|attachments)\/([^\/]+)\//);
+            if (match && match[1]) {
+                potentialIDs.add(match[1]);
+            }
+        }
+        
+        console.log(`Potential Zotero IDs: ${JSON.stringify([...potentialIDs])}`);
+        
+        // Look for files in standard Zotero export structure: files/ID/filename.ext
+        for (const id of potentialIDs) {
+            // Common folder names for Zotero exports
+            const folderPatterns = ['files', 'attachments', 'storage', id];
+            
+            for (const file of files) {
+                // Check if the file's path contains both an ID folder and one of the common parent folders
+                const containsID = file.path.includes(`/${id}/`);
+                const containsFolder = folderPatterns.some(pattern => file.path.toLowerCase().includes(`/${pattern.toLowerCase()}/`));
+                
+                if (containsID || (containsFolder && potentialFilenames.some(name => file.name.includes(name)))) {
+                    console.log(`Found potential Zotero attachment match: ${file.path}`);
+                    return file.path;
+                }
+            }
+        }
+        
+        // Look for files in standard Zotero folder structure
+        const zoteroFolderMatches = files.filter(file => {
+            return file.path.includes('/files/') && // Standard Zotero export folder
+                  (file.name.endsWith('.pdf') || file.name.endsWith('.epub')) && // Common attachment types
+                  potentialFilenames.some(name => 
+                    // Partial filename match (in case of truncation or modification)
+                    file.name.includes(name) || 
+                    // Try to match by removing spaces/special chars
+                    file.name.replace(/[^a-zA-Z0-9]/g, '').includes(name.replace(/[^a-zA-Z0-9]/g, ''))
+                  );
+        });
+        
+        if (zoteroFolderMatches.length > 0) {
+            console.log(`Found Zotero folder structure match: ${zoteroFolderMatches[0].path}`);
+            return zoteroFolderMatches[0].path;
+        }
+        
+        // Final fallback: look for PDFs with similar filenames anywhere in the vault
+        // This is more aggressive matching but may help in cases where files were manually imported
+        const fuzzyMatches = files.filter(file => {
+            // Only consider PDF/EPUB files
+            if (!(file.name.endsWith('.pdf') || file.name.endsWith('.epub'))) return false;
+            
+            // Try different matching strategies
+            return potentialFilenames.some(name => {
+                // Try to normalize both filenames for comparison by removing special chars
+                const normalizedFileName = file.name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                const normalizedSearchName = name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                
+                // Check if one contains a significant portion of the other
+                return normalizedFileName.includes(normalizedSearchName) || 
+                       normalizedSearchName.includes(normalizedFileName);
+            });
+        });
+        
+        if (fuzzyMatches.length > 0) {
+            console.log(`Found fuzzy match: ${fuzzyMatches[0].path}`);
+            return fuzzyMatches[0].path;
+        }
+        
+        // No matches found
+        return '';
+    }
+    
+    /**
+     * Move an attachment file to the user-specified attachment location and rename it with the citekey
+     * @param sourcePath The current path of the attachment file in the vault
+     * @param citekey The citekey to use for the new filename
+     * @returns The new path of the attachment after moving, or empty string if move failed
+     */
+    private async moveAttachmentToProperLocation(sourcePath: string, citekey: string): Promise<string> {
+        try {
+            // Get the source file
+            const sourceFile = this.app.vault.getAbstractFileByPath(sourcePath);
+            if (!(sourceFile instanceof TFile)) {
+                console.error(`Source file not found or not a file: ${sourcePath}`);
+                return '';
+            }
+            
+            // Determine the file extension
+            const fileExt = sourceFile.extension;
+            
+            // Build the target path according to user settings
+            const biblibPath = normalizePath(this.settings.attachmentFolderPath);
+            
+            // Ensure base attachment directory exists
+            try {
+                const biblibFolder = this.app.vault.getAbstractFileByPath(biblibPath);
+                if (!biblibFolder) {
+                    await this.app.vault.createFolder(biblibPath);
+                }
+            } catch (folderError) {
+                console.error(`Error creating attachment folder ${biblibPath}:`, folderError);
+                new Notice(`Error creating attachment folder: ${biblibPath}`);
+                return ''; // Cannot proceed without folder
+            }
+            
+            // Determine if we need a subfolder
+            let targetFolderPath = biblibPath;
+            if (this.settings.createAttachmentSubfolder) {
+                // Create subfolder if enabled
+                targetFolderPath = normalizePath(`${biblibPath}/${citekey}`);
+                try {
+                    const subFolder = this.app.vault.getAbstractFileByPath(targetFolderPath);
+                    if (!subFolder) {
+                        await this.app.vault.createFolder(targetFolderPath);
+                    }
+                } catch (subFolderError) {
+                    console.error(`Error creating attachment subfolder ${targetFolderPath}:`, subFolderError);
+                    new Notice(`Error creating attachment subfolder: ${targetFolderPath}`);
+                    return ''; // Cannot proceed without subfolder
+                }
+            }
+            
+            // Use citekey as the new filename
+            const newFilename = `${citekey}.${fileExt}`;
+            const targetPath = normalizePath(`${targetFolderPath}/${newFilename}`);
+            
+            // Check if target file already exists
+            const existingTarget = this.app.vault.getAbstractFileByPath(targetPath);
+            if (existingTarget instanceof TFile) {
+                // File already exists at the target location with the citekey name
+                console.log(`Attachment already exists at target location: ${targetPath}`);
+                return targetPath;
+            }
+            
+            // Read the source file content
+            const sourceContent = await this.app.vault.readBinary(sourceFile);
+            
+            // Create the new file with the same content
+            await this.app.vault.createBinary(targetPath, sourceContent);
+            
+            // Optionally delete the source file (commented out for safety - only uncomment if this is desired behavior)
+            // await this.app.vault.delete(sourceFile);
+            
+            new Notice(`Moved attachment to ${targetPath}`);
+            return targetPath;
+            
+        } catch (error) {
+            console.error(`Error moving attachment to proper location: ${error}`);
+            new Notice(`Error organizing attachment: ${error.message}`);
+            return '';
+        }
+    }
+
+    /**
+     * Import attachments referenced in the BibTeX entry
+     * @param filePaths Array of file paths from BibTeX entry
+     * @param citekey The citekey for the reference
+     * @param baseDir The base directory where the BibTeX file is located
+     * @returns Path to the imported attachment or empty string if import failed
+     */
+    private async importAttachmentsFromReferences(filePaths: string[], citekey: string, baseDir: string): Promise<string> {
+        if (!filePaths.length || !baseDir) {
+            return '';
+        }
+        
+        // Sort attachments by preference (PDFs first, then other formats)
+        const sortedPaths = [...filePaths].sort((a, b) => {
+            const aExt = a.split('.').pop()?.toLowerCase() || '';
+            const bExt = b.split('.').pop()?.toLowerCase() || '';
+            
+            // Prefer PDFs
+            if (aExt === 'pdf' && bExt !== 'pdf') return -1;
+            if (bExt === 'pdf' && aExt !== 'pdf') return 1;
+            return 0;
+        });
+        
+        // Try each file path
+        for (const filePath of sortedPaths) {
+            try {
+                const fileName = filePath.split('/').pop();
+                if (!fileName) continue;
+                
+                // Build the full path relative to the BibTeX file
+                const fullPath = normalizePath(`${baseDir}${filePath}`);
+                
+                // Check if file exists
+                try {
+                    // Read the file as binary data using the adapter API
+                    const fileData = await this.app.vault.adapter.readBinary(fullPath);
+                    
+                    // Create a File object for import
+                    const file = new File([fileData], fileName);
+                    
+                    // Create an attachment data object
+                    const attachmentData = {
+                        type: AttachmentType.IMPORT,
+                        file,
+                        filename: fileName
+                    };
+                    
+                    // Handle the attachment (this will import it to the vault)
+                    const initialPath = await this.handleAttachment(citekey, attachmentData);
+                    if (initialPath) {
+                        // Then move it to the proper location and rename with citekey
+                        const finalPath = await this.moveAttachmentToProperLocation(initialPath, citekey);
+                        if (finalPath) {
+                            new Notice(`Imported and organized attachment: ${citekey}.${fileName.split('.').pop()}`, 2000);
+                            return finalPath;
+                        }
+                        return initialPath; // Return initial path if move failed
+                    }
+                } catch (readError) {
+                    console.log(`Referenced attachment not found or could not be read at: ${fullPath}`, readError);
+                }
+            } catch (error) {
+                console.error(`Error importing attachment: ${filePath}`, error);
+            }
+        }
+        
+        // If we get here, no attachments were successfully imported
+        if (filePaths.length > 0) {
+            new Notice(`Could not import referenced attachments. Check paths in BibTeX file and verify files exist.`, 3000);
+        }
+        
+        return '';
     }
 }

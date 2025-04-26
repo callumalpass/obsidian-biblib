@@ -44,8 +44,19 @@ export class BulkImportModal extends Modal {
         // Warning message
         const warningEl = contentEl.createDiv({ cls: 'bulk-import-warning' });
         warningEl.createEl('p', { text: 'Warning: This operation may create or overwrite many files. Consider backing up your vault first.' });
-        warningEl.createEl('p', { 
-            text: 'Tip: For Zotero exports, use the native BibTeX export format (not Better BibTeX) to include PDFs and annotations.'
+        
+        // Zotero export instructions
+        const zoteroTipsEl = contentEl.createDiv({ cls: 'bulk-import-instructions' });
+        zoteroTipsEl.createEl('h3', { text: 'Importing from Zotero' });
+        
+        const importSteps = zoteroTipsEl.createEl('ol');
+        importSteps.createEl('li', { text: 'In Zotero, select items and use "Export Items..." (not Better BibTeX)' });
+        importSteps.createEl('li', { text: 'Select format "BibTeX" and check "Export Files"' });
+        importSteps.createEl('li', { text: 'Save the exported bibliography.bib and files/ folder to your vault' });
+        importSteps.createEl('li', { text: 'Select the bibliography.bib file in this dialog' });
+        
+        zoteroTipsEl.createEl('p', { 
+            text: 'Important: You must move the entire export folder (with the files/ subdirectory) into your vault before importing to ensure attachments are found.'
         });
 
         // File selection
@@ -175,6 +186,17 @@ export class BulkImportModal extends Modal {
                 // Read the file content
                 const fileContent = await this.readFileContent(this.selectedFile);
                 const fileExt = this.selectedFileName.split('.').pop()?.toLowerCase();
+                
+                // Handle attachment importing special case for web file picker
+                if (this.importSettings.attachmentHandling === 'import') {
+                    // Let user know about attachment importing limitation with file picker
+                    new Notice('To import attachments, you need to use a file-based import method or move attachments to your vault first.', 5000);
+                    
+                    // Look for attachments in a standard Zotero export structure
+                    if (this.selectedFile.name === 'bibliography.bib' || this.selectedFile.name.includes('export')) {
+                        new Notice('Tip: If this is a Zotero export, make sure the "files" folder and BibTeX file are both in your vault.', 5000);
+                    }
+                }
                 
                 // Start the import process
                 await this.fileManager.importReferencesFromContent(

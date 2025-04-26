@@ -140,8 +140,8 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         bibliographyJsonPath: 'biblib/bibliography.json',
         citekeyListPath: 'citekeylist.md',
         bibtexFilePath: 'biblib/bibliography.bib',
-        headerTemplate: '# [[{{pdflink}}]]{{^pdflink}}{{title}}{{/pdflink}}',
-        chapterHeaderTemplate: '# [[{{pdflink}}]]{{^pdflink}}{{title}}{{/pdflink}} (in {{container-title}})',
+        headerTemplate: '# {{#pdflink}}[[{{pdflink}}]]{{/pdflink}}{{^pdflink}}{{title}}{{/pdflink}}',
+        chapterHeaderTemplate: '# {{#pdflink}}[[{{pdflink}}]]{{/pdflink}}{{^pdflink}}{{title}}{{/pdflink}} (in {{container-title}})',
         literatureNoteTag: 'literature_note',
         openNoteOnCreate: true,
         enableZoteroConnector: false,
@@ -176,7 +176,7 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
                 },
                 {
                         name: 'attachment',
-                        template: '{{#pdflink}}["[[{{pdflink}}]]"]{{/pdflink}}{{^pdflink}}[]{{/pdflink}}',
+                        template: '[{{#pdflink}}"[[{{pdflink}}|PDF]]"{{/pdflink}}]',
                         enabled: true
                 },
                 {

@@ -54,6 +54,11 @@ export class TemplateEngine {
      * Handles a special case where we want to create an array in YAML frontmatter
      */
     private static processYamlArray(result: string): string {
+        // Handle empty arrays specially
+        if (result.trim() === '[]' || result.trim() === '[ ]') {
+            return '[]'; // Return a valid empty array
+        }
+        
         // If it's a simple array pattern like [{{...}}{{...}}], ensure it becomes valid JSON
         // Step 1: Check if it's a potential array pattern
         if (result.startsWith('[') && result.endsWith(']')) {
@@ -62,9 +67,21 @@ export class TemplateEngine {
                 JSON.parse(result);
                 return result; // Already valid JSON, return as is
             } catch (e) {
+                // Failed to parse as JSON, try to fix
+                
+                // Special case for empty arrays after template substitution
+                if (result.replace(/\s/g, '') === '[]') {
+                    return '[]';
+                }
+                
                 // Not valid JSON - attempt to fix common issues
                 // We'll extract the actual content from between the brackets
                 const content = result.substring(1, result.length - 1).trim();
+                
+                // If content is empty after trimming, return empty array
+                if (!content) {
+                    return '[]';
+                }
                 
                 // Split by commas, but not commas within double quotes
                 const splitPattern = /,(?=(?:[^"]*"[^"]*")*[^"]*$)/;
@@ -72,6 +89,11 @@ export class TemplateEngine {
                 
                 // Remove empty items
                 items = items.filter(item => item !== '');
+                
+                // If no items after filtering, return empty array
+                if (items.length === 0) {
+                    return '[]';
+                }
                 
                 // Make sure each item is properly quoted if it's not already
                 items = items.map(item => {
@@ -106,7 +128,9 @@ export class TemplateEngine {
             
             // If the value is an array, iterate over it
             if (Array.isArray(value)) {
-                if (value.length === 0) return ''; // Empty array = don't render
+                if (value.length === 0) {
+                    return ''; // Empty array = don't render
+                }
                 
                 // Map each item in the array through the template
                 return value.map((item, index) => {
@@ -204,6 +228,7 @@ export class TemplateEngine {
                 }
             }
             
+            // Return string value
             return String(value);
         });
     }
