@@ -159,7 +159,11 @@ export class NoteCreationService {
       if (!fileContent) throw new Error('File is empty');
       
       const fileName = filePath.split('/').pop() || filePath;
-      const baseDir = filePath.substring(0, filePath.lastIndexOf('/') + 1);
+      // Ensure the baseDir ends with a trailing slash
+      let baseDir = filePath.substring(0, filePath.lastIndexOf('/') + 1);
+      if (!baseDir.endsWith('/')) {
+        baseDir += '/';
+      }
       
       // Import using content
       return this.bulkImportFromString(fileContent, fileExt, fileName, importSettings, baseDir);
@@ -223,6 +227,9 @@ export class NoteCreationService {
       
       // Process each reference
       for (let i = 0; i < parsedReferences.length; i++) {
+        // Reset variables for this iteration to prevent carrying over state from previous iterations
+        let attachmentPath = '';
+        
         const parsedRef = parsedReferences[i];
         const refTitle = parsedRef.cslData.title || 'Untitled';
         new Notice(`Importing reference ${i + 1} of ${totalReferences}: ${refTitle}`, 2000);
@@ -251,7 +258,7 @@ export class NoteCreationService {
           }
           
           // Handle attachments if enabled
-          let attachmentPath = '';
+          // No need to re-declare attachmentPath since we're already setting it to an empty string at the start of the loop
           if (importSettings.attachmentHandling === 'import') {
             // First check if attachment already exists in vault
             attachmentPath = await this.attachmentManager.findAttachmentInVault(parsedRef) || '';
@@ -271,7 +278,84 @@ export class NoteCreationService {
               // Try each path
               for (const filePath of filePaths) {
                 try {
-                  const fullPath = normalizePath(`${baseDir}${filePath}`);
+                  // Determine if the file path is absolute or relative
+                  let fullPath: string;
+                  
+                  if (filePath.startsWith('/') || /^[A-Za-z]:/.test(filePath)) {
+                    // This is an absolute path, use it directly
+                    fullPath = normalizePath(filePath);
+                  } else {
+                    // This is a relative path, try multiple strategies
+                    
+                    // 1. First try with the baseDir from the file location
+                    const cleanFilePath = filePath.replace(/^\/+/, '');
+                    fullPath = normalizePath(`${baseDir}${cleanFilePath}`);
+                    
+                    // Check if this path exists before proceeding
+                    let fileExists = false;
+                    try {
+                      fileExists = await this.app.vault.adapter.exists(fullPath);
+                    } catch (e) {
+                      // Ignore error, we'll try other paths
+                    }
+                    
+                    if (!fileExists) {
+                      // 2. Try searching in the vault root
+                      // We can't directly get the vault path, so use a more generic approach
+                      const rootPath = normalizePath(`/${cleanFilePath}`);
+                      
+                      try {
+                        fileExists = await this.app.vault.adapter.exists(rootPath);
+                        if (fileExists) {
+                          fullPath = rootPath;
+                        }
+                      } catch (e) {
+                        // Ignore error, we'll try other paths
+                      }
+                    }
+                    
+                    if (!fileExists) {
+                      // 3. Try looking for common patterns like "files/ID/filename.pdf" anywhere in the vault
+                      const filesMatch = filePath.match(/files\/([^\/]+)\/([^\/]+)$/);
+                      if (filesMatch) {
+                        const id = filesMatch[1];
+                        const filename = filesMatch[2];
+                        
+                        // Look for the files folder in the base directory (where the BibTeX file is)
+                        try {
+                          // The most reliable approach: look for the files folder in the same directory as the BibTeX file
+                          // baseDir is already the directory containing the BibTeX file
+                          const filesFolderPath = normalizePath(`${baseDir}files/${id}/${filename}`);
+                          
+                          try {
+                            fileExists = await this.app.vault.adapter.exists(filesFolderPath);
+                            if (fileExists) {
+                              fullPath = filesFolderPath;
+                            }
+                          } catch (e) {
+                            // Ignore error
+                          }
+                          
+                          // If that failed, try to find the file using vault search as a fallback
+                          if (!fileExists) {
+                            // Use a simplified search to find the file in the vault
+                            const allFiles = this.app.vault.getAllLoadedFiles();
+                            const searchPattern = `/files/${id}/${filename}`;
+                            
+                            for (const file of allFiles) {
+                              if (file.path.includes(searchPattern)) {
+                                fullPath = file.path;
+                                fileExists = true;
+                                break;
+                              }
+                            }
+                          }
+                        } catch (e) {
+                          // Ignore error
+                        }
+                      }
+                    }
+                  }
                   
                   // Check if file exists
                   try {

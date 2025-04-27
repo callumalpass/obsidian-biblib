@@ -47,7 +47,52 @@ export class ReferenceParserService {
           // Extract file fields (might be multiple)
           const fileField = this.extractBibTeXField(entry, 'file');
           if (fileField) {
-            _sourceFields.file = fileField;
+            // Parse Zotero file field format: description:path:mime-type
+            try {
+              // Handle Zotero's specialized file field format
+              // In Zotero, the file field format is: description:path:mime-type
+              // Multiple files are separated by semicolons
+              
+              // First, split by semicolons to handle multiple files
+              const fileEntries = fileField.split(';').map(entry => entry.trim()).filter(Boolean);
+              const processedPaths = [];
+              
+              for (const entry of fileEntries) {
+                // For each entry, try to find the path component
+                const colonCount = (entry.match(/:/g) || []).length;
+                
+                if (colonCount >= 2) {
+                  // This is likely a Zotero format entry with 3 parts
+                  const parts = entry.split(':');
+                  
+                  // The path is the middle part (index 1)
+                  // For safety, join any remaining parts in case there are colons in the path
+                  if (parts.length >= 3) {
+                    // If we have at least 3 parts, take everything in the middle
+                    const path = parts.slice(1, -1).join(':');
+                    processedPaths.push(path);
+                  } else {
+                    // Fallback if the splitting didn't work as expected
+                    processedPaths.push(entry);
+                  }
+                } else {
+                  // Not in the Zotero format, just use as is
+                  processedPaths.push(entry);
+                }
+              }
+              
+              // Use the processed paths if any were found
+              if (processedPaths.length > 0) {
+                _sourceFields.file = processedPaths.length === 1 ? processedPaths[0] : processedPaths;
+              } else {
+                // Fallback to the original field if parsing failed
+                _sourceFields.file = fileField;
+              }
+            } catch (parseError) {
+              // If anything goes wrong, fall back to the original field
+              console.error(`Error parsing file field: ${parseError}`);
+              _sourceFields.file = fileField;
+            }
           }
           
           // Extract annote fields (might be multiple)

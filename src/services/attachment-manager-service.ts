@@ -108,7 +108,7 @@ export class AttachmentManagerService {
         }
       }
       
-      // 2. Zotero structure match - look for files in Zotero-like folder structure
+      // 2. Zotero structure match - look for files in standard Zotero export structure
       const potentialIDs = new Set<string>();
       for (const path of cleanedPaths) {
         // Extract ID from patterns like "files/12345/filename.pdf" or "attachments/12345/filename.pdf"
@@ -120,61 +120,57 @@ export class AttachmentManagerService {
       
       // Look for files in standard Zotero export structure: files/ID/filename.ext
       for (const id of potentialIDs) {
-        // Common folder names for Zotero exports
-        const folderPatterns = ['files', 'attachments', 'storage', id];
-        
         for (const file of allFiles) {
-          // Check if the file's path contains both an ID folder and one of the common parent folders
-          const containsID = file.path.includes(`/${id}/`);
-          const containsFolder = folderPatterns.some(pattern => 
-            file.path.toLowerCase().includes(`/${pattern.toLowerCase()}/`));
+          // First check: Path must contain the ID in proper folder structure
+          const containsID = file.path.includes(`/files/${id}/`) || 
+                           file.path.includes(`/attachments/${id}/`);
           
-          if (containsID || (containsFolder && 
-              potentialFilenames.some(name => file.name.includes(name)))) {
-            // console.log(`Found potential Zotero attachment match: ${file.path}`);
-            return file.path;
+          if (containsID) {
+            // Check if the filename is in our potential filenames list
+            const foundMatchingName = potentialFilenames.some(name => {
+              const fileNameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.'));
+              const nameWithoutExt = name.includes('.') ? name.substring(0, name.lastIndexOf('.')) : name;
+              
+              // Only return true for exact matches or if the filename begins with the potential name
+              return fileNameWithoutExt.toLowerCase() === nameWithoutExt.toLowerCase() ||
+                    fileNameWithoutExt.toLowerCase().startsWith(nameWithoutExt.toLowerCase());
+            });
+            
+            if (foundMatchingName) {
+              console.log(`Found Zotero structure match: ${file.path}`);
+              return file.path;
+            }
           }
         }
       }
       
-      // 3. Zotero folder structure search
+      // 3. Zotero folder structure search - with more strict matching
       const zoteroFolderMatches = allFiles.filter(file => {
-        return file.path.includes('/files/') && // Standard Zotero export folder
-          (file.name.endsWith('.pdf') || file.name.endsWith('.epub')) && // Common attachment types
-          potentialFilenames.some(name => 
-            // Partial filename match (in case of truncation or modification)
-            file.name.includes(name) || 
-            // Try to match by removing spaces/special chars
-            file.name.replace(/[^a-zA-Z0-9]/g, '').includes(name.replace(/[^a-zA-Z0-9]/g, ''))
-          );
-      });
-      
-      if (zoteroFolderMatches.length > 0) {
-        // console.log(`Found Zotero folder structure match: ${zoteroFolderMatches[0].path}`);
-        return zoteroFolderMatches[0].path;
-      }
-      
-      // 4. Fuzzy matching - look for PDFs with similar filenames anywhere in the vault
-      const fuzzyMatches = allFiles.filter(file => {
-        // Only consider PDF/EPUB files
-        if (!(file.name.endsWith('.pdf') || file.name.endsWith('.epub'))) return false;
+        // Only consider files in standard Zotero export folders and common attachment types
+        if (!file.path.includes('/files/') || 
+            !(file.name.endsWith('.pdf') || file.name.endsWith('.epub'))) {
+          return false;
+        }
         
-        // Try different matching strategies
+        // Only match if a potential filename exactly matches the file name
         return potentialFilenames.some(name => {
-          // Try to normalize both filenames for comparison by removing special chars
-          const normalizedFileName = file.name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-          const normalizedSearchName = name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+          // Get just the base filename without extension for exact comparison
+          const fileNameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.'));
+          const nameWithoutExt = name.includes('.') ? name.substring(0, name.lastIndexOf('.')) : name;
           
-          // Check if one contains a significant portion of the other
-          return normalizedFileName.includes(normalizedSearchName) || 
-            normalizedSearchName.includes(normalizedFileName);
+          // Only return true for exact matches (case insensitive)
+          return fileNameWithoutExt.toLowerCase() === nameWithoutExt.toLowerCase();
         });
       });
       
-      if (fuzzyMatches.length > 0) {
-        // console.log(`Found fuzzy match: ${fuzzyMatches[0].path}`);
-        return fuzzyMatches[0].path;
+      if (zoteroFolderMatches.length > 0) {
+        console.log(`Found Zotero folder structure match: ${zoteroFolderMatches[0].path}`);
+        return zoteroFolderMatches[0].path;
       }
+      
+      // Fuzzy matching removed as it can incorrectly match PDFs
+      // We now rely solely on exact filename matches and Zotero structure matches
+      // which are more reliable for properly identifying the correct attachments
       
       // No matches found
       return null;
