@@ -498,9 +498,14 @@ export class ChapterModal extends Modal {
         family: string = '', 
         given: string = '',
         literal: string = ''
-    ): void {
+    ): Contributor {
         // Make sure the contributors container has the right class
         this.contributorsListContainer.addClass('bibliography-contributors');
+        
+        // Normalize empty values
+        family = family || '';
+        given = given || '';
+        literal = literal || '';
         
         // Create contributor object
         const contributor: Contributor = {
@@ -510,21 +515,20 @@ export class ChapterModal extends Modal {
             literal
         };
         
-        // Always add to contributors array, even if empty
-        // This ensures the contributor exists in the array as soon as the field is created
-        this.contributors.push(contributor); // VERY IMPORTANT
-
-        // Create and append the component
+        // Add to contributors array - we push directly since we're handling duplicates by clearing
+        this.contributors.push(contributor);
+        
+        // Create and append the component to the UI
         const component = new ContributorField(
             this.contributorsListContainer,
             contributor,
-            (contributor) => {
-                // Remove from contributors array
+            (contributorToRemove) => {
+                // Remove from contributors array - use a proper comparison since we need to find by value
                 const index = this.contributors.findIndex(c => 
-                    c.role === contributor.role &&
-                    c.family === contributor.family &&
-                    c.given === contributor.given &&
-                    c.literal === contributor.literal
+                    c.role === contributorToRemove.role &&
+                    c.family === contributorToRemove.family &&
+                    c.given === contributorToRemove.given &&
+                    c.literal === contributorToRemove.literal
                 );
                 
                 if (index !== -1) {
@@ -533,22 +537,8 @@ export class ChapterModal extends Modal {
             }
         );
         
-        // Add to contributors array if not already present
-        const alreadyExists = this.contributors.some(c => 
-            c.role === role && 
-            c.family === family && 
-            c.given === given && 
-            c.literal === literal
-        );
-        
-        if (!alreadyExists) {
-            this.contributors.push({
-                role,
-                family,
-                given,
-                literal
-            });
-        }
+        // Return the created contributor
+        return contributor;
     }
 
     /**
@@ -612,66 +602,74 @@ export class ChapterModal extends Modal {
         );
         
         if (!hasRealContributors) {
-            // Clear existing placeholder contributors
+            // Clear everything
             this.contributorsListContainer.empty();
             this.contributors = [];
             
-            // Initialize a new array to make sure update is complete
-            const newContributors: Contributor[] = [];
             
-            // Copy book authors if available
-            if (fm.author && Array.isArray(fm.author)) {
-                fm.author.forEach((author: any) => {
-                    // Make sure we handle all possible structures
-                    let family = '';
-                    let given = '';
-                    let literal = '';
-                    
-                    if (typeof author === 'object') {
-                        family = author.family || '';
-                        given = author.given || '';
-                        literal = author.literal || '';
-                    } else if (typeof author === 'string') {
-                        // Handle simple string names - use as literal
-                        literal = author;
+            // First, check for editors - they should be added to the chapter regardless of authors
+            let editors: any[] = [];
+            if (fm.editor && Array.isArray(fm.editor)) {
+                editors = fm.editor.map((editor: any) => ({...editor, role: 'editor'}));
+            } 
+            else if (fm.editor && typeof fm.editor === 'object' && !Array.isArray(fm.editor)) {
+                editors = [{...fm.editor, role: 'editor'}];
+            }
+            else if (fm.editor && typeof fm.editor === 'string' && fm.editor.trim()) {
+                editors = [{role: 'editor', literal: fm.editor.trim()}];
+            }
+            
+            // Add all editors found (with proper editor role)
+            if (editors.length > 0) {
+                editors.forEach((editor: any) => {
+                    if (typeof editor === 'object') {
+                        // Get properties with proper fallbacks
+                        const family = editor.family || '';
+                        const given = editor.given || '';
+                        const literal = editor.literal || '';
+                        
+                        // Always use 'editor' role for editors
+                        this.addContributorField('editor', family, given, literal);
+                    } else if (typeof editor === 'string' && editor.trim()) {
+                        this.addContributorField('editor', '', '', editor.trim());
                     }
-                    
-                    // Add to our clean array
-                    newContributors.push({
-                        role: 'author',
-                        family,
-                        given,
-                        literal
-                    });
-                    
-                    // Create the UI field
-                    const component = new ContributorField(
-                        this.contributorsListContainer,
-                        { role: 'author', family, given, literal },
-                        (contributor) => {
-                            // Remove from contributors array
-                            const index = this.contributors.findIndex(c => 
-                                c.role === contributor.role &&
-                                c.family === contributor.family &&
-                                c.given === contributor.given &&
-                                c.literal === contributor.literal
-                            );
-                            
-                            if (index !== -1) {
-                                this.contributors.splice(index, 1);
-                            }
-                        }
-                    );
                 });
             }
             
-            // Replace the entire array to ensure clean state
-            this.contributors = newContributors;
-            
-            // Add an empty author field if we didn't add any
-            if (newContributors.length === 0) {
-                this.addContributorField('author');
+            // Next, check for book authors to add as container-authors
+            let containerAuthors: any[] = [];
+            if (fm.author && Array.isArray(fm.author)) {
+                containerAuthors = fm.author.map((author: any) => ({...author, role: 'container-author'}));
+            } 
+            else if (fm.author && typeof fm.author === 'object' && !Array.isArray(fm.author)) {
+                containerAuthors = [{...fm.author, role: 'container-author'}];
             }
+            else if (fm.author && typeof fm.author === 'string' && fm.author.trim()) {
+                containerAuthors = [{role: 'container-author', literal: fm.author.trim()}];
+            }
+            
+            // Add all container authors found
+            if (containerAuthors.length > 0) {
+                containerAuthors.forEach((containerAuthor: any) => {
+                    if (typeof containerAuthor === 'object') {
+                        // Get properties with proper fallbacks
+                        const family = containerAuthor.family || '';
+                        const given = containerAuthor.given || '';
+                        const literal = containerAuthor.literal || '';
+                        
+                        // Add with container-author role
+                        this.addContributorField('container-author', family, given, literal);
+                    } else if (typeof containerAuthor === 'string' && containerAuthor.trim()) {
+                        this.addContributorField('container-author', '', '', containerAuthor.trim());
+                    }
+                });
+            }
+            // Book authors are NOT added as chapter authors - they're handled via container-author
+            // Chapter authors must be entered manually by the user
+            
+            // Add an empty author field for the chapter author 
+            // (book authors are already captured in the citation as container-author)
+            this.addContributorField('author');
         }
         
         // Handle book attachment - check all possible sources of attachment data
@@ -772,7 +770,6 @@ export class ChapterModal extends Modal {
         
         // Get selected book data
         const bookData = this.selectedBook.frontmatter;
-        
         // Build citation object from form fields
         const citation: Citation = {
             id: this.idInput.value || CitekeyGenerator.generate({ 
@@ -789,7 +786,7 @@ export class ChapterModal extends Modal {
             DOI: this.doiInput.value || undefined,
             abstract: this.abstractInput.value || undefined,
             // Chapter-specific fields we may want to include
-            'container-author': bookData.author, // Book author
+            'container-author': this.contributors.filter(c => c.role === 'container-author'), // Book authors as container-author
             volume: bookData.volume,
             edition: bookData.edition,
             isbn: bookData.ISBN,
@@ -899,7 +896,7 @@ export class ChapterModal extends Modal {
             let bookContributors: Contributor[] = [];
             
             if (this.selectedBook.frontmatter) {
-                // First add any chapter-specific contributors
+                // First add any chapter-specific contributors with valid content
                 const finalUserContributors = this.contributors.filter(c => 
                     c.family || c.given || c.literal  // Only include contributors with content
                 );
