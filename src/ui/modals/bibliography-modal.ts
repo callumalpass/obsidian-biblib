@@ -17,7 +17,7 @@ import {
 } from '../../services';
 
 // Keep this import for compatibility until we fully remove it
-import { FileManager } from '../../services/file-manager';
+// import { FileManager } from '../../services/file-manager';
 
 export class BibliographyModal extends Modal {
     // Services
@@ -25,7 +25,7 @@ export class BibliographyModal extends Modal {
     private citationService: CitationService;
     
     // Legacy service - will be replaced
-    private fileManager: FileManager;
+    // private fileManager: FileManager;
     
     // New services
     private noteCreationService: NoteCreationService;
@@ -79,7 +79,7 @@ export class BibliographyModal extends Modal {
         this.citationService = new CitationService(this.settings.citekeyOptions);
         
         // Initialize legacy service (to be removed)
-        this.fileManager = new FileManager(app, settings);
+        // this.fileManager = new FileManager(app, settings);
         
         // Set up new service layer
         const templateVariableBuilder = new TemplateVariableBuilderService();
@@ -703,7 +703,7 @@ export class BibliographyModal extends Modal {
             });
         
         // Contributors section
-        formContainer.createEl('h3', { text: 'Contributors' });
+        formContainer.createEl('h4', { text: 'Contributors' });
         
         // Container for contributor fields
         this.contributorsListContainer = formContainer.createDiv({ cls: 'bibliography-contributors' });
@@ -717,7 +717,7 @@ export class BibliographyModal extends Modal {
             .onClick(() => this.addContributorField('author'));
         
         // Additional fields section
-        formContainer.createEl('h3', { text: 'Additional fields' });
+        formContainer.createEl('h4', { text: 'Additional fields' });
         
         // Container for additional fields
         this.additionalFieldsContainer = formContainer.createDiv({ cls: 'bibliography-additional-fields' });

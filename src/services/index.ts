@@ -9,4 +9,4 @@ export * from './api/citoid';
 
 // Keep the original export for backward compatibility
 // This can be removed after updating all imports
-export * from './file-manager';
+// export * from './file-manager';

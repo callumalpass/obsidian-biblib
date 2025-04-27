@@ -15,7 +15,7 @@ import {
 } from '../../services';
 
 // Legacy import for compatibility
-import { FileManager } from '../../services/file-manager';
+// import { FileManager } from '../../services/file-manager';
 
 // Define type for book entries used in this modal
 // Ensures consistency with FileManager return types
@@ -23,7 +23,7 @@ type BookEntry = { id: string; title: string; path: string; frontmatter: any };
 
 export class ChapterModal extends Modal {
     // Legacy service
-    private fileManager: FileManager;
+    // private fileManager: FileManager;
     
     // New services
     private noteCreationService: NoteCreationService;
@@ -66,10 +66,10 @@ export class ChapterModal extends Modal {
         super(app);
         
         // Initialize legacy service for backwards compatibility
-        this.fileManager = new FileManager(app, settings);
+        // this.fileManager = new FileManager(app, settings);
         
         // Initialize citation service for citekey generation
-        this.citationService = new CitationService(settings.citekeyOptions);
+        this.citationService = new CitationService(this.settings.citekeyOptions);
         
         // Set up new service layer
         const templateVariableBuilder = new TemplateVariableBuilderService();
@@ -302,7 +302,7 @@ export class ChapterModal extends Modal {
             });
 
         // --- Contributors Section ---
-        contentEl.createEl('h3', { text: 'Contributors' });
+        contentEl.createEl('h4', { text: 'Contributors' });
         
         // Container for contributor fields
         this.contributorsListContainer = contentEl.createDiv({ cls: 'bibliography-contributors' });
@@ -316,7 +316,7 @@ export class ChapterModal extends Modal {
             .onClick(() => this.addContributorField('author'));
 
         // --- Additional Fields Section ---
-        contentEl.createEl('h3', { text: 'Additional fields' });
+        contentEl.createEl('h4', { text: 'Additional fields' });
         
         // Container for additional fields
         this.additionalFieldsContainer = contentEl.createDiv({ cls: 'bibliography-additional-fields' });
@@ -501,6 +501,7 @@ export class ChapterModal extends Modal {
     ): void {
         // Make sure the contributors container has the right class
         this.contributorsListContainer.addClass('bibliography-contributors');
+        
         // Create contributor object
         const contributor: Contributor = {
             role,
@@ -509,6 +510,10 @@ export class ChapterModal extends Modal {
             literal
         };
         
+        // Always add to contributors array, even if empty
+        // This ensures the contributor exists in the array as soon as the field is created
+        this.contributors.push(contributor); // VERY IMPORTANT
+
         // Create and append the component
         const component = new ContributorField(
             this.contributorsListContainer,
@@ -528,8 +533,15 @@ export class ChapterModal extends Modal {
             }
         );
         
-        // Add to contributors array if values provided
-        if (role || family || given || literal) {
+        // Add to contributors array if not already present
+        const alreadyExists = this.contributors.some(c => 
+            c.role === role && 
+            c.family === family && 
+            c.given === given && 
+            c.literal === literal
+        );
+        
+        if (!alreadyExists) {
             this.contributors.push({
                 role,
                 family,
@@ -582,7 +594,7 @@ export class ChapterModal extends Modal {
     private populateFromBook(book: BookEntry) {
         if (!book) return;
         
-        // Some types are duplicated on this.additionalFields (it holds different data)
+        // Access frontmatter
         const fm = book.frontmatter;
         
         // Auto-generate citekey for chapter based on book ID
@@ -594,21 +606,160 @@ export class ChapterModal extends Modal {
         
         // We don't populate the title, as this is for the chapter title
         
-        // If no contributors have been added yet, copy the book's authors as default
-        if (this.contributors.length === 0 || 
-            (this.contributors.length === 1 && !this.contributors[0].family && !this.contributors[0].given)) {
-            
-            // Clear existing contributors from UI
+        // First check if we have any real contributors already
+        const hasRealContributors = this.contributors.some(c => 
+            c.family || c.given || c.literal
+        );
+        
+        if (!hasRealContributors) {
+            // Clear existing placeholder contributors
             this.contributorsListContainer.empty();
             this.contributors = [];
+            
+            // Initialize a new array to make sure update is complete
+            const newContributors: Contributor[] = [];
             
             // Copy book authors if available
             if (fm.author && Array.isArray(fm.author)) {
                 fm.author.forEach((author: any) => {
-                    this.addContributorField('author', author.family, author.given, author.literal);
+                    // Make sure we handle all possible structures
+                    let family = '';
+                    let given = '';
+                    let literal = '';
+                    
+                    if (typeof author === 'object') {
+                        family = author.family || '';
+                        given = author.given || '';
+                        literal = author.literal || '';
+                    } else if (typeof author === 'string') {
+                        // Handle simple string names - use as literal
+                        literal = author;
+                    }
+                    
+                    // Add to our clean array
+                    newContributors.push({
+                        role: 'author',
+                        family,
+                        given,
+                        literal
+                    });
+                    
+                    // Create the UI field
+                    const component = new ContributorField(
+                        this.contributorsListContainer,
+                        { role: 'author', family, given, literal },
+                        (contributor) => {
+                            // Remove from contributors array
+                            const index = this.contributors.findIndex(c => 
+                                c.role === contributor.role &&
+                                c.family === contributor.family &&
+                                c.given === contributor.given &&
+                                c.literal === contributor.literal
+                            );
+                            
+                            if (index !== -1) {
+                                this.contributors.splice(index, 1);
+                            }
+                        }
+                    );
                 });
             }
+            
+            // Replace the entire array to ensure clean state
+            this.contributors = newContributors;
+            
+            // Add an empty author field if we didn't add any
+            if (newContributors.length === 0) {
+                this.addContributorField('author');
+            }
         }
+        
+        // Handle book attachment - check all possible sources of attachment data
+        let attachmentPath = '';
+        
+        // Check for attachment_path field (direct path reference)
+        if (fm.attachment_path) {
+            attachmentPath = fm.attachment_path;
+        } 
+        // Check for attachment field (may contain array or string)
+        else if (fm.attachment) {
+            if (Array.isArray(fm.attachment)) {
+                if (fm.attachment.length > 0) {
+                    // Try to extract a path from the first attachment
+                    const firstAttachment = fm.attachment[0];
+                    attachmentPath = this.extractPathFromAttachment(firstAttachment);
+                }
+            } else if (typeof fm.attachment === 'string') {
+                attachmentPath = this.extractPathFromAttachment(fm.attachment);
+            }
+        }
+        
+        // If we found an attachment path, update the UI
+        if (attachmentPath) {
+            if (this.attachmentTypeSelect) {
+                // Set to LINK type since we're linking to an existing file
+                this.attachmentTypeSelect.value = AttachmentType.LINK;
+                
+                // Trigger the change event to update UI
+                this.attachmentTypeSelect.dispatchEvent(new Event('change'));
+                
+                // Store attachment data
+                this.attachmentData = {
+                    type: AttachmentType.LINK,
+                    path: attachmentPath
+                };
+                
+                // Update the button text if the component exists
+                if (this.linkButtonComponent) {
+                    const fileName = attachmentPath.split('/').pop() || attachmentPath;
+                    this.linkButtonComponent.setButtonText(fileName);
+                }
+                
+                // Show the container
+                if (this.linkSettingEl) {
+                    this.linkSettingEl.style.display = 'block';
+                }
+            }
+        }
+        
+        // Copy additional fields from book that might be relevant to chapters
+        const relevantFields = ['publisher', 'publisher-place', 'volume', 'edition', 'ISBN'];
+        
+        // Clear existing additional fields
+        this.additionalFields = [];
+        this.additionalFieldsContainer.empty();
+        
+        // Copy relevant fields from book frontmatter
+        for (const field of relevantFields) {
+            if (fm[field]) {
+                this.addAdditionalField(field, fm[field], 'standard');
+            }
+        }
+    }
+    
+    /**
+     * Helper method to extract file path from attachment references
+     * Handles various formats including wikilinks [[file.pdf]]
+     */
+    private extractPathFromAttachment(attachment: string): string {
+        // Handle wikilinks format: [[path/to/file.pdf]] or [[path/to/file.pdf|alias]]
+        const wikiLinkMatch = attachment.match(/\[\[(.*?)(?:\|.*?)?\]\]/);
+        if (wikiLinkMatch && wikiLinkMatch[1]) {
+            return wikiLinkMatch[1];
+        }
+        
+        // Handle markdown links: [name](path/to/file.pdf)
+        const markdownLinkMatch = attachment.match(/\[.*?\]\((.*?)\)/);
+        if (markdownLinkMatch && markdownLinkMatch[1]) {
+            return markdownLinkMatch[1];
+        }
+        
+        // Handle direct file paths (just return the string)
+        if (attachment.endsWith('.pdf') || attachment.endsWith('.epub')) {
+            return attachment;
+        }
+        
+        return '';
     }
 
     /**
@@ -624,7 +775,10 @@ export class ChapterModal extends Modal {
         
         // Build citation object from form fields
         const citation: Citation = {
-            id: this.idInput.value,
+            id: this.idInput.value || CitekeyGenerator.generate({ 
+                title: this.titleInput.value,
+                author: this.contributors.filter(c => c.role === 'author')
+            }, this.settings.citekeyOptions),
             type: 'chapter', // Fixed as chapter type
             title: this.titleInput.value,
             'title-short': this.titleShortInput.value || undefined,
@@ -687,7 +841,7 @@ export class ChapterModal extends Modal {
 				const authorData: { family?: string; given?: string; literal?: string } = {};
 				if (c.family) authorData.family = c.family;
 				if (c.given) authorData.given = c.given;
-				 // Include literal only if family/given are missing, typically for institutions
+				// Include literal only if family/given are missing, typically for institutions
 				if (c.literal && !c.family && !c.given) authorData.literal = c.literal;
 				return authorData;
 			})
@@ -722,16 +876,8 @@ export class ChapterModal extends Modal {
             message += '\n- Citekey is required';
         }
         
-        // Check for at least one author
-        const hasAuthor = this.contributors.some(contributor => 
-            contributor.role === 'author' && 
-            (contributor.family || contributor.given || contributor.literal)
-        );
-        
-        if (!hasAuthor) {
-            isValid = false;
-            message += '\n- At least one author is required';
-        }
+        // We don't require authors for chapters - they can inherit from the book
+        // or be explicitly empty if needed
 
         if (!isValid) {
             new Notice(message);
@@ -753,6 +899,12 @@ export class ChapterModal extends Modal {
             let bookContributors: Contributor[] = [];
             
             if (this.selectedBook.frontmatter) {
+                // First add any chapter-specific contributors
+                const finalUserContributors = this.contributors.filter(c => 
+                    c.family || c.given || c.literal  // Only include contributors with content
+                );
+                
+                // Then add book contributors with different roles
                 const roles = ['editor', 'translator', 'director', 'contributor'];
                 
                 // Extract contributors from book frontmatter
@@ -760,22 +912,57 @@ export class ChapterModal extends Modal {
                     const contributors = this.selectedBook.frontmatter[role];
                     if (contributors && Array.isArray(contributors)) {
                         contributors.forEach((person: any) => {
-                            // Add as contributor with book role
+                            if (typeof person === 'object') {
+                                // Add as contributor with book role
+                                bookContributors.push({
+                                    role: role,
+                                    family: person.family || '',
+                                    given: person.given || '',
+                                    literal: person.literal || ''
+                                });
+                            } else if (typeof person === 'string' && person.trim()) {
+                                // Handle string-based contributors
+                                bookContributors.push({
+                                    role: role,
+                                    family: '',
+                                    given: '',
+                                    literal: person.trim()
+                                });
+                            }
+                        });
+                    }
+                }
+                
+                // Check if we need to add book authors
+                // Only add book authors if we don't have chapter authors
+                const hasChapterAuthors = finalUserContributors.some(c => c.role === 'author');
+                
+                if (!hasChapterAuthors && this.selectedBook.frontmatter.author && 
+                    Array.isArray(this.selectedBook.frontmatter.author)) {
+                    
+                    this.selectedBook.frontmatter.author.forEach((person: any) => {
+                        if (typeof person === 'object') {
                             bookContributors.push({
-                                role: role,
+                                role: 'author',
                                 family: person.family || '',
                                 given: person.given || '',
                                 literal: person.literal || ''
                             });
-                        });
-                    }
+                        } else if (typeof person === 'string' && person.trim()) {
+                            bookContributors.push({
+                                role: 'author',
+                                family: '',
+                                given: '', 
+                                literal: person.trim()
+                            });
+                        }
+                    });
                 }
             }
             
             // Combine contributors, adding book-level contributors
-            // (Note: we only handle specific roles, and avoid duplicating author roles)
             const finalContributors = [
-                ...this.contributors,
+                ...this.contributors.filter(c => c.family || c.given || c.literal), // Only include non-empty contributors
                 ...bookContributors
             ];
             
