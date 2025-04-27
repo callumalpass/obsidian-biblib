@@ -857,12 +857,12 @@ export class BibliographyModal extends Modal {
                     hasContributors = true;
                     cslData[role].forEach((person: any) => {
                         // Add to internal state
-                        this.contributors.push({
-                            role: role,
-                            family: person.family || '',
-                            given: person.given || '',
-                            literal: person.literal || ''
-                        });
+                        // this.contributors.push({
+                        //     role: role,
+                        //     family: person.family || '',
+                        //     given: person.given || '',
+                        //     literal: person.literal || ''
+                        // });
                         
                         // Create field in UI
                         this.addContributorField(role, person.family, person.given, person.literal);
