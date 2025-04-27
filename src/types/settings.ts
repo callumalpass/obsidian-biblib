@@ -97,11 +97,6 @@ export interface BibliographyPluginSettings {
         usePrefix: boolean;
         notePrefix: string;
         createAttachmentSubfolder: boolean;
-        // Legacy fields still in type but no longer in UI
-        includeDateCreated: boolean;
-        includeYear: boolean;
-        includeAuthorLink: boolean;
-        includeAttachment: boolean;
         // Bibliography and file options
         bibliographyJsonPath: string;
         citekeyListPath: string;
@@ -133,15 +128,11 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         usePrefix: true,
         notePrefix: '@',
         createAttachmentSubfolder: true,
-        includeDateCreated: true,
-        includeYear: true,
-        includeAuthorLink: true,
-        includeAttachment: true,
         bibliographyJsonPath: 'biblib/bibliography.json',
         citekeyListPath: 'citekeylist.md',
         bibtexFilePath: 'biblib/bibliography.bib',
-        headerTemplate: '# {{#pdflink}}[[{{pdflink}}]]{{/pdflink}}{{^pdflink}}{{title}}{{/pdflink}}',
-        chapterHeaderTemplate: '# {{#pdflink}}[[{{pdflink}}]]{{/pdflink}}{{^pdflink}}{{title}}{{/pdflink}} (in {{container-title}})',
+        headerTemplate: '# {{#pdflink}}[[{{pdflink}}|{{title}}]]{{/pdflink}}{{^pdflink}}{{title}}{{/pdflink}}',
+        chapterHeaderTemplate: '# {{#pdflink}}[[{{pdflink}}|{{title}}]]{{/pdflink}}{{^pdflink}}{{title}}{{/pdflink}} (in {{container-title}})',
         literatureNoteTag: 'literature_note',
         openNoteOnCreate: true,
         enableZoteroConnector: false,
@@ -166,21 +157,21 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
                 },
                 {
                         name: 'aliases',
-                        template: '["{{title|sentence}}", "{{authors}} ({{year}})"]',
+                        template: '["{{title|sentence}}"]',
                         enabled: true
                 },
                 {
                         name: 'author-links',
-                        template: '[{{#authors}}"[[Author/{{.}}]]"{{/authors}}]',
+                        template: '[{{#authors}}"[[Author/{{.}}]]",{{/authors}}]',
                         enabled: true
                 },
                 {
                         name: 'attachment',
-                        template: '[{{#pdflink}}"[[{{pdflink}}|PDF]]"{{/pdflink}}]',
+                        template: '[{{#pdflink}}"[[{{pdflink}}]]"{{/pdflink}}]',
                         enabled: true
                 },
                 {
-                        name: 'keywords',
+                        name: 'keyword',
                         template: '[]',
                         enabled: true
                 },
@@ -192,7 +183,7 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         ],
         // Default citekey options
         citekeyOptions: {
-                citekeyTemplate: '{{author|lowercase}}{{year}}', // Default to mustache template
+                citekeyTemplate: '{{author|lowercase}}{{title|titleword}}{{year}}', // Default to mustache template
                 useZoteroKeys: false,
                 authorAbbreviationStyle: 'full',
                 includeMultipleAuthors: false,
