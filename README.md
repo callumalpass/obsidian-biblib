@@ -40,7 +40,7 @@ is a big win for academics and researchers who want an integrated workflow.
   your literature sources and your notes form a single connected knowledge
   graph.  
 - **Pandoc-Ready Bibliography:** Because BibLib adheres to CSL JSON, it can
-  output a `bibliography.json` for your entire library (or a subset). This file
+  output a `bibliography.json` for your entire library. This file
   can be fed directly to Pandoc or other processors to produce a properly
   formatted bibliography, without any extra conversion steps. In other words,
   writing a paper in Obsidian with citations is seamless – cite your sources
@@ -106,6 +106,10 @@ is a big win for academics and researchers who want an integrated workflow.
   This is handy for inserting into a manuscript or sharing with collaborators
   who use a reference manager. The export respects the data in your YAML, so it
   stays consistent.  
+- **Import from Zotero or BibTeX/CSL-JSON files**: BibLib can import your references
+  from Zotero or other reference managers. It can handle Zotero's 
+  attachments and the notes that you've taken in Zotero. 
+  Or, if you manage you references using just a BibTeX file, it can handle that as well!
 - **PDF Annotation Linking:** If you highlight or annotate PDFs in Obsidian,
   you can copy direct links to those annotations and paste them in your
   literature note. BibLib makes it easy to connect a note’s commentary to the
@@ -163,11 +167,10 @@ is a big win for academics and researchers who want an integrated workflow.
 - **Editing References:** If you need to update a reference’s details, you can
   simply edit the YAML frontmatter of the note. All fields are plain text. For
   example, if a publication year was missing or you want to add an issue number,
-  just open the note, click the YAML in edit mode and make changes. (Future
-  enhancements will include an “Edit Reference” dialog for convenience – see
-  development plans below.) Keep in mind Obsidian’s Properties panel might not
-  show nested fields correctly (it could show a warning or nothing for an
-  `author` list), so rely on the raw YAML view when editing complex fields.  
+  just open the note, click the YAML in edit mode and make changes. 
+  Keep in mind Obsidian’s Properties panel might not
+  show nested fields correctly (it could show a warning),
+  so rely on the raw YAML view when editing complex fields.  
 - **Working with PDF Highlights:** When reviewing attached PDFs in Obsidian,
   you can highlight text or add comments. To tie these into your literature
   notes, copy the highlight link (Obsidian’s PDF viewer provides a way to copy
@@ -287,7 +290,6 @@ consistent and predictable keys for your references.
 
 ## **Upcoming Features**
 
-* Bulk import from existing BibTeX/CSL-JSON files.  
 * Export individuals files to various formats.
 
 ## **License**
