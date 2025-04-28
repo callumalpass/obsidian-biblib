@@ -14,6 +14,7 @@ export interface CreateNoteInput {
   contributors: Contributor[];
   additionalFields: AdditionalField[];
   attachmentData: AttachmentData | null;
+  relatedNotePaths?: string[]; // Paths to related notes
 }
 
 /**
@@ -76,7 +77,7 @@ export class NoteCreationService {
    */
   async createLiteratureNote(inputData: CreateNoteInput): Promise<CreateNoteResult> {
     try {
-      const { citation, contributors, additionalFields, attachmentData } = inputData;
+      const { citation, contributors, additionalFields, attachmentData, relatedNotePaths } = inputData;
       
       // Handle attachment if provided
       let attachmentPath = '';
@@ -94,6 +95,7 @@ export class NoteCreationService {
         contributors,
         additionalFields,
         attachmentPath,
+        relatedNotePaths,
         pluginSettings: this.settings
       });
       

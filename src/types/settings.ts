@@ -177,7 +177,7 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
                 },
                 {
                         name: 'related',
-                        template: '[]',
+                        template: '[{{links}}]',
                         enabled: true
                 }
         ],

@@ -7,6 +7,7 @@ import { TemplateVariableBuilderService } from './template-variable-builder-serv
  */
 export interface NoteContentInput extends FrontmatterInput {
   annotationContent?: string; // Content extracted from 'annote' fields
+  relatedNotePaths?: string[]; // Paths to related notes
 }
 
 /**
@@ -37,7 +38,8 @@ export class NoteContentBuilderService {
         additionalFields, 
         attachmentPath,
         pluginSettings, 
-        annotationContent 
+        annotationContent,
+        relatedNotePaths
       } = data;
       
       // Generate frontmatter
@@ -46,14 +48,16 @@ export class NoteContentBuilderService {
         contributors,
         additionalFields,
         attachmentPath,
-        pluginSettings
+        pluginSettings,
+        relatedNotePaths
       });
       
       // Build template variables for header template
       const templateVariables = this.templateVariableBuilder.buildVariables(
         citation, 
         contributors, 
-        attachmentPath
+        attachmentPath,
+        relatedNotePaths
       );
       
       // Add annotation content to template variables if available

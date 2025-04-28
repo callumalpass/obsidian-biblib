@@ -1,4 +1,5 @@
 import { App, Modal, Notice, Setting, TFile, ButtonComponent, FuzzySuggestModal } from 'obsidian';
+import { NoteSuggestModal } from './note-suggest-modal';
 import { BibliographyPluginSettings } from '../../types/settings';
 import { Contributor, AdditionalField, Citation, AttachmentData, AttachmentType } from '../../types/citation';
 import { ContributorField } from '../components/contributor-field';
@@ -33,6 +34,7 @@ export class ChapterModal extends Modal {
     private additionalFields: AdditionalField[] = [];
     private contributors: Contributor[] = [];
     private bookEntries: BookEntry[] = []; // Use defined type
+    private relatedNotePaths: string[] = [];
     private selectedBook: BookEntry | null = null; // Use defined type
     private attachmentData: AttachmentData = { type: AttachmentType.NONE };
     
@@ -325,6 +327,31 @@ export class ChapterModal extends Modal {
         const addFieldButton = new ButtonComponent(contentEl)
             .setButtonText('Add field')
             .onClick(() => this.addAdditionalField('', '', 'standard'));
+            
+        // --- Related Notes Section ---
+        contentEl.createEl('h4', { text: 'Related Notes' });
+        const relatedNotesSetting = new Setting(contentEl)
+            .setName('Link related notes')
+            .setDesc('Select existing notes in your vault that relate to this chapter.');
+
+        // Container to display selected notes
+        const relatedNotesDisplayEl = contentEl.createDiv({ cls: 'bibliography-related-notes-display' });
+        this.updateRelatedNotesDisplay(relatedNotesDisplayEl); // Set initial state
+
+        // Add button to trigger note selection
+        relatedNotesSetting.addButton(button => button
+            .setButtonText('Add Related Note')
+            .onClick(() => {
+                // Open the Note Suggest Modal
+                new NoteSuggestModal(this.app, (selectedFile) => {
+                    if (selectedFile && !this.relatedNotePaths.includes(selectedFile.path)) {
+                        this.relatedNotePaths.push(selectedFile.path);
+                        this.updateRelatedNotesDisplay(relatedNotesDisplayEl); // Update UI
+                    } else if (selectedFile) {
+                        new Notice(`Note "${selectedFile.basename}" is already selected.`);
+                    }
+                }).open();
+            }));
 
         // --- Attachment Section ---
         this.createAttachmentSection(contentEl);
@@ -736,6 +763,38 @@ export class ChapterModal extends Modal {
     }
     
     /**
+     * Update the display of related notes
+     * @param displayEl The HTML element to update
+     */
+    private updateRelatedNotesDisplay(displayEl: HTMLElement): void {
+        displayEl.empty(); // Clear previous display
+
+        if (this.relatedNotePaths.length === 0) {
+            displayEl.setText('No notes selected.');
+            return;
+        }
+
+        const listEl = displayEl.createEl('ul', { cls: 'bibliography-related-notes-list' });
+
+        this.relatedNotePaths.forEach(notePath => {
+            const listItemEl = listEl.createEl('li');
+            // Display basename for better readability
+            const basename = notePath.substring(notePath.lastIndexOf('/') + 1);
+            listItemEl.createSpan({ text: basename }); // Display note name/path
+
+            // Add remove button
+            const removeButton = listItemEl.createEl('button', {
+                cls: 'bibliography-remove-related-note-button',
+                text: 'Remove'
+            });
+            removeButton.onclick = () => {
+                this.relatedNotePaths = this.relatedNotePaths.filter(p => p !== notePath);
+                this.updateRelatedNotesDisplay(displayEl); // Refresh the display
+            };
+        });
+    }
+    
+    /**
      * Helper method to extract file path from attachment references
      * Handles various formats including wikilinks [[file.pdf]]
      */
@@ -980,7 +1039,8 @@ export class ChapterModal extends Modal {
                 citation,
                 contributors: finalContributors,
                 additionalFields: finalAdditionalFields,
-                attachmentData: this.attachmentData.type !== AttachmentType.NONE ? this.attachmentData : null
+                attachmentData: this.attachmentData.type !== AttachmentType.NONE ? this.attachmentData : null,
+                relatedNotePaths: this.relatedNotePaths.length > 0 ? this.relatedNotePaths : undefined
             });
             
             if (result.success) {

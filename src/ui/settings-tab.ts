@@ -285,6 +285,13 @@ export class BibliographySettingTab extends PluginSettingTab {
 		this.createListItem(contribVarsUl, '{{authors_given}}', 'Array of author first names only');
 		this.createListItem(contribVarsUl, '{{editors}}, {{translators}}, etc.', 'Lists for other contributor types');
 
+		guideDiv.createEl('strong', { text: 'Linking Variables', cls:'setting-guide-subtitle' });
+		const linkingVarsUl = guideDiv.createEl('ul');
+		this.createListItem(linkingVarsUl, '{{links}}', 'Array of Obsidian wikilinks to selected related notes (e.g., ["[[Note A]]", "[[Folder/Note B]]"]).');
+		this.createListItem(linkingVarsUl, '{{linkPaths}}', 'Array of raw file paths for selected related notes (e.g., ["Note A.md", "Folder/Note B.md"]).');
+		this.createListItem(linkingVarsUl, '{{links_string}}', 'Comma-separated string of Obsidian wikilinks (e.g., "[[Note A]], [[Folder/Note B]]").');
+
+
 		guideDiv.createEl('strong', { text: 'Formatting options', cls:'setting-guide-subtitle' });
 		guideDiv.createEl('p', { text: 'You can format any variable using pipe syntax:' });
 		const formatOptsUl = guideDiv.createEl('ul');

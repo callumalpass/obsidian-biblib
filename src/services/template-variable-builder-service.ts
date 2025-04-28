@@ -9,12 +9,14 @@ export class TemplateVariableBuilderService {
    * @param citation Citation data
    * @param contributors List of contributors
    * @param attachmentPath Optional path to attachment
+   * @param relatedNotePaths Optional list of related note paths
    * @returns Object containing all template variables
    */
   buildVariables(
     citation: Citation, 
     contributors: Contributor[], 
-    attachmentPath?: string
+    attachmentPath?: string,
+    relatedNotePaths?: string[]
   ): Record<string, any> {
     // Start with the basic variable set
     const variables: Record<string, any> = {
@@ -62,6 +64,21 @@ export class TemplateVariableBuilderService {
       variables.quoted_attachment = '';
     }
     
+    // Process related notes if provided
+    if (relatedNotePaths && relatedNotePaths.length > 0) {
+      // Format as Obsidian wikilinks
+      const formattedLinks = relatedNotePaths.map(path => `[[${path}]]`);
+
+      variables.links = formattedLinks; // Array of wikilinks
+      variables.linkPaths = relatedNotePaths; // Array of raw paths
+      variables.links_string = formattedLinks.join(', '); // Comma-separated string of wikilinks
+    } else {
+      // Ensure variables exist even if empty
+      variables.links = [];
+      variables.linkPaths = [];
+      variables.links_string = '';
+    }
+
     return variables;
   }
   

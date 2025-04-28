@@ -13,6 +13,7 @@ export interface FrontmatterInput {
   additionalFields: AdditionalField[]; // Fields not part of core CSL structure
   attachmentPath?: string; // Normalized path in vault if attachment exists
   pluginSettings: BibliographyPluginSettings; // To access custom fields, tag etc.
+  relatedNotePaths?: string[]; // Paths to related notes
 }
 
 /**
@@ -32,7 +33,7 @@ export class FrontmatterBuilderService {
    */
   async buildYamlFrontmatter(data: FrontmatterInput): Promise<string> {
     try {
-      const { citation, contributors, additionalFields, attachmentPath, pluginSettings } = data;
+      const { citation, contributors, additionalFields, attachmentPath, pluginSettings, relatedNotePaths } = data;
       
       // Build base frontmatter object from essential citation fields
       const frontmatter: Record<string, any> = {
@@ -85,7 +86,8 @@ export class FrontmatterBuilderService {
         citation, 
         contributors, 
         attachmentPath, 
-        pluginSettings
+        pluginSettings,
+        relatedNotePaths
       );
       
       // Generate formatted YAML
@@ -175,7 +177,8 @@ export class FrontmatterBuilderService {
     citation: Citation,
     contributors: Contributor[],
     attachmentPath?: string,
-    pluginSettings?: BibliographyPluginSettings
+    pluginSettings?: BibliographyPluginSettings,
+    relatedNotePaths?: string[]
   ): Promise<void> {
     if (!pluginSettings?.customFrontmatterFields?.length) {
       return;
@@ -185,7 +188,8 @@ export class FrontmatterBuilderService {
     const templateVariables = this.templateVariableBuilder.buildVariables(
       citation, 
       contributors, 
-      attachmentPath
+      attachmentPath,
+      relatedNotePaths
     );
     
     // Filter to enabled custom fields
