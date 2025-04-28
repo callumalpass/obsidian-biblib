@@ -305,8 +305,6 @@ export class BibliographyModal extends Modal {
             placeholder: 'Paste BibTeX entry here...',
             cls: 'bibliography-bibtex-input'
         });
-        bibtexInput.style.width = '100%';
-        bibtexInput.style.minHeight = '100px';
         
         const bibtexButton = bibtexContainer.createEl('button', {
             text: 'Parse BibTeX',
@@ -362,8 +360,7 @@ export class BibliographyModal extends Modal {
         const linkOption = attachmentTypeDropdown.createEl('option', { value: AttachmentType.LINK, text: 'Link to existing file' });
         
         // Import file input
-        const importContainer = attachmentContainer.createDiv({ cls: 'setting' });
-        importContainer.style.display = 'none';
+        const importContainer = attachmentContainer.createDiv({ cls: 'setting hidden' });
         
         new Setting(importContainer)
             .setDesc('Select a PDF or EPUB file to import')
@@ -399,8 +396,7 @@ export class BibliographyModal extends Modal {
             });
         
         // Link to existing file
-        const linkContainer = attachmentContainer.createDiv({ cls: 'setting' });
-        linkContainer.style.display = 'none';
+        const linkContainer = attachmentContainer.createDiv({ cls: 'setting hidden' });
         
         new Setting(linkContainer)
             .setDesc('Select an existing file in your vault')
@@ -427,15 +423,19 @@ export class BibliographyModal extends Modal {
             const selectedValue = attachmentTypeDropdown.value as AttachmentType;
             
             // Hide all containers first
-            importContainer.style.display = 'none';
-            linkContainer.style.display = 'none';
+            importContainer.removeClass('visible');
+            importContainer.addClass('hidden');
+            linkContainer.removeClass('visible');
+            linkContainer.addClass('hidden');
             
             // Show selected container
             if (selectedValue === AttachmentType.IMPORT) {
-                importContainer.style.display = 'block';
+                importContainer.removeClass('hidden');
+                importContainer.addClass('visible');
                 this.attachmentData.type = AttachmentType.IMPORT;
             } else if (selectedValue === AttachmentType.LINK) {
-                linkContainer.style.display = 'block';
+                linkContainer.removeClass('hidden');
+                linkContainer.addClass('visible');
                 this.attachmentData.type = AttachmentType.LINK;
             } else {
                 // None selected

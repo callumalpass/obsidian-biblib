@@ -1,4 +1,4 @@
-import { App, Notice, TFile, normalizePath } from 'obsidian';
+import { App, Notice, TFile, TAbstractFile, normalizePath } from 'obsidian';
 import { BibliographyPluginSettings } from '../types';
 import { Citation, Contributor, AdditionalField, AttachmentData, AttachmentType } from '../types/citation';
 import { ReferenceParserService, ParsedReference } from './reference-parser-service';
@@ -280,114 +280,91 @@ export class NoteCreationService {
               // Try each path
               for (const filePath of filePaths) {
                 try {
-                  // Determine if the file path is absolute or relative
-                  let fullPath: string;
-                  
-                  if (filePath.startsWith('/') || /^[A-Za-z]:/.test(filePath)) {
-                    // This is an absolute path, use it directly
-                    fullPath = normalizePath(filePath);
-                  } else {
-                    // This is a relative path, try multiple strategies
-                    
-                    // 1. First try with the baseDir from the file location
-                    const cleanFilePath = filePath.replace(/^\/+/, '');
-                    fullPath = normalizePath(`${baseDir}${cleanFilePath}`);
-                    
-                    // Check if this path exists before proceeding
-                    let fileExists = false;
+                  let sourceTFile: TFile | null = null; // Variable to hold the TFile if found
+
+                  // --- Strategy 1: Try path relative to baseDir ---
+                  if (!sourceTFile && baseDir) {
+                    const cleanFilePath = filePath.replace(/^\/+/, ''); // Remove leading slashes for clean join
+                    const potentialPath = normalizePath(`${baseDir}${cleanFilePath}`);
+                    const abstractFile = this.app.vault.getAbstractFileByPath(potentialPath);
+                    if (abstractFile instanceof TFile) {
+                      sourceTFile = abstractFile;
+                    }
+                  }
+
+                  // --- Strategy 2: Try path relative to vault root (if not found yet) ---
+                  if (!sourceTFile) {
+                    const cleanFilePath = filePath.replace(/^\/+/, ''); // Remove leading slashes
+                    const potentialPath = normalizePath(`/${cleanFilePath}`); // Ensure leading slash for root path
+                    const abstractFile = this.app.vault.getAbstractFileByPath(potentialPath);
+                    if (abstractFile instanceof TFile) {
+                      sourceTFile = abstractFile;
+                    }
+                  }
+
+                  // --- Strategy 3: Try common Zotero "files/ID/filename" structure (if not found yet) ---
+                  if (!sourceTFile) {
+                    const filesMatch = filePath.match(/files\/([^\/]+)\/([^\/]+)$/);
+                    if (filesMatch) {
+                      const id = filesMatch[1];
+                      const filename = filesMatch[2];
+                      const searchPattern = `/files/${id}/${filename}`; // Pattern to look for in paths
+
+                      // Try relative to baseDir first (most likely for Zotero exports)
+                      if (baseDir) {
+                        const potentialPath = normalizePath(`${baseDir}files/${id}/${filename}`);
+                        const abstractFile = this.app.vault.getAbstractFileByPath(potentialPath);
+                        if (abstractFile instanceof TFile) {
+                          sourceTFile = abstractFile;
+                        }
+                      }
+
+                      // Fallback: Search anywhere in the vault (less efficient)
+                      if (!sourceTFile) {
+                        const allFiles = this.app.vault.getFiles(); // Get all files in the vault
+                        for (const file of allFiles) {
+                          if (file.path.includes(searchPattern)) {
+                            sourceTFile = file;
+                            break; // Found one
+                          }
+                        }
+                      }
+                    }
+                  }
+
+                  // --- If a TFile was found by any strategy, try to read and import ---
+                  if (sourceTFile) {
                     try {
-                      fileExists = await this.app.vault.adapter.exists(fullPath);
-                    } catch (e) {
-                      // Ignore error, we'll try other paths
-                    }
-                    
-                    if (!fileExists) {
-                      // 2. Try searching in the vault root
-                      // We can't directly get the vault path, so use a more generic approach
-                      const rootPath = normalizePath(`/${cleanFilePath}`);
-                      
-                      try {
-                        fileExists = await this.app.vault.adapter.exists(rootPath);
-                        if (fileExists) {
-                          fullPath = rootPath;
-                        }
-                      } catch (e) {
-                        // Ignore error, we'll try other paths
+                      // Read the file using VAULT API (requires TFile)
+                      const fileData = await this.app.vault.readBinary(sourceTFile);
+
+                      // Create File object and attachment data
+                      // Use the actual filename from the found TFile
+                      const fileName = sourceTFile.name;
+                      const file = new File([fileData], fileName);
+                      const attachmentData = {
+                        type: AttachmentType.IMPORT,
+                        file: file,
+                        filename: fileName
+                      };
+
+                      // Import the attachment
+                      attachmentPath = await this.attachmentManager.importAttachment(attachmentData, citekey) || '';
+                      if (attachmentPath) {
+                        attachmentsImported++;
+                        break; // Stop after first successful import for this reference
                       }
-                    }
-                    
-                    if (!fileExists) {
-                      // 3. Try looking for common patterns like "files/ID/filename.pdf" anywhere in the vault
-                      const filesMatch = filePath.match(/files\/([^\/]+)\/([^\/]+)$/);
-                      if (filesMatch) {
-                        const id = filesMatch[1];
-                        const filename = filesMatch[2];
-                        
-                        // Look for the files folder in the base directory (where the BibTeX file is)
-                        try {
-                          // The most reliable approach: look for the files folder in the same directory as the BibTeX file
-                          // baseDir is already the directory containing the BibTeX file
-                          const filesFolderPath = normalizePath(`${baseDir}files/${id}/${filename}`);
-                          
-                          try {
-                            fileExists = await this.app.vault.adapter.exists(filesFolderPath);
-                            if (fileExists) {
-                              fullPath = filesFolderPath;
-                            }
-                          } catch (e) {
-                            // Ignore error
-                          }
-                          
-                          // If that failed, try to find the file using vault search as a fallback
-                          if (!fileExists) {
-                            // Use a simplified search to find the file in the vault
-                            const allFiles = this.app.vault.getAllLoadedFiles();
-                            const searchPattern = `/files/${id}/${filename}`;
-                            
-                            for (const file of allFiles) {
-                              if (file.path.includes(searchPattern)) {
-                                fullPath = file.path;
-                                fileExists = true;
-                                break;
-                              }
-                            }
-                          }
-                        } catch (e) {
-                          // Ignore error
-                        }
-                      }
+                    } catch (readError) {
+                      console.error(`Error reading file ${sourceTFile.path}:`, readError);
+                      // Continue loop to try next filePath for this reference (if any)
                     }
                   }
-                  
-                  // Check if file exists
-                  try {
-                    // Read the file as binary data
-                    const fileData = await this.app.vault.adapter.readBinary(fullPath);
-                    
-                    // Create File object and attachment data
-                    const fileName = filePath.split('/').pop() || '';
-                    const file = new File([fileData], fileName);
-                    
-                    const attachmentData = {
-                      type: AttachmentType.IMPORT,
-                      file,
-                      filename: fileName
-                    };
-                    
-                    // Import the attachment
-                    attachmentPath = await this.attachmentManager.importAttachment(
-                      attachmentData, citekey
-                    ) || '';
-                    
-                    if (attachmentPath) {
-                      attachmentsImported++;
-                      break; // Stop after first successful import
-                    }
-                  } catch (readError) {
-                    // Continue to next path
-                  }
+                  // If sourceTFile is still null after all strategies, it wasn't found in the vault.
+                  // The loop will continue to the next filePath (if any) for the current reference.
+
                 } catch (attachErr) {
-                  // Continue to next path
+                  console.error(`Error processing attachment path "${filePath}":`, attachErr);
+                  // Continue loop to try next filePath for this reference (if any)
                 }
               }
             }

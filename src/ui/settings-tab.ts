@@ -50,8 +50,6 @@ export class BibliographySettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		// --- General Settings ---
-		new Setting(containerEl).setName('General').setHeading();
 
 		new Setting(containerEl)
 			.setName('Literature note tag')

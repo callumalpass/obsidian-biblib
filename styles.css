@@ -83,7 +83,8 @@
 
 /* BibTeX specific styles */
 .bibliography-bibtex-input {
-  min-height: 120px;
+  width: 100%;
+  min-height: 100px;
   resize: vertical;
   padding: 10px;
   font-size: 0.9em;
@@ -277,6 +278,15 @@
 
 .setting-visible {
   display: block !important;
+}
+
+/* New classes for attachment containers */
+.attachment-container .hidden {
+  display: none;
+}
+
+.attachment-container .visible {
+  display: block;
 }
 
 /* Hover States */

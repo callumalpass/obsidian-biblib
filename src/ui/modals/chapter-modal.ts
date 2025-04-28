@@ -410,8 +410,7 @@ export class ChapterModal extends Modal {
         this.attachmentTypeSelect.createEl('option', { value: AttachmentType.LINK, text: 'Link to existing file' });
         
         // Container for import file option
-        this.importSettingEl = attachmentContainer.createDiv({ cls: 'setting' });
-        this.importSettingEl.style.display = 'none'; // Hide initially
+        this.importSettingEl = attachmentContainer.createDiv({ cls: 'setting hidden' }); // Hide initially
         
         const importSetting = new Setting(this.importSettingEl)
             .setDesc('Select a PDF or EPUB file to import');
@@ -449,8 +448,7 @@ export class ChapterModal extends Modal {
         });
         
         // Create link to existing file option
-        this.linkSettingEl = attachmentContainer.createDiv({ cls: 'setting' });
-        this.linkSettingEl.style.display = 'none'; // Hide initially
+        this.linkSettingEl = attachmentContainer.createDiv({ cls: 'setting hidden' }); // Hide initially
         
         const linkSetting = new Setting(this.linkSettingEl)
             .setDesc('Select an existing file in your vault');
@@ -480,12 +478,15 @@ export class ChapterModal extends Modal {
             const selectedType = this.attachmentTypeSelect.value as AttachmentType;
             
             // Hide all containers first
-            this.importSettingEl.style.display = 'none';
-            this.linkSettingEl.style.display = 'none';
+            this.importSettingEl.removeClass('visible');
+            this.importSettingEl.addClass('hidden');
+            this.linkSettingEl.removeClass('visible');
+            this.linkSettingEl.addClass('hidden');
             
             // Show selected container
             if (selectedType === AttachmentType.IMPORT) {
-                this.importSettingEl.style.display = 'block';
+                this.importSettingEl.removeClass('hidden');
+                this.importSettingEl.addClass('visible');
                 
                 // Reset attachment data if type changed but no specific file selected yet
                 if (this.attachmentData.type !== AttachmentType.IMPORT || !this.attachmentData.file) {
@@ -497,7 +498,8 @@ export class ChapterModal extends Modal {
                         this.importButtonComponent.setButtonText('Choose file');
                 }
             } else if (selectedType === AttachmentType.LINK) {
-                this.linkSettingEl.style.display = 'block';
+                this.linkSettingEl.removeClass('hidden');
+                this.linkSettingEl.addClass('visible');
                 
                 // Reset attachment data if type changed but no path selected yet
                 if (this.attachmentData.type !== AttachmentType.LINK || !this.attachmentData.path) {
