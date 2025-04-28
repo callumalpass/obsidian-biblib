@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-biblib",
-	"version": "1.1.2",
+	"version": "1.2.1",
 	"description": "Create literature notes and manage bibliographic references in Obsidian",
 	"main": "main.js",
 	"scripts": {
