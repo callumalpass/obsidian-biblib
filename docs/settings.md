@@ -1,4 +1,4 @@
- # Settings Deep Dive
+# Settings
 
 BibLib's settings allow you to customize its behavior to fit your workflow. Access them via `Settings` -> `Community Plugins` -> `BibLib`.
 
@@ -61,8 +61,6 @@ Configure the integration with the Zotero browser connector. This feature requir
     *   **Description:** Optional. Specify a custom *system* path where PDFs downloaded via the connector should be temporarily stored before being imported into the Obsidian vault. If left empty, the system's default temporary directory is used.
     *   **Default:** (Empty - uses system temp)
     *   **Usage:** Generally, leave this empty unless you have specific reasons or permissions issues with the default system temporary folder. This is *not* a path inside your vault.
-
-*   **Usage Instructions:** The settings tab includes a brief guide on how to use the Zotero Connector feature. Key points: Zotero Desktop must be closed, enable the server in BibLib, use the browser extension as normal.
 
 ## Bibliography Builder Settings
 
