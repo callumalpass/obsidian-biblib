@@ -1,3 +1,5 @@
+// ./src/ui/components/additional-field.ts
+
 import { AdditionalField } from '../../types/citation';
 import {
   CSL_STANDARD_FIELDS,
@@ -7,172 +9,188 @@ import {
 } from '../../utils/csl-variables';
 
 export class AdditionalFieldComponent {
-    public containerEl: HTMLDivElement; // Changed to public for CSS access
+    public containerEl: HTMLDivElement; // Parent container for all additional fields
     public field: AdditionalField;
     private onRemove: (field: AdditionalField) => void;
 
     // UI elements
     private typeSelect: HTMLSelectElement;
-    public fieldDiv: HTMLDivElement; // Changed to public and store the main field row div
+    public fieldDiv: HTMLDivElement; // The main div for this specific field's controls
     private fieldSelect: HTMLSelectElement;
     private valueInputContainer: HTMLDivElement;
+    private removeButton: HTMLButtonElement;
+    private warningTextEl: HTMLDivElement | null = null; // Element for the warning text
 
     constructor(
         containerEl: HTMLDivElement,
         field: AdditionalField,
         onRemove: (field: AdditionalField) => void
     ) {
-        this.containerEl = containerEl;
+        this.containerEl = containerEl; // This is the overall container (e.g., bibliography-additional-fields)
         this.field = field;
         this.onRemove = onRemove;
         this.render();
     }
 
     private render(): void {
+        // Create the div for this specific field's input row FIRST
         this.fieldDiv = this.containerEl.createDiv({ cls: 'bibliography-additional-field' });
-        
+
+        // --- Populate the fieldDiv with controls ---
         // Type dropdown
         this.typeSelect = this.fieldDiv.createEl('select', { cls: 'bibliography-input bibliography-field-type' });
         ['Standard', 'Number', 'Date'].forEach(typeOption => {
-            const option = this.typeSelect.createEl('option', { 
-                text: typeOption, 
-                value: typeOption.toLowerCase() 
+            const option = this.typeSelect.createEl('option', {
+                text: typeOption,
+                value: typeOption.toLowerCase()
             });
-            
-            // Select the current type or default to standard
-            if (!this.field.type) {
-                this.field.type = 'standard';
-            }
-            
-            if (typeOption.toLowerCase() === this.field.type) {
-                option.selected = true;
-            }
+            if (!this.field.type) this.field.type = 'standard';
+            if (typeOption.toLowerCase() === this.field.type) option.selected = true;
         });
-        
         this.typeSelect.onchange = () => {
             this.field.type = this.typeSelect.value || 'standard';
             this.updateFieldOptions();
+            this.updateValueInput();
+            this.updateHighlight();
         };
-        
+
         // Field name dropdown
         this.fieldSelect = this.fieldDiv.createEl('select', { cls: 'bibliography-input bibliography-field-name' });
         this.updateFieldOptions();
-        
         this.fieldSelect.onchange = () => {
             this.field.name = this.fieldSelect.value;
-            this.updateValueInput();
-            this.updateHighlight(); // Update highlight on name change
+            this.updateHighlight();
         };
-        
-        // Create value input
+
+        // Value input container
         this.valueInputContainer = this.fieldDiv.createDiv({ cls: 'bibliography-field-value-container' });
         this.updateValueInput();
-        
+
         // Remove button
-        const removeButton = this.fieldDiv.createEl('button', { 
-            text: 'Remove', 
-            cls: 'bibliography-remove-field-button' 
+        this.removeButton = this.fieldDiv.createEl('button', {
+            text: 'Remove',
+            cls: 'bibliography-remove-field-button'
         });
-        removeButton.onclick = () => {
+        this.removeButton.onclick = () => {
+            // Remove the warning text too if it exists when the field is removed
+            if (this.warningTextEl) {
+                this.warningTextEl.remove();
+            }
             this.onRemove(this.field);
-            this.fieldDiv.remove();
+            this.fieldDiv.remove(); // Remove the main field div
         };
-        
-        this.updateHighlight(); // Initial highlight check
+
+        // --- Initial state update ---
+        // Call updateHighlight AFTER the fieldDiv is fully rendered and added to the DOM
+        // It will handle creating/placing the warning text element outside the fieldDiv if needed
+        this.updateHighlight();
     }
 
+    // updateFieldOptions remains the same as before...
     private updateFieldOptions(): void {
-        // Clear existing options
+        const currentName = this.fieldSelect.value;
         this.fieldSelect.empty();
-        
-        // Ensure field type is valid, default to standard if empty or invalid
+
         if (!this.field.type || !['standard', 'number', 'date'].includes(this.field.type)) {
             this.field.type = 'standard';
         }
-        
-        // Populate options based on field type using centralized CSL field lists
+
         const fieldOptions: string[] = [];
         switch (this.field.type) {
-            case 'number':
-                fieldOptions.push(...CSL_NUMBER_FIELDS);
-                break;
-            case 'date':
-                fieldOptions.push(...CSL_DATE_FIELDS);
-                break;
-            case 'standard':
-            default:
-                fieldOptions.push(...CSL_STANDARD_FIELDS);
-                break;
+            case 'number': fieldOptions.push(...CSL_NUMBER_FIELDS); break;
+            case 'date': fieldOptions.push(...CSL_DATE_FIELDS); break;
+            case 'standard': default: fieldOptions.push(...CSL_STANDARD_FIELDS); break;
         }
-        
-        // Add the current key if it's not in the standard options
+
         if (this.field.name && !fieldOptions.includes(this.field.name)) {
-            fieldOptions.push(this.field.name);
+             if (!CSL_ALL_CSL_FIELDS.has(this.field.name)){
+                fieldOptions.push(this.field.name);
+             }
         }
-        
-        fieldOptions.sort(); // Alphabetize all collected options
+
+        fieldOptions.sort();
+
         fieldOptions.forEach(fieldOption => {
-            const option = this.fieldSelect.createEl('option', { 
-                text: fieldOption, 
-                value: fieldOption 
+            const option = this.fieldSelect.createEl('option', {
+                text: fieldOption,
+                value: fieldOption
             });
-            
-            // Select the current field name
-            if (fieldOption === this.field.name) {
+            if (fieldOption === this.field.name || fieldOption === currentName) {
                 option.selected = true;
+                 if (this.field.name !== fieldOption) {
+                     this.field.name = fieldOption;
+                 }
             }
         });
-    }
-
-    private updateValueInput(): void {
-        // Remove any existing value input
-        this.valueInputContainer.empty();
-        
-        // Create value input based on field type
-        if (this.field.type === 'number') {
-            const valueInput = this.valueInputContainer.createEl('input', { 
-                type: 'number', 
-                placeholder: 'Enter Value', 
-                cls: 'bibliography-input bibliography-field-value' 
-            });
-            valueInput.value = this.field.value !== undefined ? this.field.value.toString() : '';
-            valueInput.oninput = () => {
-                this.field.value = Number(valueInput.value.trim()).toString();
-            };
-        } else if (this.field.type === 'date') {
-            const valueInput = this.valueInputContainer.createEl('input', { 
-                type: 'date', 
-                cls: 'bibliography-input bibliography-field-value' 
-            });
-            valueInput.value = this.field.value !== undefined ? this.field.value.toString() : '';
-            valueInput.oninput = () => {
-                this.field.value = valueInput.value.trim();
-            };
-        } else {
-            const valueInput = this.valueInputContainer.createEl('input', { 
-                type: 'text', 
-                placeholder: 'Enter Value', 
-                cls: 'bibliography-input bibliography-field-value' 
-            });
-            valueInput.value = this.field.value !== undefined ? this.field.value.toString() : '';
-            valueInput.oninput = () => {
-                this.field.value = valueInput.value.trim();
-            };
+        if (!this.field.name && this.fieldSelect.value) {
+             this.field.name = this.fieldSelect.value;
+        } else if (!this.field.name && fieldOptions.length > 0) {
+            this.field.name = fieldOptions[0];
+            this.fieldSelect.value = fieldOptions[0];
         }
     }
 
+
+    // updateValueInput remains the same as before...
+    private updateValueInput(): void {
+        this.valueInputContainer.empty();
+        const commonClasses = 'bibliography-input bibliography-field-value';
+        let valueInput: HTMLInputElement | HTMLTextAreaElement;
+
+        if (this.field.type === 'number') {
+            valueInput = this.valueInputContainer.createEl('input', { type: 'number', placeholder: 'Enter Number', cls: commonClasses });
+        } else if (this.field.type === 'date') {
+            valueInput = this.valueInputContainer.createEl('input', { type: 'date', cls: commonClasses });
+        } else {
+            if (this.field.name === 'abstract' || this.field.name === 'note') {
+                 valueInput = this.valueInputContainer.createEl('textarea', { placeholder: 'Enter Value', cls: commonClasses });
+                 valueInput.rows = 2;
+            } else {
+                 valueInput = this.valueInputContainer.createEl('input', { type: 'text', placeholder: 'Enter Value', cls: commonClasses });
+            }
+        }
+
+        valueInput.value = this.field.value != null ? String(this.field.value) : '';
+        valueInput.oninput = () => { this.field.value = valueInput.value.trim(); };
+        valueInput.onchange = () => { this.field.value = valueInput.value.trim(); };
+    }
+
+
     /**
-     * Adds or removes a highlight class based on whether the current field name is a standard CSL variable.
-     * CSL field names are case-sensitive according to the specification.
+     * Adds or removes a highlight class to the field row AND manages a warning
+     * text element displayed *below* the field row if the name is non-standard.
      */
     private updateHighlight(): void {
-        const fieldName = this.field.name || ''; // Handle null/undefined
+        const fieldName = this.field.name || '';
         const isNonStandard = fieldName !== '' && !CSL_ALL_CSL_FIELDS.has(fieldName);
-        
+
         if (isNonStandard) {
+            // Add highlighting class to the main field div
             this.fieldDiv.addClass('non-csl-field');
+
+            // Add or update the warning text element *after* the fieldDiv
+            if (!this.warningTextEl) {
+                // Create the warning element
+                this.warningTextEl = createDiv({ // Use Obsidian's createDiv for convenience
+                    cls: 'bibliography-field-warning setting-item-description',
+                    text: 'This field name is not a standard CSL variable and may not be compatible with other tools.'
+                });
+
+                // Insert it into the parent container, right after the fieldDiv
+                this.fieldDiv.parentNode?.insertBefore(this.warningTextEl, this.fieldDiv.nextSibling);
+
+            }
         } else {
+            // Remove highlighting class
             this.fieldDiv.removeClass('non-csl-field');
+
+            // Hide or remove the warning text element if it exists
+            if (this.warningTextEl) {
+                 // Option 1: Remove the element completely (cleaner DOM)
+                 this.warningTextEl.remove();
+                 this.warningTextEl = null;
+
+            }
         }
     }
 }
