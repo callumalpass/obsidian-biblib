@@ -1,0 +1,43 @@
+# Project information
+site_name: BibLib
+site_url: https://callumalpass.github.io/obsidian-biblib/
+site_description: Manage references and literature notes from within Obsidian
+site_author: Callum Alpass# Your name/handle
+
+# Repository
+repo_url: https://github.com/callumalpass/obsidian-biblib 
+repo_name: callumalpass/obsidian-biblib 
+
+
+# Configuration
+theme:
+  name: material # Use the Material theme 
+  # You can add theme-specific features here later, like palettes, fonts, logos, etc.
+  features:
+   # - navigation.tabs
+   - search.suggest
+  palette:
+    scheme: slate # Or slate for dark mode
+    primary: slate # Choose colors: https://squidfunk.github.io/mkdocs-material/setup/changing-the-colors/
+    accent: indigo
+
+# Extensions (Optional but useful markdown extensions)
+markdown_extensions:
+  - admonition # Adds styled blocks like notes, warnings
+  # - pymdownx.highlight: # Code highlighting options
+  #     anchor_linenums: true
+#   - pymdownx.superfences # Allows nesting code/content blocks
+
+# Navigation (Optional - MkDocs auto-discovers pages if omitted, but manual nav gives control)
+nav:
+  - 'Home': 'index.md'
+  - 'Core Concepts': 'core-concepts.md'
+  - 'Installation': 'installation.md'
+  - 'Key Features': 'key-features.md'
+  - 'Usage Guide': 'usage-guide.md'
+  - 'Settings': 'settings.md'
+  - 'Templating': 'templating-system-guide.md'
+  - 'Troubleshooting & FAQ': 'troubleshooting-faq.md'
+  # - 'User Guide':
+  # - 'Installation': 'guide/installation.md'
+  # - 'Configuration': 'guide/configuration.md'
