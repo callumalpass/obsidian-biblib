@@ -40,7 +40,6 @@ export default class BibliographyPlugin extends Plugin {
     private processingItem: boolean = false;
 
     async onload() {
-        console.log('Loading Bibliography Plugin');
         await this.loadSettings();
 
         // Initialize all services that DO NOT depend on Node.js modules first
@@ -145,7 +144,6 @@ export default class BibliographyPlugin extends Plugin {
             // Use dynamic import() to load ConnectorServer only on desktop
             import('./src/services/connector-server')
                 .then(({ ConnectorServer }) => {
-                    console.log("ConnectorServer module loaded successfully on desktop.");
 
                     // --- Add Desktop-Only Commands ---
                     this.addCommand({
@@ -176,7 +174,6 @@ export default class BibliographyPlugin extends Plugin {
                     // Register cleanup using Obsidian's mechanism
                     this.register(() => {
                         document.removeEventListener('zotero-item-received', boundHandler);
-                        console.log('Unregistered Zotero event listener.');
                     });
 
                     // --- Initialize Desktop-Only Features ---
@@ -193,13 +190,10 @@ export default class BibliographyPlugin extends Plugin {
                     console.error("Failed to load ConnectorServer module (unexpected on desktop):", err);
                     new Notice("Failed to load Zotero Connector feature. Check console for details.");
                 });
-        } else {
-            console.log('Skipping Zotero Connector initialization on mobile.');
-        }
+        } 
 
         // Add settings tab (works on both platforms)
         this.addSettingTab(new BibliographySettingTab(this.app, this));
-        console.log('Bibliography Plugin loaded.');
     }
 
 	    /**
@@ -211,7 +205,6 @@ export default class BibliographyPlugin extends Plugin {
         if (Platform.isMobile) return;
 
         if (this.connectorServer) {
-            console.log('Connector server already running.');
             return;
         }
 
@@ -222,7 +215,6 @@ export default class BibliographyPlugin extends Plugin {
              return;
         }
 
-        console.log('Attempting to start Zotero Connector server...');
         try {
             // Instantiate using the dynamically imported class
             this.connectorServer = new ConnectorServerClass(this.settings);
@@ -230,7 +222,6 @@ export default class BibliographyPlugin extends Plugin {
             // ---- FIX: Add null check before calling start ----
             if (this.connectorServer) {
                 await this.connectorServer.start(); // Call start on the instance
-                console.log('Zotero Connector server successfully started.');
             } else {
                  // This case should ideally not happen if instantiation succeeded, but belts and suspenders
                  console.error("ConnectorServer instance is null immediately after instantiation.");
@@ -252,11 +243,9 @@ export default class BibliographyPlugin extends Plugin {
      */
     stopConnectorServer(): void {
         if (this.connectorServer) {
-            console.log('Stopping Zotero Connector server...');
             try {
                 this.connectorServer.stop(); // Call stop on the instance
                 this.connectorServer = null;
-                console.log('Zotero Connector server stopped.');
             } catch (error) {
                 console.error("Error stopping connector server:", error);
                 this.connectorServer = null; // Ensure it's null even if stop fails
@@ -268,7 +257,6 @@ export default class BibliographyPlugin extends Plugin {
      * Handle the custom 'zotero-item-received' event dispatched by the ConnectorServer.
      */
     private handleZoteroItemReceived(event: CustomEvent): void {
-        console.log('Received zotero-item-received event');
         const { item, files } = event.detail;
 
         if (!item) {
@@ -278,11 +266,9 @@ export default class BibliographyPlugin extends Plugin {
         }
 
         if (this.processingItem) {
-            console.log('Already processing a Zotero item, skipping duplicate event.');
             return;
         }
         this.processingItem = true;
-        console.log('Processing Zotero item:', item.title || item.key || 'No Title/Key');
 
         try {
             // Parse the Zotero item using the dedicated service method
@@ -313,7 +299,6 @@ export default class BibliographyPlugin extends Plugin {
                             file: files[0],
                             filename: files[0].name
                          };
-                         console.log('Prepared attachment data from File object:', attachmentData.filename);
                     }
                     // If 'files' contains paths (requires Node 'fs' on desktop):
                     else if (typeof files[0] === 'string' && !Platform.isMobile) {
@@ -327,7 +312,6 @@ export default class BibliographyPlugin extends Plugin {
                                 file: file,
                                 filename: fileName
                             };
-                            console.log('Prepared attachment data from file path:', attachmentData.filename);
                          } else {
                             console.warn(`Attachment file path not found: ${filePath}`);
                          }
@@ -355,7 +339,6 @@ export default class BibliographyPlugin extends Plugin {
                     } else {
                         new Notice('Zotero data loaded.');
                     }
-                    console.log('Populated Bibliography Modal with Zotero data.');
                 } catch (modalError) {
                     console.error("Error populating modal:", modalError);
                     new Notice("Error displaying Zotero data in modal.");
@@ -377,7 +360,6 @@ export default class BibliographyPlugin extends Plugin {
     }
 
     async onunload() {
-        console.log('Unloading Bibliography Plugin');
         // Stop the connector server if it's running
         this.stopConnectorServer();
         // Other cleanup tasks if needed
