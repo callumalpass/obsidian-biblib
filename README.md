@@ -3,6 +3,9 @@
 > [!NOTE]  
 > This plugin is awaiting approval by the Obsidian team, so currently must be installed manually, or by using BRAT.
 
+> [!NOTE]
+> For more details on why and how to use this plugin, [see the docs](https://callumalpass.github.io/obsidian-biblib)
+
 BibLib is an Obsidian plugin that turns your vault into a robust academic
 reference manager. It stores each reference (paper, book, etc.) as a Markdown
 note with bibliographic metadata in the YAML frontmatter using the Citation
@@ -181,7 +184,7 @@ is a big win for academics and researchers who want an integrated workflow.
   points to the critical passages in the original, which is great for writing
   literature reviews or when you need to double-check a quote’s context.  
 
-> [!IMPORTANT]  Obsidian's built-in frontmatter parser currently only supports
+> [!NOTE]  Obsidian's built-in frontmatter parser currently only supports
 > simple key-value pairs and cannot interpret nested structures (like CSL's
 > author or issued fields). BibLib generates valid YAML and CSL-JSON, but you
 > might see warnings in Obsidian's metadata panel for these nested fields.
