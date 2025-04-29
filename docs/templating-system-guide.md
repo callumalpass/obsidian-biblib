@@ -88,22 +88,28 @@ Control template sections based on data presence:
 Iterate over arrays like `authors_raw`, `editors_family`, `tags`, or custom array fields:
 
 *   **List Authors:**
-    ```hbs
-    Authors:
-    {{#authors_raw}}
-    - {{given}} {{family}} ({{@number}})
-    {{/authors_raw}}
-    ```
+
+```yaml
+Authors:
+{{#authors_raw}}
+- {{given}} {{family}} ({{@number}})
+{{/authors_raw}}
+```
+
 *   **Comma-Separated List:**
-    ```hbs
-    Keywords: {{#keyword}}{{.}}{{^@last}}, {{/@last}}{{/keyword}}
-    ```
+
+```yaml
+Keywords: {{#keyword}}{{.}}{{^@last}}, {{/@last}}{{/keyword}}
+```
+
 *   **Conditional Formatting in Loops:**
-    ```hbs
-    {{#authors_raw}}
-      {{family}}{{#given}}, {{given}}{{/given}}{{#@last}} (Last Author){{/@last}}{{^@last}}; {{/@last}}
-    {{/authors_raw}}
-    ```
+
+```yaml
+{{#authors_raw}}
+  {{family}}{{#given}}, {{given}}{{/given}}{{#@last}} (Last Author){{/@last}}{{^@last}}; {{/@last}}
+{{/authors_raw}}
+```
+
 
 ## Examples
 

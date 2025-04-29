@@ -16,10 +16,29 @@ theme:
   features:
    # - navigation.tabs
    - search.suggest
+  font:
+   text: Crimson Text
   palette:
-    scheme: slate # Or slate for dark mode
-    primary: slate # Choose colors: https://squidfunk.github.io/mkdocs-material/setup/changing-the-colors/
-    accent: indigo
+  - media: "(prefers-color-scheme)"
+    accent: purple
+    primary: white
+    toggle:
+     icon: material/brightness-auto
+     name: Switch to light mode
+  - media: "(prefers-color-scheme: light)"
+    scheme: default
+    accent: purple
+    primary: white
+    toggle:
+      icon: material/toggle-switch
+      name: Switch to dark mode
+  - media: "(prefers-color-scheme: dark)"
+    scheme: slate
+    accent: purple
+    primary: black
+    toggle:
+      icon: material/toggle-switch-off-outline
+      name: Switch to light mode
 
 # Extensions (Optional but useful markdown extensions)
 markdown_extensions:
@@ -30,7 +49,7 @@ markdown_extensions:
 
 # Navigation (Optional - MkDocs auto-discovers pages if omitted, but manual nav gives control)
 nav:
-  - 'Home': 'index.md'
+  - 'BibLib': 'index.md'
   - 'Core Concepts': 'core-concepts.md'
   - 'Installation': 'installation.md'
   - 'Key Features': 'key-features.md'
