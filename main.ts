@@ -148,7 +148,7 @@ export default class BibliographyPlugin extends Plugin {
                     // --- Add Desktop-Only Commands ---
                     this.addCommand({
                         id: 'toggle-zotero-connector',
-                        name: 'Toggle Zotero Connector Server',
+                        name: 'Toggle Zotero Connector server',
                         callback: async () => {
                             if (this.connectorServer) {
                                 this.stopConnectorServer();
