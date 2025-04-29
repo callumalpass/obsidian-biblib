@@ -58,6 +58,13 @@ export class BibliographyModal extends Modal {
     private contributorsListContainer: HTMLDivElement;
     private additionalFieldsContainer: HTMLDivElement;
     
+    // Attachment UI elements
+    private attachmentTypeSelect: HTMLSelectElement;
+    private importSettingEl: HTMLElement;
+    private linkSettingEl: HTMLElement;
+    private importButtonComponent: ButtonComponent | null = null;
+    private linkButtonComponent: ButtonComponent | null = null;
+    
     // Attachment data in the new structure
     private attachmentData: AttachmentData = { type: AttachmentType.NONE };
     
@@ -153,69 +160,45 @@ export class BibliographyModal extends Modal {
                 }
             }
             
-            // Find the attachment section heading
-            const headings = Array.from(this.contentEl.querySelectorAll('.setting-item-heading'));
-            const attachmentHeading = headings.find(h => h.textContent?.includes('Attachment'));
             
-            if (attachmentHeading) {
-                // Find existing indicator and remove it if present
-                const existingIndicator = attachmentHeading.querySelector('.zotero-attachment-indicator');
-                if (existingIndicator) {
-                    existingIndicator.remove();
-                }
-                
-                // Create a visual indicator for Zotero attachment
-                const indicatorEl = document.createElement('span');
-                indicatorEl.className = 'zotero-attachment-indicator';
-                indicatorEl.textContent = 'From Zotero Connector';
-                
-                // Add tooltip
-                indicatorEl.setAttribute('aria-label', 'An attachment has been imported from Zotero Connector');
-                
-                // Add to heading
-                attachmentHeading.appendChild(indicatorEl);
+            // 1. Set the dropdown value based on the attachment type
+            if (this.attachmentTypeSelect) {
+                this.attachmentTypeSelect.value = data.type;
             }
             
-            // Find the attachment dropdown element
-            const attachmentSetting = this.contentEl.querySelectorAll('.setting').item(
-                Array.from(this.contentEl.querySelectorAll('.setting-item-heading'))
-                    .findIndex(h => h.textContent?.includes('Attachment')) + 1
-            );
+            // 2. Directly update visibility based on attachment type (instead of relying on event)
+            this.updateAttachmentVisibility(data.type);
             
-            const attachmentDropdown = attachmentSetting?.querySelector('select') as HTMLSelectElement;
-            if (attachmentDropdown) {
-                // Set the dropdown value based on the attachment type
-                attachmentDropdown.value = data.type;
-                // Dispatch change event to trigger the UI update
-                attachmentDropdown.dispatchEvent(new Event('change'));
+            // 3. Update button text using stored references based on attachment type
+            if (data.type === AttachmentType.IMPORT && data.file && this.importButtonComponent) {
+                // Update the button text
+                this.importButtonComponent.setButtonText(data.filename || data.file.name);
                 
-                // If we have file data, update the button text
-                if (data.type === AttachmentType.IMPORT && data.file) {
-                    const importButton = this.contentEl.querySelector('.setting-visible button') as HTMLButtonElement;
-                    if (importButton) {
-                        importButton.textContent = data.file.name;
-                        
-                        // Also add a note about Zotero source
-                        const container = importButton.closest('.setting-item-control');
-                        if (container) {
-                            // Check if there's already a note
-                            let noteEl = container.querySelector('.zotero-attachment-note');
-                            if (!noteEl) {
-                                const noteDiv = document.createElement('div');
-                                noteDiv.className = 'zotero-attachment-note';
-                                noteDiv.textContent = 'PDF imported from Zotero';
-                                container.appendChild(noteDiv);
-                            }
-                        }
-                    }
-                } else if (data.type === AttachmentType.LINK && data.path) {
-                    const linkButton = this.contentEl.querySelector('.setting-visible button') as HTMLButtonElement;
-                    if (linkButton) {
-                        // Extract just the filename from the path
-                        const fileName = data.path.split('/').pop() || data.path;
-                        linkButton.textContent = fileName;
+                // Add a note about Zotero source below the button
+                // First, find the placeholder
+                const placeholder = this.importSettingEl.querySelector('.zotero-note-placeholder');
+                if (placeholder) {
+                    // Create a new container to replace the placeholder
+                    const noteContainer = document.createElement('div');
+                    noteContainer.className = 'zotero-note-container';
+                    
+                    // Create the note div
+                    const noteDiv = document.createElement('div');
+                    noteDiv.className = 'zotero-attachment-note';
+                    noteDiv.textContent = 'PDF imported from Zotero Connector';
+
+                    // Add the note to the container
+                    noteContainer.appendChild(noteDiv);
+                    
+                    // Replace the placeholder with the new container
+                    if (placeholder.parentNode) {
+                        placeholder.parentNode.replaceChild(noteContainer, placeholder);
                     }
                 }
+            } else if (data.type === AttachmentType.LINK && data.path && this.linkButtonComponent) {
+                // Extract just the filename from the path
+                const fileName = data.path.split('/').pop() || data.path;
+                this.linkButtonComponent.setButtonText(fileName);
             }
         }
     }
@@ -354,17 +337,27 @@ export class BibliographyModal extends Modal {
         const dropdownContainer = attachmentSetting.controlEl.createEl('div');
         const attachmentTypeDropdown = dropdownContainer.createEl('select', { cls: 'dropdown' });
         
+        // Store dropdown reference
+        this.attachmentTypeSelect = attachmentTypeDropdown;
+        
         // Add options
         const noneOption = attachmentTypeDropdown.createEl('option', { value: AttachmentType.NONE, text: 'None' });
         const importOption = attachmentTypeDropdown.createEl('option', { value: AttachmentType.IMPORT, text: 'Import file' });
         const linkOption = attachmentTypeDropdown.createEl('option', { value: AttachmentType.LINK, text: 'Link to existing file' });
         
-        // Import file input
-        const importContainer = attachmentContainer.createDiv({ cls: 'setting hidden' });
+        // Import file input - store references
+        this.importSettingEl = attachmentContainer.createDiv({ cls: 'setting hidden' });
         
-        new Setting(importContainer)
+        // Create a custom container for the import section
+        const importSection = this.importSettingEl.createDiv({ cls: 'import-section-container' });
+        
+        // Add the setting with button
+        new Setting(importSection)
             .setDesc('Select a PDF or EPUB file to import')
             .addButton(button => {
+                // Store button reference
+                this.importButtonComponent = button;
+                
                 button
                     .setButtonText('Choose file')
                     .onClick(() => {
@@ -387,6 +380,12 @@ export class BibliographyModal extends Modal {
                                     file: file,
                                     filename: file.name
                                 };
+                                
+                                // Remove any previous Zotero note if present
+                                const noteContainer = importSection.querySelector('.zotero-note-container');
+                                if (noteContainer) {
+                                    noteContainer.remove();
+                                }
                             }
                         });
                         
@@ -395,12 +394,18 @@ export class BibliographyModal extends Modal {
                     });
             });
         
-        // Link to existing file
-        const linkContainer = attachmentContainer.createDiv({ cls: 'setting hidden' });
+        // Create a container for the Zotero note (initially empty)
+        this.importSettingEl.createDiv({ cls: 'zotero-note-placeholder' });
         
-        new Setting(linkContainer)
+        // Link to existing file - store references
+        this.linkSettingEl = attachmentContainer.createDiv({ cls: 'setting hidden' });
+        
+        new Setting(this.linkSettingEl)
             .setDesc('Select an existing file in your vault')
             .addButton(button => {
+                // Store button reference
+                this.linkButtonComponent = button;
+                
                 button
                     .setButtonText('Choose file')
                     .onClick(() => {
@@ -419,29 +424,40 @@ export class BibliographyModal extends Modal {
             });
         
         // Add event listener to show/hide appropriate containers based on selection
-        attachmentTypeDropdown.addEventListener('change', () => {
-            const selectedValue = attachmentTypeDropdown.value as AttachmentType;
-            
-            // Hide all containers first
-            importContainer.removeClass('visible');
-            importContainer.addClass('hidden');
-            linkContainer.removeClass('visible');
-            linkContainer.addClass('hidden');
-            
-            // Show selected container
-            if (selectedValue === AttachmentType.IMPORT) {
-                importContainer.removeClass('hidden');
-                importContainer.addClass('visible');
-                this.attachmentData.type = AttachmentType.IMPORT;
-            } else if (selectedValue === AttachmentType.LINK) {
-                linkContainer.removeClass('hidden');
-                linkContainer.addClass('visible');
-                this.attachmentData.type = AttachmentType.LINK;
-            } else {
-                // None selected
-                this.attachmentData = { type: AttachmentType.NONE };
-            }
+        this.attachmentTypeSelect.addEventListener('change', () => {
+            // Use the helper method to update UI visibility
+            this.updateAttachmentVisibility(this.attachmentTypeSelect.value as AttachmentType);
         });
+    }
+    
+    /**
+     * Helper function to manage visibility and state of attachment UI elements
+     */
+    private updateAttachmentVisibility(selectedType: AttachmentType): void {
+        // Hide all containers first
+        this.importSettingEl?.removeClass('visible');
+        this.importSettingEl?.addClass('hidden');
+        this.linkSettingEl?.removeClass('visible');
+        this.linkSettingEl?.addClass('hidden');
+        
+        // Update attachment data type
+        if (this.attachmentData.type !== selectedType) {
+            // Only reset if changed via UI (not programmatically)
+            if (selectedType === AttachmentType.NONE) {
+                this.attachmentData = { type: AttachmentType.NONE };
+            } else {
+                this.attachmentData.type = selectedType;
+            }
+        }
+        
+        // Show selected container
+        if (selectedType === AttachmentType.IMPORT) {
+            this.importSettingEl?.removeClass('hidden');
+            this.importSettingEl?.addClass('visible');
+        } else if (selectedType === AttachmentType.LINK) {
+            this.linkSettingEl?.removeClass('hidden');
+            this.linkSettingEl?.addClass('visible');
+        }
     }
 
     private createMainForm(contentEl: HTMLElement) {
@@ -1159,35 +1175,17 @@ export class BibliographyModal extends Modal {
         
         // ID will be auto-generated if empty
         
-        // Check for at least one author with content
+        // Clean up any empty contributor fields
         const authors = this.contributors.filter(contributor => 
             contributor.role === 'author'
         );
         
-        // First check if we have any author contributors at all
-        if (authors.length === 0) {
-            isValid = false;
-            message += '\n- At least one contributor with role "author" is required';
-        } else {
-            // Then check if any of them have content
-            const hasAuthorWithContent = authors.some(author => 
-                (author.family && author.family.trim() !== '') || 
-                (author.given && author.given.trim() !== '') || 
-                (author.literal && author.literal.trim() !== '')
-            );
-            
-            if (!hasAuthorWithContent) {
-                isValid = false;
-                message += '\n- At least one author must have a name (family or given)';
-                
-                // Force refresh contributor fields
-                authors.forEach(author => {
-                    if (author.family === '') author.family = undefined;
-                    if (author.given === '') author.given = undefined;
-                    if (author.literal === '') author.literal = undefined;
-                });
-            }
-        }
+        // Clean up any empty author fields (this doesn't affect validation)
+        authors.forEach(author => {
+            if (author.family === '') author.family = undefined;
+            if (author.given === '') author.given = undefined;
+            if (author.literal === '') author.literal = undefined;
+        });
 
         if (!isValid) {
             new Notice(message);
