@@ -1,4 +1,4 @@
-import { App, Plugin, Notice, Platform, TFile } from 'obsidian';
+import { App, Plugin, Notice, Platform, TFile, debounce } from 'obsidian';
 import { BibliographyModal } from './src/ui/modals/bibliography-modal';
 import { ChapterModal } from './src/ui/modals/chapter-modal';
 import { BulkImportModal } from './src/ui/modals/bulk-import-modal';
@@ -329,8 +329,9 @@ export default class BibliographyPlugin extends Plugin {
             const modal = new BibliographyModal(this.app, this.settings, false);
             modal.open();
 
-            // Use a short timeout to allow the modal DOM to render before populating
-            setTimeout(() => {
+            // Use debounce to allow the modal DOM to render before populating
+            // The debounced function will run after 150ms of inactivity
+            const populateModal = debounce(() => {
                 try {
                     modal.populateFormFromCitoid(cslData);
                     if (attachmentData) {
@@ -345,17 +346,26 @@ export default class BibliographyPlugin extends Plugin {
                     modal.close(); // Close the broken modal
                 } finally {
                     // Ensure processing flag is reset even if modal population fails
-                     setTimeout(() => { this.processingItem = false; }, 100);
+                    // Use debounce for resetting processing flag too
+                    debounce(() => { 
+                        this.processingItem = false; 
+                    }, 100)();
                 }
-            }, 150); // Increased timeout slightly
+            }, 150);
+
+            // Execute the debounced function
+            populateModal();
 
         } catch (error) {
             console.error('Error processing Zotero item:', error);
             new Notice('Error processing Zotero item. Check console for details.');
-             // Reset processing flag in case of error during parsing
-             this.processingItem = false;
+            // Reset processing flag in case of error during parsing
+            // Use debounce to ensure we're not resetting too quickly
+            debounce(() => {
+                this.processingItem = false;
+            }, 100)();
         }
-        // Note: The processing flag is reset inside the setTimeout's finally block
+        // Note: The processing flag is reset inside the debounced function's finally block
         // or immediately above in the catch block for parsing errors.
     }
 
