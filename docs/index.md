@@ -1,7 +1,8 @@
 
-Welcome to the official documentation for BibLib, an Obsidian plugin designed to transform your vault into a powerful, integrated academic reference manager.
-
----
+<video width="640" height="480" controls>
+  <source src="assets/videos/1745816311.mp4" type="video/mp4">
+  Your browser does not support the video tag. Please update your browser.
+</video>
 
 ## Introduction
 
