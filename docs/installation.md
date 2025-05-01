@@ -10,13 +10,13 @@
 3.  Go into the `plugins` sub-directory.
 4.  Create a new folder named `biblib`.
 5.  Copy the downloaded `main.js`, `manifest.json`, and `styles.css` files into the `biblib` folder.
-6.  Restart Obsidian or reload the app (`Ctrl/Cmd + R`).
+6.  Restart Obsidian or reload the app.
 7.  Go to `Settings` -> `Community plugins`.
 8.  Find "BibLib" in the list of installed plugins and toggle it **on**.
 
 ## Installation via BRAT
 
-BRAT (Beta Reviewers Auto-update Tester) is an Obsidian plugin that helps install and update plugins that are not yet in the official community store.
+BRAT is an Obsidian plugin that helps install and update plugins that are not yet in the official community store.
 
 1.  **Install BRAT:**
     *   Go to `Settings` -> `Community plugins` -> `Browse`.
