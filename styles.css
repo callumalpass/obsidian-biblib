@@ -700,7 +700,7 @@
   padding: 12px 16px;
   margin-bottom: 20px;
   border-radius: 5px;
-  background-color: var(--background-modifier-error-hover);
+  background-color: var(--background-secondary-alt);
   border: 1px solid var(--text-error);
   color: var(--text-error); /* Ensure text is visible */
 }
@@ -845,6 +845,104 @@
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   CSL Key Styling
+   ========================================================================== */
+
+/* IMPORTANT: This section should be updated whenever CSL_ALL_CSL_FIELDS changes in src/utils/csl-variables.ts */
+
+/* Default style for all frontmatter keys */
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property-key, /* Live Preview */
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line .cm-meta.cm-yaml-key /* Source Mode */
+{
+  /* Default style for all keys  */
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* These CSS selectors target CSL fields defined in the source */
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="id"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="type"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="title"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="author"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="editor"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="chair"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="translator"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="container-author"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="collection-editor"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="issued"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="accessed"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="year"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="month"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="day"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="volume"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="number"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="issue"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="page"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="container-title"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="collection-title"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="DOI"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="ISBN"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="ISSN"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="URL"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="publisher"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="publisher-place"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="abstract"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="language"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="event"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="event-place"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="genre"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="source"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="medium"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="note"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="scale"] .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="status"] .metadata-property-key,
+
+/* Also target source mode keys */
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="id"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="type"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="title"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="author"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="editor"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="chair"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="translator"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="container-author"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="collection-editor"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="issued"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="accessed"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="year"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="month"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="day"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="volume"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="number"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="issue"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="page"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="container-title"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="collection-title"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="DOI"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="ISBN"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="ISSN"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="URL"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="publisher"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="publisher-place"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="abstract"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="language"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="event"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="event-place"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="genre"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="source"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="medium"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="note"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="scale"],
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="status"]
+{
+  /* Style for standard CSL keys - overrides default style */
+  font-style: normal !important;
+  font-weight: bold !important;
+  opacity: 1.0 !important;
+  color: var(--interactive-accent) !important;
 }
 
 /* ==========================================================================
