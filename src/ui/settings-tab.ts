@@ -1,4 +1,3 @@
-//@ts-nocheck
 import { App, Platform, PluginSettingTab, Setting, normalizePath, setIcon } from 'obsidian';
 import BibliographyPlugin from '../../main';
 
