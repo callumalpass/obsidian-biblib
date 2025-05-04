@@ -62,7 +62,19 @@ export class CitekeyGenerator {
                        // Fallback citekey in case of unexpected errors
                        const authorFallback = this.extractAuthorPart(citationData, config) || 'unknown';
                        const yearFallback = this.extractYearPart(citationData) || new Date().getFullYear().toString();
-                       return (authorFallback + yearFallback).replace(/[^a-zA-Z0-9]/g, '');
+                       let fallbackCitekey = authorFallback + yearFallback;
+                       
+                       // Apply Pandoc's citekey rules
+                       // 1. Must start with a letter, digit, or underscore
+                       if (!/^[a-zA-Z0-9_]/.test(fallbackCitekey)) {
+                               fallbackCitekey = '_' + fallbackCitekey;
+                       }
+                       
+                       // 2. Allow alphanumerics and Pandoc's permitted punctuation
+                       fallbackCitekey = fallbackCitekey.replace(/[^a-zA-Z0-9_:.#$%&\-+?<>~/]/g, '');
+                       
+                       // 3. Remove trailing punctuation (only internal punctuation is allowed)
+                       return fallbackCitekey.replace(/[:.#$%&\-+?<>~/]+$/g, '');
                }
        }
        
@@ -257,8 +269,17 @@ export class CitekeyGenerator {
                        citekey += shortDelimiter + randomSuffix;
                }
 
-               // Final basic sanitization for legacy output
-               return citekey.replace(/[^a-zA-Z0-9]/g, '');
+               // Apply Pandoc's citekey rules for legacy output
+               // 1. Must start with a letter, digit, or underscore
+               if (!/^[a-zA-Z0-9_]/.test(citekey)) {
+                       citekey = '_' + citekey;
+               }
+               
+               // 2. Allow alphanumerics and Pandoc's permitted punctuation
+               citekey = citekey.replace(/[^a-zA-Z0-9_:.#$%&\-+?<>~/]/g, '');
+               
+               // 3. Remove trailing punctuation (only internal punctuation is allowed)
+               return citekey.replace(/[:.#$%&\-+?<>~/]+$/g, '');
        }
 
 
@@ -319,8 +340,10 @@ export class CitekeyGenerator {
                        }
                }
 
-               // Basic cleanup: lowercase, remove non-alphanumeric (allow hyphen)
-               return lastName ? lastName.toLowerCase().replace(/[^a-z0-9-]/gi, '') : '';
+               // Basic cleanup: lowercase, allow Pandoc-compatible characters
+               // Note: We still need to be more restrictive here than in the final citekey
+               // to avoid issues with author name extraction
+               return lastName ? lastName.toLowerCase().replace(/[^a-z0-9_-]/gi, '') : '';
        }
 
        /**

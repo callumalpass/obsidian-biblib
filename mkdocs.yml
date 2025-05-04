@@ -60,3 +60,6 @@ nav:
   # - 'User Guide':
   # - 'Installation': 'guide/installation.md'
   # - 'Configuration': 'guide/configuration.md'
+  #
+extra_css:
+  - stylesheets/extra.css

@@ -292,6 +292,16 @@ consistent and predictable keys for your references.
   * `|shorttitle`: First few significant words of the title.  
   * (Consult settings for a full list).  
 
+### **Pandoc-Compatible Citekeys**
+
+BibLib generates citekeys that are compatible with Pandoc's citation syntax. Following Pandoc's rules:
+
+1. Citekeys must start with a letter, digit, or underscore
+2. Citekeys can contain alphanumerics and these punctuation characters: `:.#$%&-+?<>~/`
+3. Punctuation can only be used internally in the key, not at the beginning or end
+
+This allows for more flexible citekeys like `smith.2023`, `jones-allen_2022`, or `brown_et.al:2021`.
+
 ## **Upcoming Features**
 
 * Export individuals files to various formats.

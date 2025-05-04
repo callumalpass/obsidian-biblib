@@ -38,7 +38,21 @@ export class TemplateEngine {
         
         // Apply citekey sanitization if requested
         if (options.sanitizeForCitekey) {
-            result = result.replace(/[^a-zA-Z0-9]/g, '');
+            // Apply Pandoc's citekey rules:
+            // 1. Must start with a letter, digit, or underscore
+            // 2. Can contain alphanumerics and internal punctuation (:.#$%&-+?<>~/)
+            
+            // First, ensure the key starts with a valid character
+            if (!/^[a-zA-Z0-9_]/.test(result)) {
+                // If it doesn't start with a valid character, replace with an underscore
+                result = '_' + result;
+            }
+            
+            // Allow alphanumerics and Pandoc's permitted punctuation
+            result = result.replace(/[^a-zA-Z0-9_:.#$%&\-+?<>~/]/g, '');
+            
+            // Remove trailing punctuation (only internal punctuation is allowed)
+            result = result.replace(/[:.#$%&\-+?<>~/]+$/g, '');
         }
         
         // Process special YAML array format if requested
@@ -362,8 +376,12 @@ export class TemplateEngine {
             return ''; // No title words found
         }
         
-        // Combine words, lowercase, and basic sanitize
-        return resultWords.join('').toLowerCase().replace(/[^a-z0-9]/gi, '');
+        // Combine words, lowercase, and sanitize according to Pandoc's rules
+        const result = resultWords.join('').toLowerCase();
+        
+        // Only allow alphanumerics - we're stricter here since this is just for title words
+        // The final citekey will be sanitized according to the full rules elsewhere
+        return result.replace(/[^a-z0-9]/gi, '');
     }
     
     /**
