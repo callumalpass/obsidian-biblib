@@ -679,21 +679,20 @@ export class NoteCreationService {
       const { TemplateEngine } = require('../utils/template-engine');
       fileName = TemplateEngine.render(filenameTemplate, variables);
       
-      // Legacy fallback - still use the prefix setting if the template doesn't include the citekey
-      // This ensures backward compatibility
+      // Fallback if template renders to empty string
       if (!fileName || fileName.trim() === '') {
-        const prefix = this.settings.usePrefix ? this.settings.notePrefix : '';
+        // Use default format: citekey with @ prefix
         const sanitizedId = id.replace(/[^a-zA-Z0-9_\-]+/g, '_');
-        fileName = `${prefix}${sanitizedId}`;
+        fileName = `@${sanitizedId}`;
       }
       
       // Sanitize the filename for filesystem compatibility, but preserve forward slashes for subfolder creation
       fileName = fileName.replace(/[\\:"*?<>|]+/g, '_');
     } else {
-      // Legacy behavior - use prefix and sanitized ID
-      const prefix = this.settings.usePrefix ? this.settings.notePrefix : '';
+      // This case should rarely happen as filenameTemplate should always have a default value
+      // But just in case, use the same default format as the fallback
       const sanitizedId = id.replace(/[^a-zA-Z0-9_\-]+/g, '_');
-      fileName = `${prefix}${sanitizedId}`;
+      fileName = `@${sanitizedId}`;
     }
     
     // Check if the filename has path components (contains slashes for subfolders)

@@ -94,9 +94,7 @@ export interface CustomFrontmatterField {
 export interface BibliographyPluginSettings {
         attachmentFolderPath: string;
         literatureNotePath: string;
-        usePrefix: boolean;
-        notePrefix: string;
-        filenameTemplate: string; // New filename template option
+        filenameTemplate: string; // Filename template option
         createAttachmentSubfolder: boolean;
         // Bibliography and file options
         bibliographyJsonPath: string;
@@ -126,8 +124,6 @@ export interface BibliographyPluginSettings {
 export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         attachmentFolderPath: 'biblib',
         literatureNotePath: '/',
-        usePrefix: true,
-        notePrefix: '@',
         filenameTemplate: '@{{citekey}}',
         createAttachmentSubfolder: true,
         bibliographyJsonPath: 'biblib/bibliography.json',

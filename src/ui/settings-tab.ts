@@ -139,33 +139,6 @@ export class BibliographySettingTab extends PluginSettingTab {
 				})
 			);
 
-		new Setting(containerEl)
-			.setName('Legacy filename options')
-			.setDesc('These settings are maintained for backward compatibility but are superseded by the filename template above.')
-			.setClass('setting-item-heading-secondary');
-
-		new Setting(containerEl)
-			.setName('Use prefix for literature notes')
-			.setDesc('Add a prefix to literature note filenames when the template is not used')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.usePrefix)
-				.onChange(async (value) => {
-					this.plugin.settings.usePrefix = value;
-					this.display(); // Refresh display to enable/disable prefix input
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
-			.setName('Literature note prefix')
-			.setDesc('The prefix to add to literature note filenames (e.g., "@" for "@citation-key.md")')
-			.addText(text => text
-				.setPlaceholder('@')
-				.setValue(this.plugin.settings.notePrefix)
-				.setDisabled(!this.plugin.settings.usePrefix) // Disable if usePrefix is false
-				.onChange(async (value) => {
-					this.plugin.settings.notePrefix = value;
-					await this.plugin.saveSettings();
-				}));
 
 		// --- Zotero Connector Settings ---
 		if (!Platform.isMobile) {
