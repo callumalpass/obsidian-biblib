@@ -8,7 +8,7 @@ In BibLib, every reference (journal article, book, chapter, report, webpage, etc
 
 *   **Content:** The body of the Markdown file is yours to use for summaries, critiques, quotes, connections to other notes, or any other analysis related to the reference.
 *   **Metadata:** All the bibliographic information (author, title, year, publisher, DOI, etc.) is stored within the YAML frontmatter section at the top of the file.
-*   **Filename:** By default, the filename is based on the reference's `citekey`, often prefixed with a character like `@` (e.g., `@Smith2023.md`). This is configurable in the settings.
+*   **Filename:** Literature note filenames are generated using a template. By default, the template is `@{{citekey}}` (e.g., `@Smith2023.md`), but you can customize this to create more descriptive filenames (e.g., `{{citekey}} - {{title|capitalize}}.md`) or organize notes into subfolders (e.g., `{{type}}/{{year}}/{{citekey}}.md`). This is fully configurable in the settings using the same template system that powers other features.
 
 Because references are standard Obsidian notes, you can link to them (`[[@Smith2023]]`), tag them (`#methodology`), organize them in folders, and view them in the graph like any other piece of knowledge in your vault.
 
@@ -30,7 +30,7 @@ BibLib stores the bibliographic metadata in the YAML frontmatter using a structu
 
 A **citekey** (or citation key) is a short, unique identifier assigned to each literature note. It serves several purposes:
 
-*   **Filename:** Often used as the base for the literature note's filename (e.g., `Smith2023` becomes `@Smith2023.md`).
+*   **Filename:** Can be used as a reference for the literature note's filename, but BibLib now allows separate templates for citekeys and filenames. This means your citekeys can be optimized for citations (`smith2023`), while your filenames can be more descriptive or organized (`2023/Smith - Quantum Computing.md`).
 *   **Linking:** Used to create links between your notes (`[[@Smith2023]]`).
 *   **Citation:** Used in external tools like Pandoc to refer to the reference (`[@Smith2023]`).
 

@@ -1,6 +1,28 @@
 # Templating System Guide
 
-BibLib uses a unified template engine based on Handlebars/Mustache syntax for customizing citekeys, note headers, and custom frontmatter fields. This provides powerful control over how your reference data is formatted and stored.
+BibLib uses a unified template engine based on Handlebars/Mustache syntax for customizing citekeys, filenames, note headers, and custom frontmatter fields. This provides powerful control over how your reference data is formatted and stored.
+
+## Where Templates Are Used
+
+BibLib uses templates in four major areas:
+
+1. **Header templates:** Configured in Settings → "Header template"
+   * The template for the first header in a literature note, appearing above the YAML frontmatter
+   * Example: `# {{title}} ({{year}})`
+
+2. **Filename templates:** Configured in Settings → "Filename template"
+   * The template for generating literature note filenames, independent from citekeys
+   * Example: `@{{citekey}}` or `{{year}}-{{citekey}}` or `{{type}}/{{citekey}}`
+   * Forward slashes (`/`) in the template will create subfolders automatically
+   * Example hierarchies: `{{type}}/{{year}}/{{citekey}}` or `References/{{authors_family.0}}/{{year}}/{{citekey}}`
+
+3. **Custom frontmatter fields:** Configured in Settings → "Custom frontmatter fields"
+   * Each field in the frontmatter section uses a template for its value
+   * Example: `aliases` field with template: `["{{title|sentence}}", "{{citekey}}"]`
+
+4. **Citekey templates:** Configured in Settings → "Citekey template"
+   * The template for generating unique citation keys
+   * Example: `{{authors_family.0|lowercase}}{{year}}` → "smith2023"
 
 ## Syntax Basics
 
@@ -144,3 +166,15 @@ Keywords: {{#keyword}}{{.}}{{^@last}}, {{/@last}}{{/keyword}}
 *   `{{authors_family.0|lower}}{{year}}{{title|titleword}}` -> `smith2023quantum`
 *   `Auth{{authors_family.0|abbr1}}{{authors_family.1|abbr1}}{{year}}` -> `AuthSJ2023` (For Smith and Jones)
 *   `{{citekey|upper}}` -> `SMITH2023QUANTUMCOMPUTING` (Uses the *already generated* citekey and uppercases it - less common use case)
+
+**Filename Template:**
+
+*   `@{{citekey}}` -> `@smith2023.md`
+*   `{{year}}-{{citekey}}` -> `2023-smith2023.md`
+*   `{{type}}/{{citekey}}` -> `article/smith2023.md` (Creates a subfolder for the reference type)
+*   `{{type}}/{{year}}/{{citekey}}` -> `article/2023/smith2023.md` (Creates nested folders by type and year)
+*   `{{citekey}} - {{title|capitalize}}` -> `smith2023 - Quantum Computing Basics.md`
+*   `Lit/{{authors_family.0|lowercase}}_{{year}}{{^volume}}{{/volume}}{{#volume}}_v{{volume}}{{/volume}}` -> `Lit/smith_2023_v42.md`
+*   `References/{{citekey}}{{#DOI}}_doi{{/DOI}}` -> `References/smith2023_doi.md` (Only adds "_doi" if a DOI exists)
+*   `Library/{{#container-title}}{{container-title|lowercase}}/{{/container-title}}{{citekey}}` -> `Library/journal of physics/smith2023.md` (Organizes by journal)
+*   `Papers/{{year}}/{{authors_family.0|lowercase}}/{{citekey}}` -> `Papers/2023/smith/smith2023.md` (Creates year/author hierarchies)

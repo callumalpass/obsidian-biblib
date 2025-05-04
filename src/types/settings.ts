@@ -96,6 +96,7 @@ export interface BibliographyPluginSettings {
         literatureNotePath: string;
         usePrefix: boolean;
         notePrefix: string;
+        filenameTemplate: string; // New filename template option
         createAttachmentSubfolder: boolean;
         // Bibliography and file options
         bibliographyJsonPath: string;
@@ -127,6 +128,7 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         literatureNotePath: '/',
         usePrefix: true,
         notePrefix: '@',
+        filenameTemplate: '@{{citekey}}',
         createAttachmentSubfolder: true,
         bibliographyJsonPath: 'biblib/bibliography.json',
         citekeyListPath: 'citekeylist.md',

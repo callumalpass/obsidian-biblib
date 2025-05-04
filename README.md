@@ -205,9 +205,17 @@ BibLib offers customization options to tailor the workflow:
   after the citekey within the attachment folder for each reference's files.  
 * **Literature note location**: Specify the default directory where new
   literature notes (.md files) will be created.  
-* **Use prefix for literature notes**: If enabled, adds a prefix to the
-  filename of literature notes.  
-* **Literature note prefix**: Define the prefix string (e.g., Lit/, Ref-) to be
+* **Filename template**: Define how literature note filenames are generated using
+  the template system. For example, `@{{citekey}}` creates filenames like "@smith2023.md",
+  while `{{year}}-{{citekey}}` creates filenames like "2023-smith2023.md". You can
+  use any variables available in the template system, including `{{citekey}}`, `{{title}}`,
+  `{{year}}`, `{{type}}`, and more. This allows for advanced organization like
+  type-based folders (`{{type}}/{{citekey}}`) or descriptive filenames 
+  (`{{citekey}} - {{title|capitalize}}`).  
+* **Use prefix for literature notes** (Legacy): If enabled, adds a prefix to the
+  filename of literature notes. This setting is maintained for backward compatibility
+  but is superseded by the filename template above.  
+* **Literature note prefix** (Legacy): Define the prefix string (e.g., Lit/, Ref-) to be
   added if the above option is enabled.
 
 ### **Custom Frontmatter Fields & Templating**

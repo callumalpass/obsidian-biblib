@@ -99,8 +99,8 @@ export class NoteCreationService {
         pluginSettings: this.settings
       });
       
-      // Determine the note path
-      const notePath = this.getLiteratureNotePath(citation.id);
+      // Determine the note path, passing citation data
+      const notePath = this.getLiteratureNotePath(citation.id, citation);
       
       // Check if file already exists
       const existingFile = this.app.vault.getAbstractFileByPath(notePath);
@@ -111,6 +111,19 @@ export class NoteCreationService {
           success: false,
           error: new Error(`Literature note already exists at ${notePath}`)
         };
+      }
+      
+      // Create any necessary folders first
+      if (notePath.includes('/')) {
+        const folderPath = notePath.substring(0, notePath.lastIndexOf('/'));
+        if (folderPath) {
+          try {
+            await this.app.vault.createFolder(folderPath);
+          } catch (error) {
+            // If the folder already exists, that's fine
+            // No action needed, as createFolder throws when the folder exists
+          }
+        }
       }
       
       // Create the note
@@ -250,7 +263,7 @@ export class NoteCreationService {
           citekey = citekey.replace(/[^a-zA-Z0-9_\-]+/g, '_');
           
           // Check for existing note
-          const notePath = this.getLiteratureNotePath(citekey);
+          const notePath = this.getLiteratureNotePath(citekey, parsedRef.cslData);
           const existingFile = this.app.vault.getAbstractFileByPath(notePath);
           
           if (existingFile instanceof TFile && importSettings.conflictResolution === 'skip') {
@@ -420,6 +433,19 @@ export class NoteCreationService {
             await this.app.vault.modify(existingFile, content);
             new Notice(`Overwritten existing note: ${citekey}`, 2000);
           } else {
+            // Create any necessary folders first
+            if (notePath.includes('/')) {
+              const folderPath = notePath.substring(0, notePath.lastIndexOf('/'));
+              if (folderPath) {
+                try {
+                  await this.app.vault.createFolder(folderPath);
+                } catch (error) {
+                  // If the folder already exists, that's fine
+                  // No action needed, as createFolder throws when the folder exists
+                }
+              }
+            }
+            
             await this.app.vault.create(notePath, content);
           }
           created++;
@@ -622,21 +648,90 @@ export class NoteCreationService {
   /**
    * Get the full, normalized path for a literature note
    */
-  private getLiteratureNotePath(id: string): string {
-    // Use settings for note filename and path
-    const prefix = this.settings.usePrefix ? this.settings.notePrefix : '';
-    // Sanitize citekey for use in filename
-    const sanitizedId = id.replace(/[^a-zA-Z0-9_\-]+/g, '_');
-    const fileName = `${prefix}${sanitizedId}.md`;
-    // Ensure base path ends with slash if it's not root
-    let basePath = normalizePath(this.settings.literatureNotePath);
-    if (basePath !== '/' && !basePath.endsWith('/')) {
-      basePath += '/';
-    }
-    // Handle root path case
-    if (basePath === '/') basePath = ''; 
+  private getLiteratureNotePath(id: string, citation?: any): string {
+    let fileName = '';
     
-    return normalizePath(`${basePath}${fileName}`);
+    // If using the new filename template, use it to generate the filename
+    if (this.settings.filenameTemplate) {
+      // First get the filename template
+      const filenameTemplate = this.settings.filenameTemplate;
+      
+      // Set up the variables to use in the template
+      const variables: any = {
+        citekey: id,
+        // Add date-related variables
+        currentDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+      };
+      
+      // If citation data is available, add those variables too
+      if (citation) {
+        Object.assign(variables, {
+          title: citation.title || '',
+          year: citation.year || '',
+          type: citation.type || '',
+          'container-title': citation['container-title'] || '',
+          // More variables could be added here as needed
+        });
+      }
+      
+      // Use template engine to render the filename
+      // Import the TemplateEngine class if not already imported
+      const { TemplateEngine } = require('../utils/template-engine');
+      fileName = TemplateEngine.render(filenameTemplate, variables);
+      
+      // Legacy fallback - still use the prefix setting if the template doesn't include the citekey
+      // This ensures backward compatibility
+      if (!fileName || fileName.trim() === '') {
+        const prefix = this.settings.usePrefix ? this.settings.notePrefix : '';
+        const sanitizedId = id.replace(/[^a-zA-Z0-9_\-]+/g, '_');
+        fileName = `${prefix}${sanitizedId}`;
+      }
+      
+      // Sanitize the filename for filesystem compatibility, but preserve forward slashes for subfolder creation
+      fileName = fileName.replace(/[\\:"*?<>|]+/g, '_');
+    } else {
+      // Legacy behavior - use prefix and sanitized ID
+      const prefix = this.settings.usePrefix ? this.settings.notePrefix : '';
+      const sanitizedId = id.replace(/[^a-zA-Z0-9_\-]+/g, '_');
+      fileName = `${prefix}${sanitizedId}`;
+    }
+    
+    // Check if the filename has path components (contains slashes for subfolders)
+    let finalPath = '';
+    
+    if (fileName.includes('/')) {
+      // The filename contains path components
+      // Make sure the last component has the .md extension
+      const pathParts = fileName.split('/');
+      pathParts[pathParts.length - 1] = pathParts[pathParts.length - 1] + '.md';
+      fileName = pathParts.join('/');
+      
+      // We need the path to be absolute, so prepend the base path
+      let basePath = normalizePath(this.settings.literatureNotePath);
+      if (basePath !== '/' && !basePath.endsWith('/')) {
+        basePath += '/';
+      }
+      // Handle root path case
+      if (basePath === '/') basePath = '';
+      
+      finalPath = normalizePath(`${basePath}${fileName}`);
+    } else {
+      // Simple filename with no path components
+      // Add .md extension
+      fileName = `${fileName}.md`;
+      
+      // Use the base path from settings
+      let basePath = normalizePath(this.settings.literatureNotePath);
+      if (basePath !== '/' && !basePath.endsWith('/')) {
+        basePath += '/';
+      }
+      // Handle root path case
+      if (basePath === '/') basePath = '';
+      
+      finalPath = normalizePath(`${basePath}${fileName}`);
+    }
+    
+    return finalPath;
   }
   
   /**

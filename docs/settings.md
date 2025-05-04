@@ -33,15 +33,31 @@ These settings control where BibLib saves notes and attachments. Use forward sla
     *   **Default:** `/` (Vault root)
     *   **Usage:** Specify a folder like `References/` or `Sources/` to keep all literature notes together. Ensure the path ends with a `/` unless it's the root (`/`).
 
-*   **Use prefix for literature notes:**
-    *   **Description:** If enabled, the string defined in "Literature note prefix" will be added to the beginning of the filename for every new literature note.
-    *   **Default:** `true` (Enabled)
-    *   **Usage:** Helps distinguish literature notes visually in file explorers and links (e.g., `@Smith2023.md`). Disable if you prefer filenames based only on the citekey (e.g., `Smith2023.md`).
+*   **Filename template:**
+    *   **Description:** Template for generating literature note filenames. Uses the same template engine as headers and frontmatter, allowing for customized naming patterns that can include any available variables.
+    *   **Default:** `@{{citekey}}`
+    *   **Usage:** Create custom naming schemes like `{{year}}-{{citekey}}` (for date-based organization), `{{type}}/{{citekey}}` (for type-based folders), or `{{citekey}} - {{title|capitalize}}` (for descriptive filenames). You can use any variables available in the template system.
+    *   **Subfolder Creation:** Forward slashes `/` in the template will create subfolders automatically. For example, `{{type}}/{{year}}/{{citekey}}` will organize notes in a hierarchy of folders by type and year.
+    *   **Examples:**
+        * `@{{citekey}}` → `@smith2023.md`
+        * `{{year}}-{{citekey}}` → `2023-smith2023.md`
+        * `{{type}}/{{citekey}}` → `article/smith2023.md` (creates an "article" subfolder)
+        * `{{type}}/{{year}}/{{citekey}}` → `article/2023/smith2023.md` (creates nested folders)
+        * `References/{{authors_family.0|lowercase}}/{{year}}/{{citekey}}` → `References/smith/2023/smith2023.md` (creates author-based organization)
+        * `{{authors_family.0|lowercase}}{{#year}}_{{year}}{{/year}}` → `smith_2023.md` (no subfolders)
 
-*   **Literature note prefix:**
-    *   **Description:** The prefix string to use if "Use prefix" is enabled. This field is disabled if the toggle above is off.
-    *   **Default:** `@`
-    *   **Usage:** Common prefixes include `@`, `Ref-`, `Lit-`. Choose characters allowed in filenames.
+*   **Legacy filename options:**
+    These settings are maintained for backward compatibility but are superseded by the filename template above.
+
+    *   **Use prefix for literature notes:**
+        *   **Description:** If enabled, the string defined in "Literature note prefix" will be added to the beginning of the filename when the template is not used or produces an empty result.
+        *   **Default:** `true` (Enabled)
+        *   **Usage:** This setting is only used as a fallback when the filename template is empty or disabled.
+
+    *   **Literature note prefix:**
+        *   **Description:** The prefix string to use if "Use prefix" is enabled. This field is disabled if the toggle above is off.
+        *   **Default:** `@`
+        *   **Usage:** Only used when the filename template is not being used.
 
 ## Zotero Connector Settings (Desktop Only)
 

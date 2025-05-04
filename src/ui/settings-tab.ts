@@ -110,8 +110,43 @@ export class BibliographySettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
+			.setName('Filename template')
+			.setDesc(this.createFragment((frag: DocumentFragment) => {
+				frag.appendText('Template for generating literature note filenames. Uses the same template system as headers and frontmatter.');
+				frag.createEl('br');
+				frag.appendText('Examples:');
+				const ul = frag.createEl('ul');
+				this.createListItem(ul, '@{{citekey}}', 'Standard citekey with @ prefix');
+				this.createListItem(ul, '{{year}}-{{citekey}}', 'Year and citekey (2023-smith)');
+				this.createListItem(ul, '{{type}}/{{citekey}}', 'Type-based folders (article/smith2023)');
+				this.createListItem(ul, '{{citekey}} - {{title|capitalize}}', 'Citekey with title');
+			}))
+			.addTextArea(text => text
+				.setPlaceholder('@{{citekey}}')
+				.setValue(this.plugin.settings.filenameTemplate)
+				.onChange(async (value) => {
+					this.plugin.settings.filenameTemplate = value;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addExtraButton(button => button
+				.setIcon('reset')
+				.setTooltip('Reset to default')
+				.onClick(async () => {
+					this.plugin.settings.filenameTemplate = '@{{citekey}}';
+					await this.plugin.saveSettings();
+					this.display(); // Refresh the settings page
+				})
+			);
+
+		new Setting(containerEl)
+			.setName('Legacy filename options')
+			.setDesc('These settings are maintained for backward compatibility but are superseded by the filename template above.')
+			.setClass('setting-item-heading-secondary');
+
+		new Setting(containerEl)
 			.setName('Use prefix for literature notes')
-			.setDesc('Add a prefix to literature note filenames')
+			.setDesc('Add a prefix to literature note filenames when the template is not used')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.usePrefix)
 				.onChange(async (value) => {
