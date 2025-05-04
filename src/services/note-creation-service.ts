@@ -695,40 +695,40 @@ export class NoteCreationService {
       fileName = `@${sanitizedId}`;
     }
     
-    // Check if the filename has path components (contains slashes for subfolders)
+    // Process the filename and handle missing variables in paths
     let finalPath = '';
     
+    // Check if the filename has path components
     if (fileName.includes('/')) {
-      // The filename contains path components
-      // Make sure the last component has the .md extension
+      // Split the path into components
       const pathParts = fileName.split('/');
-      pathParts[pathParts.length - 1] = pathParts[pathParts.length - 1] + '.md';
-      fileName = pathParts.join('/');
       
-      // We need the path to be absolute, so prepend the base path
-      let basePath = normalizePath(this.settings.literatureNotePath);
-      if (basePath !== '/' && !basePath.endsWith('/')) {
-        basePath += '/';
+      // Filter out empty path segments (caused by missing variables that resolved to empty strings)
+      const filteredParts = pathParts.filter(part => part.trim() !== '');
+      
+      // If all path segments were empty, use just the citekey as filename
+      if (filteredParts.length === 0) {
+        fileName = `${id}.md`; // Fallback to just the citekey
+      } else {
+        // Make sure the last component has the .md extension
+        filteredParts[filteredParts.length - 1] = filteredParts[filteredParts.length - 1] + '.md';
+        fileName = filteredParts.join('/');
       }
-      // Handle root path case
-      if (basePath === '/') basePath = '';
-      
-      finalPath = normalizePath(`${basePath}${fileName}`);
     } else {
       // Simple filename with no path components
       // Add .md extension
       fileName = `${fileName}.md`;
-      
-      // Use the base path from settings
-      let basePath = normalizePath(this.settings.literatureNotePath);
-      if (basePath !== '/' && !basePath.endsWith('/')) {
-        basePath += '/';
-      }
-      // Handle root path case
-      if (basePath === '/') basePath = '';
-      
-      finalPath = normalizePath(`${basePath}${fileName}`);
     }
+    
+    // We need the path to be absolute, so prepend the base path
+    let basePath = normalizePath(this.settings.literatureNotePath);
+    if (basePath !== '/' && !basePath.endsWith('/')) {
+      basePath += '/';
+    }
+    // Handle root path case
+    if (basePath === '/') basePath = '';
+    
+    finalPath = normalizePath(`${basePath}${fileName}`);
     
     return finalPath;
   }

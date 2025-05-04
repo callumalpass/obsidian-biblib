@@ -13,6 +13,7 @@ BibLib uses templates in four major areas:
     * The template for generating literature note filenames, independent from citekeys
     * Example: `@{{citekey}}` or `{{year}}-{{citekey}}` or `{{type}}/{{citekey}}`
     * Forward slashes (`/`) in the template will create subfolders automatically
+    * Missing variables in path segments are gracefully handled by omitting that segment
     * Example hierarchies: `{{type}}/{{year}}/{{citekey}}` or `References/{{authors_family.0}}/{{year}}/{{citekey}}`
 3. **Custom frontmatter fields:** Configured in Settings → "Custom frontmatter fields"
     * Each field in the frontmatter section uses a template for its value

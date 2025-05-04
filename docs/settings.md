@@ -37,7 +37,7 @@ These settings control where BibLib saves notes and attachments. Use forward sla
     *   **Description:** Template for generating literature note filenames. Uses the same template engine as headers and frontmatter, allowing for customized naming patterns that can include any available variables.
     *   **Default:** `@{{citekey}}`
     *   **Usage:** Create custom naming schemes like `{{year}}-{{citekey}}` (for date-based organization), `{{type}}/{{citekey}}` (for type-based folders), or `{{citekey}} - {{title|capitalize}}` (for descriptive filenames). You can use any variables available in the template system.
-    *   **Subfolder Creation:** Forward slashes `/` in the template will create subfolders automatically. For example, `{{type}}/{{year}}/{{citekey}}` will organize notes in a hierarchy of folders by type and year.
+    *   **Subfolder Creation:** Forward slashes `/` in the template will create subfolders automatically. For example, `{{type}}/{{year}}/{{citekey}}` will organize notes in a hierarchy of folders by type and year. If a variable in a path segment resolves to an empty string (e.g., if `year` is missing), that segment will be skipped rather than creating empty folders.
     *   **Examples:**
         * `@{{citekey}}` → `@smith2023.md`
         * `{{year}}-{{citekey}}` → `2023-smith2023.md`
