@@ -6,23 +6,20 @@ BibLib uses a unified template engine based on Handlebars/Mustache syntax for cu
 
 BibLib uses templates in four major areas:
 
-1. **Header templates:** Configured in Settings → "Header template"
-   * The template for the first header in a literature note, appearing above the YAML frontmatter
-   * Example: `# {{title}} ({{year}})`
-
+1.   **Header templates:** Configured in Settings → "Header template"
+    * The template for the first header in a literature note, appearing above the YAML frontmatter
+    * Example: `# {{title}} ({{year}})`
 2. **Filename templates:** Configured in Settings → "Filename template"
-   * The template for generating literature note filenames, independent from citekeys
-   * Example: `@{{citekey}}` or `{{year}}-{{citekey}}` or `{{type}}/{{citekey}}`
-   * Forward slashes (`/`) in the template will create subfolders automatically
-   * Example hierarchies: `{{type}}/{{year}}/{{citekey}}` or `References/{{authors_family.0}}/{{year}}/{{citekey}}`
-
+    * The template for generating literature note filenames, independent from citekeys
+    * Example: `@{{citekey}}` or `{{year}}-{{citekey}}` or `{{type}}/{{citekey}}`
+    * Forward slashes (`/`) in the template will create subfolders automatically
+    * Example hierarchies: `{{type}}/{{year}}/{{citekey}}` or `References/{{authors_family.0}}/{{year}}/{{citekey}}`
 3. **Custom frontmatter fields:** Configured in Settings → "Custom frontmatter fields"
-   * Each field in the frontmatter section uses a template for its value
-   * Example: `aliases` field with template: `["{{title|sentence}}", "{{citekey}}"]`
-
+    * Each field in the frontmatter section uses a template for its value
+    * Example: `aliases` field with template: `["{{title|sentence}}", "{{citekey}}"]`
 4. **Citekey templates:** Configured in Settings → "Citekey template"
-   * The template for generating unique citation keys
-   * Example: `{{authors_family.0|lowercase}}{{year}}` → "smith2023"
+    * The template for generating unique citation keys
+    * Example: `{{authors_family.0|lowercase}}{{year}}` → "smith2023"
 
 ## Syntax Basics
 
