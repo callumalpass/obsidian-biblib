@@ -946,6 +946,45 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
 }
 
 /* ==========================================================================
+   Status Bar Indicator for Zotero Connector
+   ========================================================================== */
+
+.zotero-connector-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0.8;
+    padding: 0 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.zotero-connector-status:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.zotero-connector-status .status-icon {
+    font-size: 10px;
+}
+
+.zotero-connector-status.active {
+    color: var(--text-success);
+}
+
+.zotero-connector-status.active .status-icon {
+    color: var(--interactive-success);
+}
+
+.zotero-connector-status.inactive {
+    color: var(--text-muted);
+}
+
+.zotero-connector-status.inactive .status-icon {
+    color: var(--text-faint);
+}
+
+/* ==========================================================================
    Utility & Visibility Classes
    ========================================================================== */
 

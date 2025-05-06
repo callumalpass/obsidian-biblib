@@ -6,6 +6,7 @@ export * from './attachment-manager-service';
 export * from './template-variable-builder-service';
 export * from './citation-service';
 export * from './api/citoid';
+export * from './status-bar-service';
 
 // Keep the original export for backward compatibility
 // This can be removed after updating all imports

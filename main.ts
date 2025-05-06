@@ -16,6 +16,7 @@ import { FrontmatterBuilderService } from './src/services/frontmatter-builder-se
 import { NoteContentBuilderService } from './src/services/note-content-builder-service';
 import { AttachmentManagerService } from './src/services/attachment-manager-service';
 import { NoteCreationService } from './src/services/note-creation-service';
+import { StatusBarService } from './src/services/status-bar-service';
 import './styles.css';
 
 // Uncomment to suppress non-error console logging in production
@@ -35,7 +36,8 @@ export default class BibliographyPlugin extends Plugin {
     private noteContentBuilder: NoteContentBuilderService;
     private attachmentManager: AttachmentManagerService;
     private noteCreationService: NoteCreationService;
-
+    private statusBarService: StatusBarService;
+    
     // Track item processing to prevent duplicates from Zotero Connector
     private processingItem: boolean = false;
 
@@ -56,6 +58,7 @@ export default class BibliographyPlugin extends Plugin {
             this.noteContentBuilder,
             this.attachmentManager
         );
+        this.statusBarService = new StatusBarService(this.app, this.connectorServer);
 
         // --- Add Commands (Platform Independent) ---
 
@@ -194,6 +197,35 @@ export default class BibliographyPlugin extends Plugin {
 
         // Add settings tab (works on both platforms)
         this.addSettingTab(new BibliographySettingTab(this.app, this));
+        
+        // Add status bar item for Zotero connector (enabled on both platforms to show status)
+        this.statusBarService.addZoteroStatusBarItem(this, this.toggleZoteroConnector.bind(this));
+    }
+    
+    /**
+     * Toggle the Zotero connector state
+     */
+    private async toggleZoteroConnector(): Promise<void> {
+        if (this.connectorServer) {
+            this.stopConnectorServer();
+            this.settings.enableZoteroConnector = false;
+            await this.saveSettings();
+            new Notice('Zotero Connector server stopped');
+        } else {
+            // On desktop, use dynamic import to get the ConnectorServer class
+            try {
+                const { ConnectorServer } = await import('./src/services/connector-server');
+                await this.startConnectorServer(ConnectorServer);
+                if (this.connectorServer) {
+                    this.settings.enableZoteroConnector = true;
+                    await this.saveSettings();
+                    new Notice('Zotero Connector server started');
+                }
+            } catch (error) {
+                console.error("Failed to load ConnectorServer module:", error);
+                new Notice("Failed to load Zotero Connector feature.");
+            }
+        }
     }
 
 	    /**
@@ -216,12 +248,14 @@ export default class BibliographyPlugin extends Plugin {
         }
 
         try {
-            // Instantiate using the dynamically imported class
-            this.connectorServer = new ConnectorServerClass(this.settings);
+            // Instantiate using the dynamically imported class - pass the app instance as required
+            this.connectorServer = new ConnectorServerClass(this.app, this.settings);
 
             // ---- FIX: Add null check before calling start ----
             if (this.connectorServer) {
                 await this.connectorServer.start(); // Call start on the instance
+                // Update status bar after successful start
+                this.statusBarService.setConnectorServer(this.connectorServer);
             } else {
                  // This case should ideally not happen if instantiation succeeded, but belts and suspenders
                  console.error("ConnectorServer instance is null immediately after instantiation.");
@@ -235,6 +269,8 @@ export default class BibliographyPlugin extends Plugin {
             console.error('Failed to start connector server:', error);
             new Notice(`Failed to start Zotero Connector server: ${error.message}`);
             this.connectorServer = null; // Reset on failure
+            // Update status bar after failure
+            this.statusBarService.setConnectorServer(null);
         }
     }
 
@@ -246,9 +282,13 @@ export default class BibliographyPlugin extends Plugin {
             try {
                 this.connectorServer.stop(); // Call stop on the instance
                 this.connectorServer = null;
+                // Update status bar after stopping
+                this.statusBarService.setConnectorServer(null);
             } catch (error) {
                 console.error("Error stopping connector server:", error);
                 this.connectorServer = null; // Ensure it's null even if stop fails
+                // Update status bar after error
+                this.statusBarService.setConnectorServer(null);
             }
         }
     }
@@ -372,6 +412,12 @@ export default class BibliographyPlugin extends Plugin {
     async onunload() {
         // Stop the connector server if it's running
         this.stopConnectorServer();
+        
+        // Remove status bar item
+        if (this.statusBarService) {
+            this.statusBarService.remove();
+        }
+        
         // Other cleanup tasks if needed
         // Event listeners registered with this.register() are cleaned up automatically
     }
