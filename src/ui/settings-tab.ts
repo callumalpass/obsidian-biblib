@@ -75,7 +75,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Attachment folder path')
-			.setDesc('The folder where PDF and EPUB attachments will be stored. Use forward slashes for subfolders.')
+			.setDesc('The folder where attachment files (PDFs, EPUBs, and other file types) will be stored. Use forward slashes for subfolders.')
 			.addText(text => text
 				.setPlaceholder('biblib')
 				.setValue(this.plugin.settings.attachmentFolderPath)

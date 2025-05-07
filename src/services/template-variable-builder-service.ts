@@ -8,14 +8,14 @@ export class TemplateVariableBuilderService {
    * Build a comprehensive set of template variables from citation data
    * @param citation Citation data
    * @param contributors List of contributors
-   * @param attachmentPath Optional path to attachment
+   * @param attachmentPaths Optional paths to attachments
    * @param relatedNotePaths Optional list of related note paths
    * @returns Object containing all template variables
    */
   buildVariables(
     citation: Citation, 
     contributors: Contributor[], 
-    attachmentPath?: string,
+    attachmentPaths?: string[],
     relatedNotePaths?: string[]
   ): Record<string, any> {
     // Start with the basic variable set
@@ -37,31 +37,45 @@ export class TemplateVariableBuilderService {
       citekey: citation.id || '',
     };
     
-    // Handle attachment paths without conditionals
-    // We always set these, even if empty, to ensure templates work properly
-    if (attachmentPath && attachmentPath.trim()) {
-      variables.pdflink = attachmentPath;
+    // Handle attachment paths
+    // Initialize with empty arrays/values to ensure templates work properly
+    variables.pdflink = [];
+    variables.attachments = [];
+    variables.raw_pdflinks = [];
+    variables.quoted_attachments = [];
+    
+    // For backward compatibility, also provide single attachment variables
+    variables.attachment = '';
+    variables.raw_pdflink = '';
+    variables.quoted_attachment = '';
+    
+    // Process attachment paths if provided
+    if (attachmentPaths && attachmentPaths.length > 0) {
+      // For each attachment path, create formatted links
+      const formattedAttachments = attachmentPaths.map(path => {
+        if (path.endsWith('.pdf')) {
+          return `[[${path}|PDF]]`;
+        } else if (path.endsWith('.epub')) {
+          return `[[${path}|EPUB]]`;
+        } else {
+          // Extract file extension for attachment type
+          const extension = path.split('.').pop()?.toUpperCase() || 'FILE';
+          return `[[${path}|${extension}]]`;
+        }
+      });
       
-      // Create attachment link format based on file type
-      if (attachmentPath.endsWith('.pdf')) {
-        variables.attachment = `[[${attachmentPath}|PDF]]`;
-      } else if (attachmentPath.endsWith('.epub')) {
-        variables.attachment = `[[${attachmentPath}|EPUB]]`;
-      } else {
-        variables.attachment = `[[${attachmentPath}|attachment]]`;
+      // Set all attachment-related variables
+      variables.pdflink = attachmentPaths;
+      variables.attachments = formattedAttachments;
+      variables.raw_pdflinks = attachmentPaths;
+      variables.quoted_attachments = formattedAttachments.map(att => `"${att}"`);
+      
+      // For backward compatibility, set single attachment variables to first attachment
+      if (attachmentPaths.length > 0) {
+        variables.raw_pdflink = attachmentPaths[0];
+        variables.attachment = formattedAttachments[0];
+        variables.quoted_attachment = `"${formattedAttachments[0]}"`;
       }
-      
-      // Also provide just the raw path without Obsidian link formatting
-      variables.raw_pdflink = attachmentPath;
-      
-      // For use in frontmatter arrays, prepare a properly quoted version 
-      variables.quoted_attachment = `"${variables.attachment}"`;
-    } else {
-      // Set empty values to ensure templates can reference these keys
-      variables.pdflink = '';
-      variables.attachment = '';
-      variables.raw_pdflink = '';
-      variables.quoted_attachment = '';
     }
     
     // Process related notes if provided

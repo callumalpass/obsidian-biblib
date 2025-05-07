@@ -227,16 +227,48 @@ export class AttachmentManagerService {
       
       // Sanitize citekey for use in filename
       const sanitizedId = citekey.replace(/[^a-zA-Z0-9_\-]+/g, '_');
-      const attachmentFilename = `${sanitizedId}.${fileExtension}`;
-      const attachmentPath = normalizePath(`${targetFolderPath}/${attachmentFilename}`);
       
-      // Check if file already exists
-      const existingAttachment = this.app.vault.getAbstractFileByPath(attachmentPath);
-      if (existingAttachment instanceof TFile) {
-        // Skip import if attachment already exists
-        new Notice(`Attachment already exists: ${attachmentPath}`);
-        return attachmentPath;
+      // Find all files in the target folder with the same extension
+      const filesInFolder = this.app.vault.getFiles().filter(file => 
+          file.parent && file.parent.path === targetFolderPath &&
+          file.extension === fileExtension && 
+          file.basename.startsWith(sanitizedId)
+      );
+      
+      let attachmentFilename = '';
+      
+      if (filesInFolder.length > 0) {
+        // If there are already files with this citekey and extension, add a number
+        // Check if the base file without number exists
+        const baseFileExists = filesInFolder.some(file => file.basename === sanitizedId);
+        
+        // Find the highest existing number
+        const numberPattern = new RegExp(`${sanitizedId}_(\\d+)$`);
+        let highestNumber = 0;
+        
+        filesInFolder.forEach(file => {
+          const match = file.basename.match(numberPattern);
+          if (match && match[1]) {
+            const num = parseInt(match[1], 10);
+            if (num > highestNumber) {
+              highestNumber = num;
+            }
+          }
+        });
+        
+        // If base file exists without a number and no numbered files exist yet, start with _1
+        if (baseFileExists && highestNumber === 0) {
+          attachmentFilename = `${sanitizedId}_1.${fileExtension}`;
+        } else {
+          // Otherwise use the next number in sequence
+          attachmentFilename = `${sanitizedId}_${highestNumber + 1}.${fileExtension}`;
+        }
+      } else {
+        // No existing files with this name, use the basic format
+        attachmentFilename = `${sanitizedId}.${fileExtension}`;
       }
+      
+      const attachmentPath = normalizePath(`${targetFolderPath}/${attachmentFilename}`);
       
       // Import the file
       const arrayBuffer = await attachmentData.file.arrayBuffer();
@@ -329,18 +361,50 @@ export class AttachmentManagerService {
         }
       }
       
-      // Use citekey as the new filename
+      // Sanitize citekey for use in filename
       const sanitizedId = citekey.replace(/[^a-zA-Z0-9_\-]+/g, '_');
-      const newFilename = `${sanitizedId}.${fileExt}`;
-      const targetPath = normalizePath(`${targetFolderPath}/${newFilename}`);
       
-      // Check if target file already exists
-      const existingTarget = this.app.vault.getAbstractFileByPath(targetPath);
-      if (existingTarget instanceof TFile) {
-        // File already exists at the target location with the citekey name
-        // console.log(`Attachment already exists at target location: ${targetPath}`);
-        return targetPath;
+      // Find all files in the target folder with the same extension
+      const filesInFolder = this.app.vault.getFiles().filter(file => 
+          file.parent && file.parent.path === targetFolderPath &&
+          file.extension === fileExt && 
+          file.basename.startsWith(sanitizedId)
+      );
+      
+      let newFilename = '';
+      
+      if (filesInFolder.length > 0) {
+        // If there are already files with this citekey and extension, add a number
+        // Check if the base file without number exists
+        const baseFileExists = filesInFolder.some(file => file.basename === sanitizedId);
+        
+        // Find the highest existing number
+        const numberPattern = new RegExp(`${sanitizedId}_(\\d+)$`);
+        let highestNumber = 0;
+        
+        filesInFolder.forEach(file => {
+          const match = file.basename.match(numberPattern);
+          if (match && match[1]) {
+            const num = parseInt(match[1], 10);
+            if (num > highestNumber) {
+              highestNumber = num;
+            }
+          }
+        });
+        
+        // If base file exists without a number and no numbered files exist yet, start with _1
+        if (baseFileExists && highestNumber === 0) {
+          newFilename = `${sanitizedId}_1.${fileExt}`;
+        } else {
+          // Otherwise use the next number in sequence
+          newFilename = `${sanitizedId}_${highestNumber + 1}.${fileExt}`;
+        }
+      } else {
+        // No existing files with this name, use the basic format
+        newFilename = `${sanitizedId}.${fileExt}`;
       }
+      
+      const targetPath = normalizePath(`${targetFolderPath}/${newFilename}`);
       
       // Read the source file content
       const sourceContent = await this.app.vault.readBinary(sourceFile);

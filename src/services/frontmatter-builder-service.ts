@@ -11,7 +11,7 @@ export interface FrontmatterInput {
   citation: Citation; // Core CSL data
   contributors: Contributor[];
   additionalFields: AdditionalField[]; // Fields not part of core CSL structure
-  attachmentPath?: string; // Normalized path in vault if attachment exists
+  attachmentPaths?: string[]; // Normalized paths in vault if attachments exist
   pluginSettings: BibliographyPluginSettings; // To access custom fields, tag etc.
   relatedNotePaths?: string[]; // Paths to related notes
 }
@@ -33,7 +33,7 @@ export class FrontmatterBuilderService {
    */
   async buildYamlFrontmatter(data: FrontmatterInput): Promise<string> {
     try {
-      const { citation, contributors, additionalFields, attachmentPath, pluginSettings, relatedNotePaths } = data;
+      const { citation, contributors, additionalFields, attachmentPaths, pluginSettings, relatedNotePaths } = data;
       
       // Build base frontmatter object from essential citation fields
       const frontmatter: Record<string, any> = {
@@ -85,7 +85,7 @@ export class FrontmatterBuilderService {
         frontmatter, 
         citation, 
         contributors, 
-        attachmentPath, 
+        attachmentPaths, 
         pluginSettings,
         relatedNotePaths
       );
@@ -169,14 +169,14 @@ export class FrontmatterBuilderService {
    * @param frontmatter The frontmatter object to modify
    * @param citation The citation data
    * @param contributors Array of contributors
-   * @param attachmentPath Optional path to attachment
+   * @param attachmentPaths Optional paths to attachments
    * @param pluginSettings Plugin settings containing custom field definitions
    */
   private async processCustomFrontmatterFields(
     frontmatter: Record<string, any>,
     citation: Citation,
     contributors: Contributor[],
-    attachmentPath?: string,
+    attachmentPaths?: string[],
     pluginSettings?: BibliographyPluginSettings,
     relatedNotePaths?: string[]
   ): Promise<void> {
@@ -188,7 +188,7 @@ export class FrontmatterBuilderService {
     const templateVariables = this.templateVariableBuilder.buildVariables(
       citation, 
       contributors, 
-      attachmentPath,
+      attachmentPaths,
       relatedNotePaths
     );
     
@@ -199,15 +199,15 @@ export class FrontmatterBuilderService {
     for (const field of enabledFields) {
       // Special case handling for attachment fields with direct passthrough
       if (field.name === 'pdflink' && field.template === '{{pdflink}}') {
-        if (templateVariables.pdflink?.trim()) {
+        if (templateVariables.pdflink?.length > 0) {
           frontmatter[field.name] = templateVariables.pdflink;
         }
         continue;
       }
       
       if (field.name === 'attachment' && field.template === '{{attachment}}') {
-        if (templateVariables.attachment?.trim()) {
-          frontmatter[field.name] = templateVariables.attachment;
+        if (templateVariables.attachments?.length > 0) {
+          frontmatter[field.name] = templateVariables.attachments;
         }
         continue;
       }
@@ -240,10 +240,9 @@ export class FrontmatterBuilderService {
             frontmatter[field.name] = [];
           } else if (isArrayTemplate && 
                     (renderedValue.includes('{{pdflink}}') || renderedValue.includes('{{attachment}}')) && 
-                    templateVariables.pdflink) {
-            // Handle array template containing a link to pdflink
-            frontmatter[field.name] = templateVariables.pdflink ? 
-              [templateVariables.attachment] : [];
+                    templateVariables.attachments?.length > 0) {
+            // Handle array template containing attachments
+            frontmatter[field.name] = templateVariables.attachments || [];
           } else {
             // Use as string if JSON parsing fails and no special case
             frontmatter[field.name] = renderedValue;

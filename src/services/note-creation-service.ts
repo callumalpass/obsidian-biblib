@@ -13,7 +13,7 @@ export interface CreateNoteInput {
   citation: Citation;
   contributors: Contributor[];
   additionalFields: AdditionalField[];
-  attachmentData: AttachmentData | null;
+  attachmentData: AttachmentData[] | null;
   relatedNotePaths?: string[]; // Paths to related notes
 }
 
@@ -79,13 +79,22 @@ export class NoteCreationService {
     try {
       const { citation, contributors, additionalFields, attachmentData, relatedNotePaths } = inputData;
       
-      // Handle attachment if provided
-      let attachmentPath = '';
-      if (attachmentData && attachmentData.type !== AttachmentType.NONE) {
-        if (attachmentData.type === AttachmentType.IMPORT && attachmentData.file) {
-          attachmentPath = await this.attachmentManager.importAttachment(attachmentData, citation.id) || '';
-        } else if (attachmentData.type === AttachmentType.LINK && attachmentData.path) {
-          attachmentPath = this.attachmentManager.resolveLinkedAttachmentPath(attachmentData) || '';
+      // Handle attachments if provided
+      const attachmentPaths: string[] = [];
+      if (attachmentData && attachmentData.length > 0) {
+        for (const attachment of attachmentData) {
+          if (attachment.type !== AttachmentType.NONE) {
+            let path = '';
+            if (attachment.type === AttachmentType.IMPORT && attachment.file) {
+              path = await this.attachmentManager.importAttachment(attachment, citation.id) || '';
+            } else if (attachment.type === AttachmentType.LINK && attachment.path) {
+              path = this.attachmentManager.resolveLinkedAttachmentPath(attachment) || '';
+            }
+            
+            if (path) {
+              attachmentPaths.push(path);
+            }
+          }
         }
       }
       
@@ -94,7 +103,7 @@ export class NoteCreationService {
         citation,
         contributors,
         additionalFields,
-        attachmentPath,
+        attachmentPaths,
         relatedNotePaths,
         pluginSettings: this.settings
       });
@@ -424,7 +433,7 @@ export class NoteCreationService {
             contributors,
             additionalFields,
             annotationContent,
-            attachmentPath,
+            attachmentPaths: attachmentPath ? [attachmentPath] : [],
             pluginSettings: this.settings
           });
           

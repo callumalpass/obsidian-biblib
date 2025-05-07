@@ -36,7 +36,7 @@ export class ChapterModal extends Modal {
     private bookEntries: BookEntry[] = []; // Use defined type
     private relatedNotePaths: string[] = [];
     private selectedBook: BookEntry | null = null; // Use defined type
-    private attachmentData: AttachmentData = { type: AttachmentType.NONE };
+    private attachmentData: AttachmentData[] = [];
     
     // Form elements
     private idInput: HTMLInputElement;
@@ -395,127 +395,146 @@ export class ChapterModal extends Modal {
         const attachmentContainer = contentEl.createDiv({ cls: 'attachment-container' });
         
         // Add section heading
-        attachmentContainer.createEl('div', { cls: 'setting-item-heading', text: 'Chapter Attachment' });
+        attachmentContainer.createEl('div', { cls: 'setting-item-heading', text: 'Chapter Attachments' });
         
         // Create attachment setting
         const attachmentSetting = new Setting(attachmentContainer)
-            .setDesc('Optionally attach a PDF/EPUB for this specific chapter');
+            .setDesc('Add attachments to this chapter');
         
-        // Create attachment type dropdown
+        // Create the attachment type dropdown
         this.attachmentTypeSelect = attachmentSetting.controlEl.createEl('select', { cls: 'dropdown' });
         
-        // Add options for None, Import, Link
-        this.attachmentTypeSelect.createEl('option', { value: AttachmentType.NONE, text: 'None' });
+        // Add options for Import, Link
         this.attachmentTypeSelect.createEl('option', { value: AttachmentType.IMPORT, text: 'Import new file' });
         this.attachmentTypeSelect.createEl('option', { value: AttachmentType.LINK, text: 'Link to existing file' });
         
-        // Container for import file option
-        this.importSettingEl = attachmentContainer.createDiv({ cls: 'setting hidden' }); // Hide initially
-        
-        const importSetting = new Setting(this.importSettingEl)
-            .setDesc('Select a PDF or EPUB file to import');
-            
-        // Add button to select file for import
-        importSetting.addButton(button => {
-            this.importButtonComponent = button; // Store reference to button
-            button.setButtonText('Choose file');
-            button.onClick(() => {
-                // Create file input element
-                const fileInput = document.createElement('input');
-                fileInput.type = 'file';
-                fileInput.accept = '.pdf,.epub';
-                
-                // Handle file selection
-                fileInput.addEventListener('change', () => {
-                    if (fileInput.files && fileInput.files.length > 0) {
-                        const file = fileInput.files[0];
-                        
-                        // Update button text
-                        button.setButtonText(file.name);
-                        
-                        // Store file data for later use
-                        this.attachmentData = {
-                            type: AttachmentType.IMPORT,
-                            file: file
-                        };
+        // Add button - add it directly to the setting
+        attachmentSetting.addButton(button => {
+            button
+                .setButtonText('Add Attachment')
+                .setCta() // Make it a call-to-action button
+                .onClick(() => {
+                    // Handle adding attachment based on the selected type
+                    if (this.attachmentTypeSelect.value === AttachmentType.IMPORT.toString()) {
+                        this.addImportAttachment();
+                    } else if (this.attachmentTypeSelect.value === AttachmentType.LINK.toString()) {
+                        this.addLinkAttachment();
                     }
                 });
-                
-                // Trigger file dialog
-                fileInput.click();
-            });
-            return button;
         });
         
-        // Create link to existing file option
-        this.linkSettingEl = attachmentContainer.createDiv({ cls: 'setting hidden' }); // Hide initially
+        // Create container for displaying attachments list
+        const attachmentsDisplayEl = attachmentContainer.createDiv({ cls: 'bibliography-attachments-display' });
+        this.updateAttachmentsDisplay(attachmentsDisplayEl); // Initialize display
         
-        const linkSetting = new Setting(this.linkSettingEl)
-            .setDesc('Select an existing file in your vault');
-            
-        // Add button to select file to link
-        linkSetting.addButton(button => {
-            this.linkButtonComponent = button; // Store reference to button
-            button.setButtonText('Choose file');
-            button.onClick(() => {
-                // Create a modal to select file from vault
-                new FileSuggestModal(this.app, (file) => {
-                    // Update button text
-                    button.setButtonText(file.name);
-                    
-                    // Store file data for later use
-                    this.attachmentData = {
-                        type: AttachmentType.LINK,
-                        path: file.path
-                    };
-                }).open();
-            });
-            return button;
-        });
+        // Import file input - store references for use with import dialog
+        this.importSettingEl = document.createElement('div');
         
-        // Add event listener to show/hide appropriate containers based on selection
-        this.attachmentTypeSelect.addEventListener('change', () => {
-            const selectedType = this.attachmentTypeSelect.value as AttachmentType;
-            
-            // Hide all containers first
-            this.importSettingEl.removeClass('visible');
-            this.importSettingEl.addClass('hidden');
-            this.linkSettingEl.removeClass('visible');
-            this.linkSettingEl.addClass('hidden');
-            
-            // Show selected container
-            if (selectedType === AttachmentType.IMPORT) {
-                this.importSettingEl.removeClass('hidden');
-                this.importSettingEl.addClass('visible');
+        // Link to existing file - store references for use with link dialog
+        this.linkSettingEl = document.createElement('div');
+    }
+    
+    /**
+     * Handle adding an import attachment
+     */
+    private addImportAttachment(): void {
+        // Create file input element
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '*.*'; // Allow all file types
+        
+        // Handle file selection
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files && fileInput.files.length > 0) {
+                const file = fileInput.files[0];
                 
-                // Reset attachment data if type changed but no specific file selected yet
-                if (this.attachmentData.type !== AttachmentType.IMPORT || !this.attachmentData.file) {
-                    this.attachmentData = {
-                        type: AttachmentType.IMPORT
-                    };
-                    // Reset button text if needed
-                    if (this.importButtonComponent)
-                        this.importButtonComponent.setButtonText('Choose file');
-                }
-            } else if (selectedType === AttachmentType.LINK) {
-                this.linkSettingEl.removeClass('hidden');
-                this.linkSettingEl.addClass('visible');
-                
-                // Reset attachment data if type changed but no path selected yet
-                if (this.attachmentData.type !== AttachmentType.LINK || !this.attachmentData.path) {
-                    this.attachmentData = {
-                        type: AttachmentType.LINK
-                    };
-                    // Reset button text if needed
-                    if (this.linkButtonComponent)
-                        this.linkButtonComponent.setButtonText('Choose file');
-                }
-            } else {
-                // No attachment
-                this.attachmentData = {
-                    type: AttachmentType.NONE
+                // Create a new attachment data object
+                const newAttachment: AttachmentData = {
+                    type: AttachmentType.IMPORT,
+                    file: file,
+                    filename: file.name
                 };
+                
+                // Add to attachments list
+                this.attachmentData.push(newAttachment);
+                
+                // Update the display
+                this.updateAttachmentsDisplay();
             }
+        });
+        
+        // Trigger file dialog
+        fileInput.click();
+    }
+    
+    /**
+     * Handle adding a link attachment
+     */
+    private addLinkAttachment(): void {
+        // Create a modal to select file from vault
+        new FileSuggestModal(this.app, (file) => {
+            // Create a new attachment data object
+            const newAttachment: AttachmentData = {
+                type: AttachmentType.LINK,
+                path: file.path
+            };
+            
+            // Add to attachments list
+            this.attachmentData.push(newAttachment);
+            
+            // Update the display
+            this.updateAttachmentsDisplay();
+        }).open();
+    }
+    
+    /**
+     * Update the display of attachments
+     */
+    private updateAttachmentsDisplay(displayEl?: HTMLElement): void {
+        // Find the display element if not provided
+        const attachmentsDisplayEl = displayEl || this.contentEl.querySelector('.bibliography-attachments-display');
+        if (!attachmentsDisplayEl) return;
+        
+        attachmentsDisplayEl.empty(); // Clear previous display
+        
+        if (this.attachmentData.length === 0) {
+            attachmentsDisplayEl.setText('No attachments added.');
+            return;
+        }
+        
+        const listEl = attachmentsDisplayEl.createEl('ul', { cls: 'bibliography-attachments-list' });
+        
+        this.attachmentData.forEach((attachment, index) => {
+            const listItemEl = listEl.createEl('li');
+            
+            // Determine display name based on attachment type
+            let displayName = '';
+            if (attachment.type === AttachmentType.IMPORT && attachment.file) {
+                displayName = attachment.filename || attachment.file.name;
+                listItemEl.createSpan({
+                    cls: 'attachment-type-badge import',
+                    text: 'IMPORT'
+                });
+            } else if (attachment.type === AttachmentType.LINK && attachment.path) {
+                displayName = attachment.path.split('/').pop() || attachment.path;
+                listItemEl.createSpan({
+                    cls: 'attachment-type-badge link',
+                    text: 'LINK'
+                });
+            }
+            
+            // Add file name
+            const nameSpan = listItemEl.createSpan({ text: displayName });
+            
+            // Add remove button
+            const removeButton = listItemEl.createEl('button', {
+                cls: 'bibliography-remove-attachment-button',
+                text: 'Remove'
+            });
+            removeButton.onclick = () => {
+                this.attachmentData.splice(index, 1);
+                this.updateAttachmentsDisplay(attachmentsDisplayEl as HTMLElement); // Refresh display
+            };
         });
     }
 
@@ -701,52 +720,43 @@ export class ChapterModal extends Modal {
             this.addContributorField('author');
         }
         
-        // Handle book attachment - check all possible sources of attachment data
-        let attachmentPath = '';
+        // Handle book attachments - check all possible sources of attachment data
+        const attachmentPaths: string[] = [];
         
         // Check for attachment_path field (direct path reference)
         if (fm.attachment_path) {
-            attachmentPath = fm.attachment_path;
+            const path = this.extractPathFromAttachment(fm.attachment_path);
+            if (path) attachmentPaths.push(path);
         } 
         // Check for attachment field (may contain array or string)
         else if (fm.attachment) {
             if (Array.isArray(fm.attachment)) {
-                if (fm.attachment.length > 0) {
-                    // Try to extract a path from the first attachment
-                    const firstAttachment = fm.attachment[0];
-                    attachmentPath = this.extractPathFromAttachment(firstAttachment);
+                // Process all attachments in the array
+                for (const attachment of fm.attachment) {
+                    const path = this.extractPathFromAttachment(attachment);
+                    if (path) attachmentPaths.push(path);
                 }
             } else if (typeof fm.attachment === 'string') {
-                attachmentPath = this.extractPathFromAttachment(fm.attachment);
+                const path = this.extractPathFromAttachment(fm.attachment);
+                if (path) attachmentPaths.push(path);
             }
         }
         
-        // If we found an attachment path, update the UI
-        if (attachmentPath) {
-            if (this.attachmentTypeSelect) {
-                // Set to LINK type since we're linking to an existing file
-                this.attachmentTypeSelect.value = AttachmentType.LINK;
-                
-                // Trigger the change event to update UI
-                this.attachmentTypeSelect.dispatchEvent(new Event('change'));
-                
-                // Store attachment data
-                this.attachmentData = {
+        // If we found attachment paths, add them to the attachmentData array
+        if (attachmentPaths.length > 0) {
+            // Clear existing attachments first
+            this.attachmentData = [];
+            
+            // Add each path as a link attachment
+            for (const path of attachmentPaths) {
+                this.attachmentData.push({
                     type: AttachmentType.LINK,
-                    path: attachmentPath
-                };
-                
-                // Update the button text if the component exists
-                if (this.linkButtonComponent) {
-                    const fileName = attachmentPath.split('/').pop() || attachmentPath;
-                    this.linkButtonComponent.setButtonText(fileName);
-                }
-                
-                // Show the container
-                if (this.linkSettingEl) {
-                    this.linkSettingEl.style.display = 'block';
-                }
+                    path: path
+                });
             }
+            
+            // Update the display
+            this.updateAttachmentsDisplay();
         }
         
         // Copy additional fields from book that might be relevant to chapters
@@ -1041,7 +1051,7 @@ export class ChapterModal extends Modal {
                 citation,
                 contributors: finalContributors,
                 additionalFields: finalAdditionalFields,
-                attachmentData: this.attachmentData.type !== AttachmentType.NONE ? this.attachmentData : null,
+                attachmentData: this.attachmentData.length > 0 ? this.attachmentData : null,
                 relatedNotePaths: this.relatedNotePaths.length > 0 ? this.relatedNotePaths : undefined
             });
             
@@ -1080,8 +1090,8 @@ class FileSuggestModal extends FuzzySuggestModal<TFile> {
     
     constructor(app: App, onSelect: (file: TFile) => void) {
         super(app);
-        this.files = this.app.vault.getFiles().filter(file => 
-            file.extension === 'pdf' || file.extension === 'epub');
+        // Allow all file types
+        this.files = this.app.vault.getFiles();
         this.onSelect = onSelect;
     }
     
@@ -1090,7 +1100,8 @@ class FileSuggestModal extends FuzzySuggestModal<TFile> {
     }
     
     getItemText(file: TFile): string {
-        return file.path;
+        // Show extension type more prominently
+        return `${file.path} (${file.extension.toUpperCase()})`;
     }
     
     onChooseItem(file: TFile, evt: MouseEvent | KeyboardEvent): void {

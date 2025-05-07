@@ -1006,6 +1006,73 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
 }
 
 /* ==========================================================================
+   Attachments and Related Notes Display
+   ========================================================================== */
+
+.bibliography-attachments-display,
+.bibliography-related-notes-display {
+  margin-top: 10px;
+  margin-bottom: 20px;
+  padding: 10px;
+  border-radius: 4px;
+  background-color: var(--background-secondary);
+  min-height: 30px;
+}
+
+.bibliography-attachments-list,
+.bibliography-related-notes-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.bibliography-attachments-list li,
+.bibliography-related-notes-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  border-radius: 4px;
+  background-color: var(--background-primary);
+}
+
+.bibliography-remove-attachment-button,
+.bibliography-remove-related-note-button {
+  padding: 2px 6px;
+  border: none;
+  border-radius: 3px;
+  background-color: var(--background-modifier-error);
+  color: var(--text-on-accent);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.bibliography-remove-attachment-button:hover,
+.bibliography-remove-related-note-button:hover {
+  background-color: var(--text-error);
+}
+
+.attachment-type-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  margin-right: 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.attachment-type-badge.import {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.attachment-type-badge.link {
+  background-color: var(--interactive-success);
+  color: var(--text-on-accent);
+}
+
+/* ==========================================================================
    Responsive Design
    ========================================================================== */
 

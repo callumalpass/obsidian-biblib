@@ -36,7 +36,7 @@ export class NoteContentBuilderService {
         citation, 
         contributors, 
         additionalFields, 
-        attachmentPath,
+        attachmentPaths,
         pluginSettings, 
         annotationContent,
         relatedNotePaths
@@ -47,7 +47,7 @@ export class NoteContentBuilderService {
         citation,
         contributors,
         additionalFields,
-        attachmentPath,
+        attachmentPaths,
         pluginSettings,
         relatedNotePaths
       });
@@ -56,7 +56,7 @@ export class NoteContentBuilderService {
       const templateVariables = this.templateVariableBuilder.buildVariables(
         citation, 
         contributors, 
-        attachmentPath,
+        attachmentPaths,
         relatedNotePaths
       );
       

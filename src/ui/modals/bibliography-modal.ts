@@ -64,9 +64,10 @@ export class BibliographyModal extends Modal {
     private linkSettingEl: HTMLElement;
     private importButtonComponent: ButtonComponent | null = null;
     private linkButtonComponent: ButtonComponent | null = null;
+    private attachmentsDisplayEl: HTMLElement;
     
-    // Attachment data in the new structure
-    private attachmentData: AttachmentData = { type: AttachmentType.NONE };
+    // Multiple attachments support
+    private attachmentData: AttachmentData[] = [];
     
     // Flag for whether the modal is initialized
     private isInitialized: boolean = false;
@@ -139,7 +140,8 @@ export class BibliographyModal extends Modal {
      * Set the attachment data (for use by external callers)
      */
     public setAttachmentData(data: AttachmentData): void {
-        this.attachmentData = data;
+        // Add the attachment to the list
+        this.attachmentData.push(data);
         
         // Update the UI to reflect the attachment, if the form is initialized
         if (this.isInitialized) {
@@ -160,47 +162,58 @@ export class BibliographyModal extends Modal {
                 }
             }
             
-            
-            // 1. Set the dropdown value based on the attachment type
-            if (this.attachmentTypeSelect) {
-                this.attachmentTypeSelect.value = data.type;
-            }
-            
-            // 2. Directly update visibility based on attachment type (instead of relying on event)
-            this.updateAttachmentVisibility(data.type);
-            
-            // 3. Update button text using stored references based on attachment type
-            if (data.type === AttachmentType.IMPORT && data.file && this.importButtonComponent) {
-                // Update the button text
-                this.importButtonComponent.setButtonText(data.filename || data.file.name);
-                
-                // Add a note about Zotero source below the button
-                // First, find the placeholder
-                const placeholder = this.importSettingEl.querySelector('.zotero-note-placeholder');
-                if (placeholder) {
-                    // Create a new container to replace the placeholder
-                    const noteContainer = document.createElement('div');
-                    noteContainer.className = 'zotero-note-container';
-                    
-                    // Create the note div
-                    const noteDiv = document.createElement('div');
-                    noteDiv.className = 'zotero-attachment-note';
-                    noteDiv.textContent = 'PDF imported from Zotero Connector';
-
-                    // Add the note to the container
-                    noteContainer.appendChild(noteDiv);
-                    
-                    // Replace the placeholder with the new container
-                    if (placeholder.parentNode) {
-                        placeholder.parentNode.replaceChild(noteContainer, placeholder);
-                    }
-                }
-            } else if (data.type === AttachmentType.LINK && data.path && this.linkButtonComponent) {
-                // Extract just the filename from the path
-                const fileName = data.path.split('/').pop() || data.path;
-                this.linkButtonComponent.setButtonText(fileName);
-            }
+            // Update the attachments display
+            this.updateAttachmentsDisplay();
         }
+    }
+    
+    /**
+     * Update the display of attachments
+     */
+    private updateAttachmentsDisplay(): void {
+        if (!this.attachmentsDisplayEl) return;
+        
+        this.attachmentsDisplayEl.empty(); // Clear previous display
+        
+        if (this.attachmentData.length === 0) {
+            this.attachmentsDisplayEl.setText('No attachments added.');
+            return;
+        }
+        
+        const listEl = this.attachmentsDisplayEl.createEl('ul', { cls: 'bibliography-attachments-list' });
+        
+        this.attachmentData.forEach((attachment, index) => {
+            const listItemEl = listEl.createEl('li');
+            
+            // Determine display name based on attachment type
+            let displayName = '';
+            if (attachment.type === AttachmentType.IMPORT && attachment.file) {
+                displayName = attachment.filename || attachment.file.name;
+                listItemEl.createSpan({
+                    cls: 'attachment-type-badge import',
+                    text: 'IMPORT'
+                });
+            } else if (attachment.type === AttachmentType.LINK && attachment.path) {
+                displayName = attachment.path.split('/').pop() || attachment.path;
+                listItemEl.createSpan({
+                    cls: 'attachment-type-badge link',
+                    text: 'LINK'
+                });
+            }
+            
+            // Add file name
+            const nameSpan = listItemEl.createSpan({ text: displayName });
+            
+            // Add remove button
+            const removeButton = listItemEl.createEl('button', {
+                cls: 'bibliography-remove-attachment-button',
+                text: 'Remove'
+            });
+            removeButton.onclick = () => {
+                this.attachmentData.splice(index, 1);
+                this.updateAttachmentsDisplay(); // Refresh display
+            };
+        });
     }
 
     private createCitoidLookupSection(contentEl: HTMLElement) {
@@ -215,7 +228,7 @@ export class BibliographyModal extends Modal {
         // 1. If we have Zotero attachment data, always collapse and show a notice
         // 2. If opened via command, expand by default
         // 3. Otherwise, collapse by default
-        if (this.attachmentData && this.attachmentData.type === AttachmentType.IMPORT) {
+        if (this.attachmentData.length > 0 && this.attachmentData[0].type === AttachmentType.IMPORT) {
             toggleHeader.createSpan({
                 cls: 'bibliography-zotero-notice',
                 text: 'Zotero data loaded - auto-fill section collapsed'
@@ -327,11 +340,11 @@ export class BibliographyModal extends Modal {
         const attachmentContainer = contentEl.createDiv({ cls: 'attachment-container' });
         
         // Add section heading
-        const attachmentHeading = attachmentContainer.createEl('div', { cls: 'setting-item-heading', text: 'Attachment' });
+        const attachmentHeading = attachmentContainer.createEl('div', { cls: 'setting-item-heading', text: 'Attachments' });
         
         // Create attachment setting
         const attachmentSetting = new Setting(attachmentContainer)
-            .setDesc('Import or link to a PDF/EPUB attachment');
+            .setDesc('Add attachments to this citation');
         
         // Create the attachment type dropdown
         const dropdownContainer = attachmentSetting.controlEl.createEl('div');
@@ -341,124 +354,89 @@ export class BibliographyModal extends Modal {
         this.attachmentTypeSelect = attachmentTypeDropdown;
         
         // Add options
-        const noneOption = attachmentTypeDropdown.createEl('option', { value: AttachmentType.NONE, text: 'None' });
         const importOption = attachmentTypeDropdown.createEl('option', { value: AttachmentType.IMPORT, text: 'Import file' });
         const linkOption = attachmentTypeDropdown.createEl('option', { value: AttachmentType.LINK, text: 'Link to existing file' });
         
-        // Import file input - store references
-        this.importSettingEl = attachmentContainer.createDiv({ cls: 'setting hidden' });
-        
-        // Create a custom container for the import section
-        const importSection = this.importSettingEl.createDiv({ cls: 'import-section-container' });
-        
-        // Add the setting with button
-        new Setting(importSection)
-            .setDesc('Select a PDF or EPUB file to import')
-            .addButton(button => {
-                // Store button reference
-                this.importButtonComponent = button;
-                
-                button
-                    .setButtonText('Choose file')
-                    .onClick(() => {
-                        // Create file input element
-                        const fileInput = document.createElement('input');
-                        fileInput.type = 'file';
-                        fileInput.accept = '.pdf,.epub';
-                        
-                        // Handle file selection
-                        fileInput.addEventListener('change', () => {
-                            if (fileInput.files && fileInput.files.length > 0) {
-                                const file = fileInput.files[0];
-                                
-                                // Update button text
-                                button.setButtonText(file.name);
-                                
-                                // Store file data for later use
-                                this.attachmentData = {
-                                    type: AttachmentType.IMPORT,
-                                    file: file,
-                                    filename: file.name
-                                };
-                                
-                                // Remove any previous Zotero note if present
-                                const noteContainer = importSection.querySelector('.zotero-note-container');
-                                if (noteContainer) {
-                                    noteContainer.remove();
-                                }
-                            }
-                        });
-                        
-                        // Trigger file dialog
-                        fileInput.click();
-                    });
-            });
-        
-        // Create a container for the Zotero note (initially empty)
-        this.importSettingEl.createDiv({ cls: 'zotero-note-placeholder' });
-        
-        // Link to existing file - store references
-        this.linkSettingEl = attachmentContainer.createDiv({ cls: 'setting hidden' });
-        
-        new Setting(this.linkSettingEl)
-            .setDesc('Select an existing file in your vault')
-            .addButton(button => {
-                // Store button reference
-                this.linkButtonComponent = button;
-                
-                button
-                    .setButtonText('Choose file')
-                    .onClick(() => {
-                        // Create a modal to select file from vault
-                        new FileSuggestModal(this.app, (file) => {
-                            // Update button text
-                            button.setButtonText(file.name);
-                            
-                            // Store file data for later use
-                            this.attachmentData = {
-                                type: AttachmentType.LINK,
-                                path: file.path
-                            };
-                        }).open();
-                    });
-            });
-        
-        // Add event listener to show/hide appropriate containers based on selection
-        this.attachmentTypeSelect.addEventListener('change', () => {
-            // Use the helper method to update UI visibility
-            this.updateAttachmentVisibility(this.attachmentTypeSelect.value as AttachmentType);
+        // Add button - add it directly to the setting
+        attachmentSetting.addButton(button => {
+            button
+                .setButtonText('Add Attachment')
+                .setCta() // Make it a call-to-action button
+                .onClick(() => {
+                    // Handle adding attachment based on the selected type
+                    if (this.attachmentTypeSelect.value === AttachmentType.IMPORT.toString()) {
+                        this.addImportAttachment();
+                    } else if (this.attachmentTypeSelect.value === AttachmentType.LINK.toString()) {
+                        this.addLinkAttachment();
+                    }
+                });
         });
+        
+        // Create container for displaying attachments list
+        this.attachmentsDisplayEl = attachmentContainer.createDiv({ cls: 'bibliography-attachments-display' });
+        this.updateAttachmentsDisplay(); // Initialize display
+        
+        // Import file input - store references for use with import dialog
+        this.importSettingEl = document.createElement('div');
+        
+        // Link to existing file - store references for use with link dialog
+        this.linkSettingEl = document.createElement('div');
     }
     
     /**
-     * Helper function to manage visibility and state of attachment UI elements
+     * Handle adding an import attachment
      */
-    private updateAttachmentVisibility(selectedType: AttachmentType): void {
-        // Hide all containers first
-        this.importSettingEl?.removeClass('visible');
-        this.importSettingEl?.addClass('hidden');
-        this.linkSettingEl?.removeClass('visible');
-        this.linkSettingEl?.addClass('hidden');
+    private addImportAttachment(): void {
+        // Create file input element
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '*.*'; // Allow all file types, not just PDF/EPUB
         
-        // Update attachment data type
-        if (this.attachmentData.type !== selectedType) {
-            // Only reset if changed via UI (not programmatically)
-            if (selectedType === AttachmentType.NONE) {
-                this.attachmentData = { type: AttachmentType.NONE };
-            } else {
-                this.attachmentData.type = selectedType;
+        // Handle file selection
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files && fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                
+                // Create a new attachment data object
+                const newAttachment: AttachmentData = {
+                    type: AttachmentType.IMPORT,
+                    file: file,
+                    filename: file.name
+                };
+                
+                // Add to attachments list
+                this.attachmentData.push(newAttachment);
+                
+                // Update the display
+                this.updateAttachmentsDisplay();
             }
-        }
+        });
         
-        // Show selected container
-        if (selectedType === AttachmentType.IMPORT) {
-            this.importSettingEl?.removeClass('hidden');
-            this.importSettingEl?.addClass('visible');
-        } else if (selectedType === AttachmentType.LINK) {
-            this.linkSettingEl?.removeClass('hidden');
-            this.linkSettingEl?.addClass('visible');
-        }
+        // Trigger file dialog
+        fileInput.click();
     }
+    
+    /**
+     * Handle adding a link attachment
+     */
+    private addLinkAttachment(): void {
+        // Create a modal to select file from vault
+        new FileSuggestModal(this.app, (file) => {
+            // Create a new attachment data object
+            const newAttachment: AttachmentData = {
+                type: AttachmentType.LINK,
+                path: file.path
+            };
+            
+            // Add to attachments list
+            this.attachmentData.push(newAttachment);
+            
+            // Update the display
+            this.updateAttachmentsDisplay();
+        }).open();
+    }
+    
+    // We no longer need the updateAttachmentVisibility method as we've changed the UI approach
 
     private createMainForm(contentEl: HTMLElement) {
         const formContainer = contentEl.createDiv({ cls: 'bibliography-form' });
@@ -1203,7 +1181,7 @@ export class BibliographyModal extends Modal {
                 citation,
                 contributors: this.contributors, 
                 additionalFields: this.additionalFields, 
-                attachmentData: this.attachmentData.type !== AttachmentType.NONE ? this.attachmentData : null,
+                attachmentData: this.attachmentData.length > 0 ? this.attachmentData : null,
                 relatedNotePaths: this.relatedNotePaths.length > 0 ? this.relatedNotePaths : undefined
             });
             
@@ -1239,8 +1217,8 @@ class FileSuggestModal extends FuzzySuggestModal<TFile> {
     
     constructor(app: App, onSelect: (file: TFile) => void) {
         super(app);
-        this.files = this.app.vault.getFiles().filter(file => 
-            file.extension === 'pdf' || file.extension === 'epub');
+        // Allow all file types
+        this.files = this.app.vault.getFiles();
         this.onSelect = onSelect;
     }
     
@@ -1249,7 +1227,8 @@ class FileSuggestModal extends FuzzySuggestModal<TFile> {
     }
     
     getItemText(file: TFile): string {
-        return file.path;
+        // Show extension type more prominently
+        return `${file.path} (${file.extension.toUpperCase()})`;
     }
     
     onChooseItem(file: TFile, evt: MouseEvent | KeyboardEvent): void {
