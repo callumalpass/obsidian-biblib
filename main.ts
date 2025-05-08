@@ -171,12 +171,18 @@ export default class BibliographyPlugin extends Plugin {
                     });
 
                     // --- Register Desktop-Only Event Listeners ---
-                    const boundHandler = this.handleZoteroItemReceived.bind(this);
-                    // Use document directly as event target as it's global
-                    document.addEventListener('zotero-item-received', boundHandler);
+                    // Main handler for Zotero items
+                    const boundItemHandler = this.handleZoteroItemReceived.bind(this);
+                    document.addEventListener('zotero-item-received', boundItemHandler);
+                    
+                    // Additional handler for late-arriving attachments
+                    const boundAttachmentHandler = this.handleAdditionalAttachments.bind(this);
+                    document.addEventListener('zotero-additional-attachments', boundAttachmentHandler);
+                    
                     // Register cleanup using Obsidian's mechanism
                     this.register(() => {
-                        document.removeEventListener('zotero-item-received', boundHandler);
+                        document.removeEventListener('zotero-item-received', boundItemHandler);
+                        document.removeEventListener('zotero-additional-attachments', boundAttachmentHandler);
                     });
 
                     // --- Initialize Desktop-Only Features ---
@@ -293,11 +299,18 @@ export default class BibliographyPlugin extends Plugin {
         }
     }
 
+    // Track active bibliography modal for Zotero imports
+    private activeZoteroModal: BibliographyModal | null = null;
+    // Track item ID being processed to avoid duplicate modals
+    private activeZoteroItemId: string | null = null;
+    // Track processed session IDs to avoid duplicate imports
+    private processedSessionIds: Set<string> = new Set();
+
     /**
      * Handle the custom 'zotero-item-received' event dispatched by the ConnectorServer.
      */
     private handleZoteroItemReceived(event: CustomEvent): void {
-        const { item, files } = event.detail;
+        const { item, files, sessionID } = event.detail;
 
         if (!item) {
             new Notice('Invalid Zotero item received');
@@ -305,10 +318,50 @@ export default class BibliographyPlugin extends Plugin {
             return;
         }
 
-        if (this.processingItem) {
+        const itemId = item.id || 'unknown';
+        
+        // Additional fix: Check if we've already processed this session ID
+        if (sessionID && this.processedSessionIds.has(sessionID)) {
+            console.log(`Skipping duplicate item event for session ${sessionID}, already processed`);
             return;
         }
+        
+        // Check if we're already processing an item
+        if (this.processingItem) {
+            // If we're already processing this exact item (by ID), just add the new attachments
+            if (this.activeZoteroItemId === itemId && this.activeZoteroModal) {
+                console.log(`Adding attachments to existing modal for item ${itemId}`);
+                // Just process new attachments for the existing modal
+                this.processZoteroAttachments(files, this.activeZoteroModal);
+                return;
+            }
+            // If it's a different item or no modal, must wait
+            return;
+        }
+        
+        // Not currently processing, so start processing this item
         this.processingItem = true;
+        this.activeZoteroItemId = itemId;
+        
+        // Add this session ID to the processed set
+        if (sessionID) {
+            this.processedSessionIds.add(sessionID);
+            
+            // Keep the set from growing too large by pruning old entries
+            // after 10 minutes or when it exceeds 50 entries
+            setTimeout(() => {
+                this.processedSessionIds.delete(sessionID);
+            }, 10 * 60 * 1000); // 10 minutes
+            
+            if (this.processedSessionIds.size > 50) {
+                // Remove the oldest entries (first ones added)
+                const iterator = this.processedSessionIds.values();
+                for (let i = 0; i < 10; i++) {
+                    const toDelete = iterator.next().value;
+                    if (toDelete) this.processedSessionIds.delete(toDelete);
+                }
+            }
+        }
 
         try {
             // Parse the Zotero item using the dedicated service method
@@ -319,94 +372,156 @@ export default class BibliographyPlugin extends Plugin {
                 throw new Error('Failed to parse Zotero data.');
             }
 
-            // Prepare attachment data if PDF files were downloaded
-            let attachmentData: AttachmentData | null = null;
-            if (files && Array.isArray(files) && files.length > 0) {
-                // Assuming the ConnectorServer provides the temporary file path
-                const filePath = files[0]; // Taking the first file for now
-                try {
-                    // Need 'fs' to read the file; this requires careful handling
-                    // We'll assume the ConnectorServer has prepared a File object or similar accessible data
-                    // For simplicity, let's modify ConnectorServer to pass File object if possible,
-                    // or handle file reading within the try/catch here using desktop-only checks.
-
-                    // *** Simplified Approach: Assume 'files' contains File objects if possible ***
-                    // This part needs coordination with how ConnectorServer sends the event detail.
-                    // If 'files' contains actual File objects:
-                    if (files[0] instanceof File) {
-                         attachmentData = {
-                            type: AttachmentType.IMPORT,
-                            file: files[0],
-                            filename: files[0].name
-                         };
-                    }
-                    // If 'files' contains paths (requires Node 'fs' on desktop):
-                    else if (typeof files[0] === 'string' && !Platform.isMobile) {
-                         const fs = require('fs');
-                         if (fs.existsSync(filePath)) {
-                            const fileName = filePath.split(/[/\\]/).pop() || 'document.pdf';
-                            const fileData = fs.readFileSync(filePath);
-                            const file = new File([fileData], fileName, { type: 'application/pdf' });
-                            attachmentData = {
-                                type: AttachmentType.IMPORT,
-                                file: file,
-                                filename: fileName
-                            };
-                         } else {
-                            console.warn(`Attachment file path not found: ${filePath}`);
-                         }
-                    } else if (typeof files[0] === 'string' && Platform.isMobile) {
-                        console.warn("Cannot access file paths directly on mobile for Zotero attachments.");
-                    }
-                } catch (fileError) {
-                    console.error(`Error processing attachment file ${files[0]}:`, fileError);
-                    new Notice('Error processing downloaded Zotero attachment.');
-                }
-            }
-
             // Open bibliography modal with pre-filled data
             // Set openedViaCommand to false since this is opened via Zotero
             const modal = new BibliographyModal(this.app, this.settings, false);
+            
+            // Store reference to the modal for potential future attachments
+            this.activeZoteroModal = modal;
+            
             modal.open();
 
             // Use debounce to allow the modal DOM to render before populating
             // The debounced function will run after 150ms of inactivity
             const populateModal = debounce(() => {
                 try {
+                    // First populate with the citation data
                     modal.populateFormFromCitoid(cslData);
-                    if (attachmentData) {
-                        modal.setAttachmentData(attachmentData);
-                        new Notice(`Zotero data and attachment loaded.`);
-                    } else {
-                        new Notice('Zotero data loaded.');
-                    }
+                    
+                    // Then process any attachments we have now
+                    this.processZoteroAttachments(files, modal);
+                    
+                    new Notice('Zotero data loaded');
                 } catch (modalError) {
                     console.error("Error populating modal:", modalError);
                     new Notice("Error displaying Zotero data in modal.");
                     modal.close(); // Close the broken modal
-                } finally {
-                    // Ensure processing flag is reset even if modal population fails
-                    // Use debounce for resetting processing flag too
-                    debounce(() => { 
-                        this.processingItem = false; 
-                    }, 100)();
+                    this.resetZoteroProcessing(); // Make sure to reset processing state
                 }
             }, 150);
 
             // Execute the debounced function
             populateModal();
+            
+            // Set up a listener for when the modal is closed
+            modal.onClose = () => {
+                this.resetZoteroProcessing();
+            };
 
         } catch (error) {
             console.error('Error processing Zotero item:', error);
             new Notice('Error processing Zotero item. Check console for details.');
-            // Reset processing flag in case of error during parsing
-            // Use debounce to ensure we're not resetting too quickly
-            debounce(() => {
-                this.processingItem = false;
-            }, 100)();
+            // Reset all Zotero processing state
+            this.resetZoteroProcessing();
         }
-        // Note: The processing flag is reset inside the debounced function's finally block
-        // or immediately above in the catch block for parsing errors.
+    }
+    
+    /**
+     * Process Zotero attachment files and add them to the modal
+     */
+    private processZoteroAttachments(files: any[], modal: BibliographyModal): void {
+        // Process attachments if we have any
+        if (!files || !Array.isArray(files) || files.length === 0) {
+            return;
+        }
+        
+        console.log(`Processing ${files.length} attachment(s) from Zotero`);
+        let attachmentsAdded = 0;
+        
+        // Process each file in the array
+        for (const filePath of files) {
+            try {
+                // If 'files' contains actual File objects:
+                if (filePath instanceof File) {
+                    const attachmentData: AttachmentData = {
+                        type: AttachmentType.IMPORT,
+                        file: filePath,
+                        filename: filePath.name
+                    };
+                    modal.setAttachmentData(attachmentData);
+                    attachmentsAdded++;
+                    console.log(`Added File object attachment: ${filePath.name}`);
+                }
+                // If 'files' contains paths (requires Node 'fs' on desktop):
+                else if (typeof filePath === 'string' && !Platform.isMobile) {
+                    const fs = require('fs');
+                    if (fs.existsSync(filePath)) {
+                        const fileName = filePath.split(/[/\\]/).pop() || 'document.pdf';
+                        const fileData = fs.readFileSync(filePath);
+                        
+                        // Determine MIME type based on extension
+                        let mimeType = 'application/octet-stream'; // Default type
+                        const ext = fileName.toLowerCase().split('.').pop();
+                        if (ext === 'pdf') mimeType = 'application/pdf';
+                        else if (ext === 'html' || ext === 'htm') mimeType = 'text/html';
+                        else if (ext === 'epub') mimeType = 'application/epub+zip';
+                        
+                        const file = new File([fileData], fileName, { type: mimeType });
+                        const attachmentData: AttachmentData = {
+                            type: AttachmentType.IMPORT,
+                            file: file,
+                            filename: fileName
+                        };
+                        modal.setAttachmentData(attachmentData);
+                        attachmentsAdded++;
+                        console.log(`Added file path attachment: ${fileName} (${mimeType})`);
+                    } else {
+                        console.warn(`Attachment file path not found: ${filePath}`);
+                    }
+                } else if (typeof filePath === 'string' && Platform.isMobile) {
+                    console.warn("Cannot access file paths directly on mobile for Zotero attachments.");
+                }
+            } catch (fileError) {
+                console.error(`Error processing attachment file ${filePath}:`, fileError);
+                new Notice(`Error processing Zotero attachment: ${typeof filePath === 'string' ? filePath.split(/[/\\]/).pop() : 'Unknown file'}`);
+            }
+        }
+        
+        // Show notice only if we added attachments
+        if (attachmentsAdded > 0) {
+            new Notice(`${attachmentsAdded} attachment(s) added to Zotero item`);
+        }
+    }
+    
+    /**
+     * Handle additional attachments event that arrives after the initial item event
+     * This is specifically for slow-loading attachments like PDFs
+     */
+    private handleAdditionalAttachments(event: CustomEvent): void {
+        const { itemId, files, sessionID } = event.detail;
+        
+        if (!files || !Array.isArray(files) || files.length === 0) {
+            console.log("Additional attachments event received but no files were included");
+            return;
+        }
+        
+        console.log(`Received ${files.length} additional attachment(s) for item ${itemId}`);
+        
+        // Check if we have an active modal for this item
+        if (this.activeZoteroItemId === itemId && this.activeZoteroModal) {
+            // Process the new attachments and add them to the existing modal
+            this.processZoteroAttachments(files, this.activeZoteroModal);
+        } else {
+            console.log(`No active modal found for item ${itemId}, cannot add additional attachments`);
+        }
+    }
+    
+    /**
+     * Reset all Zotero processing state
+     */
+    private resetZoteroProcessing(): void {
+        // Use a small timeout to ensure any queued operations complete
+        setTimeout(() => {
+            this.processingItem = false;
+            this.activeZoteroItemId = null;
+            this.activeZoteroModal = null;
+            
+            // Don't clear the entire processed sessions set - we still want to prevent
+            // duplicates after modal is closed. Individual entries are cleaned up on their
+            // own timer or when the set grows too large.
+            
+            console.log("Zotero processing state reset");
+        }, 100);
     }
 
     async onunload() {

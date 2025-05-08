@@ -13,12 +13,11 @@ import { BibliographyPluginSettings } from '../types/settings';
 const pipeline = promisify(stream.pipeline);
 
 // --- Constants ---
-const CONNECTOR_SERVER_VERSION = '1.0.7'; // Incremented version
-// ... other constants ...
+const CONNECTOR_SERVER_VERSION = '1.0.7';
 const ZOTERO_APP_NAME = 'Obsidian Bibliography Plugin';
 const CONNECTOR_API_VERSION_SUPPORTED = 3;
-const SESSION_CLEANUP_INTERVAL = 5 * 60 * 1000;
-const SESSION_MAX_AGE = 10 * 60 * 1000;
+const SESSION_CLEANUP_INTERVAL = 10 * 60 * 1000; // 10 minutes
+const SESSION_MAX_AGE = 30 * 60 * 1000; // 30 minutes (extended for slow attachments)
 
 // --- Interfaces ---
 interface AttachmentStatus {
@@ -32,10 +31,10 @@ interface SessionData {
     startTime: number;
     attachmentStatus: { [attachmentId: string]: AttachmentStatus };
     initialRequestData?: any;
-    // --- NEW: Store expected attachment IDs ---
     expectedAttachmentIds: Set<string>;
-    // --- ----------------------------------- ---
     eventDispatched: boolean;
+    processedSnapshots: Set<string>; // Track processed HTML snapshots
+    processedAttachmentPaths: Set<string>; // Track processed attachment paths
 }
 interface AttachmentMetadata {
     id?: string;
@@ -49,17 +48,15 @@ interface AttachmentMetadata {
  * A server that intercepts Zotero Connector requests to integrate with Obsidian.
  */
 export class ConnectorServer {
-    // ... (Properties) ...
     private server: http.Server | null = null;
     private settings: BibliographyPluginSettings;
     private tempDir: string;
     private sessions: Map<string, SessionData> = new Map();
-    private processedItemKeys: Set<string> = new Set();
+    private processedSnapshots: Set<string> = new Set(); // Track processed HTML snapshots by session ID
+    private processedAttachmentPaths: Map<string, string> = new Map(); // Track attachment paths by session+filename
     private cleanupIntervalId: NodeJS.Timeout | null = null;
 
-
     constructor(settings: BibliographyPluginSettings) {
-       // ... (Constructor) ...
         this.settings = settings;
         this.tempDir = settings.tempPdfPath || path.join(os.tmpdir(), 'obsidian-bibliography');
 
@@ -74,7 +71,6 @@ export class ConnectorServer {
         }
     }
 
-    // --- Server Start/Stop/Request Handling/Routing (no changes) ---
     public async start(): Promise<void> {
         if (this.server) {
             console.log('Connector server already running.');
@@ -128,7 +124,7 @@ export class ConnectorServer {
         });
     }
 
-        private async handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+    private async handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Zotero-Version, X-Zotero-Connector-API-Version, X-Metadata, Authorization');
@@ -165,13 +161,12 @@ export class ConnectorServer {
         }
     }
 
-     private async routeConnectorApi(endpoint: string, req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+    private async routeConnectorApi(endpoint: string, req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
         const method = req.method || 'GET';
 
         console.log(`Connector Server: Routing endpoint - ${endpoint}, Method: ${method}`);
 
         switch (endpoint) {
-            // ... other cases ...
             case 'ping':
                 if (method === 'POST' || method === 'GET') await this.handlePing(req, res);
                 else this.sendMethodNotAllowed(res, endpoint);
@@ -236,7 +231,6 @@ export class ConnectorServer {
     // --- Endpoint Handlers ---
 
     private async handlePing(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-       // ... (no changes needed) ...
         const clientVersion = req.headers['x-zotero-version'] || 'Unknown';
         const clientApiVersion = parseInt(req.headers['x-zotero-connector-api-version']?.toString() || '0', 10);
 
@@ -265,7 +259,7 @@ export class ConnectorServer {
             reportActiveURL: false,
             googleDocsAddNoteEnabled: false,
             googleDocsCitationExplorerEnabled: false,
-            supportsAttachmentUpload: true, // CRUCIAL
+            supportsAttachmentUpload: true,
             translatorsHash: "obsidian-plugin-static-hash-" + CONNECTOR_SERVER_VERSION,
             sortedTranslatorHash: "obsidian-plugin-static-hash-sorted-" + CONNECTOR_SERVER_VERSION
         };
@@ -288,16 +282,14 @@ export class ConnectorServer {
         const sessionID = data.sessionID || crypto.randomUUID();
         const uri = data.uri || 'Unknown URI';
         const primaryItem = data.items[0];
-        const receivedItemCount = data.items.length;
 
-        // --- NEW: Calculate expected IDs ---
+        // Calculate expected attachment IDs
         const expectedAttachmentIds = new Set<string>();
         (primaryItem.attachments || []).forEach((att: any) => {
             if (att.linkMode !== 'linked_url' && att.id) {
                 expectedAttachmentIds.add(att.id);
             }
         });
-        // --- --------------------------- ---
 
         this.sessions.set(sessionID, {
             uri: uri,
@@ -305,217 +297,358 @@ export class ConnectorServer {
             startTime: Date.now(),
             attachmentStatus: {},
             initialRequestData: data,
-            expectedAttachmentIds: expectedAttachmentIds, // Store the set
-            eventDispatched: false
+            expectedAttachmentIds: expectedAttachmentIds,
+            eventDispatched: false,
+            processedSnapshots: new Set<string>(),
+            processedAttachmentPaths: new Set<string>()
         });
 
-        console.log(`Connector Server: Started session ${sessionID} for 1 item (received ${receivedItemCount}, initially expects ${expectedAttachmentIds.size} attachments) from ${uri}`);
+        console.log(`Connector Server: Started session ${sessionID} for item from ${uri}, expecting ${expectedAttachmentIds.size} attachments`);
 
         this.sendResponse(res, 200, { sessionID: sessionID });
-
-        new Notice(`Receiving item from Zotero. Session: ${sessionID.substring(0, 8)}...`);
-        // Don't dispatch or check completion here
+        new Notice(`Receiving item from Zotero.`);
     }
 
-     private async handleSaveSnapshot(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-         const body = await this.readRequestBody(req);
-         let data;
-         try { data = JSON.parse(body); } catch (e) { this.sendResponse(res, 400, { error: 'Invalid JSON data' }); return; }
+    private async handleSaveSnapshot(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+        const body = await this.readRequestBody(req);
+        let data;
+        try { data = JSON.parse(body); } catch (e) { this.sendResponse(res, 400, { error: 'Invalid JSON data' }); return; }
 
-         const sessionID = data.sessionID || crypto.randomUUID();
-         const uri = data.url || 'Unknown URI';
-         const title = data.title || 'Web Page Snapshot';
+        const sessionID = data.sessionID || crypto.randomUUID();
+        const uri = data.url || 'Unknown URI';
+        const title = data.title || 'Web Page Snapshot';
+        
+        // Check if this session already exists
+        const existingSession = this.sessions.get(sessionID);
+        if (existingSession) {
+            console.log(`Session ${sessionID} already exists for ${uri}, acknowledging duplicate saveSnapshot request`);
+            this.sendResponse(res, 200, { sessionID: sessionID });
+            return;
+        }
 
-         const item = { /* ... create item ... */
-              itemType: 'webpage',
-              title: title,
-              url: uri,
-              accessDate: new Date().toISOString(),
-              attachments: [], // Snapshot expected later
-              tags: [],
-              id: data.id || `webpage-${crypto.createHash('sha1').update(uri).digest('hex').substring(0, 10)}`
-         };
+        const item = { 
+            itemType: 'webpage',
+            title: title,
+            url: uri,
+            accessDate: new Date().toISOString(),
+            attachments: [],
+            tags: [],
+            id: data.id || `webpage-${crypto.createHash('sha1').update(uri).digest('hex').substring(0, 10)}`
+        };
 
-         // --- NEW: Expect 1 attachment (the snapshot itself) ---
-         // We don't know its ID yet, will add in saveSingleFile
-         const expectedAttachmentIds = new Set<string>();
-         // --- ---------------------------------------------- ---
+        // Create a temporary ID for the expected HTML snapshot
+        const tempSnapshotId = `html-snapshot-${crypto.randomUUID().substring(0, 8)}`;
+        const expectedAttachmentIds = new Set<string>([tempSnapshotId]);
 
-         this.sessions.set(sessionID, {
-              uri: uri,
-              items: [item],
-              startTime: Date.now(),
-              attachmentStatus: {},
-              initialRequestData: data,
-              expectedAttachmentIds: expectedAttachmentIds, // Store empty set for now
-              eventDispatched: false
-         });
+        this.sessions.set(sessionID, {
+            uri: uri,
+            items: [item],
+            startTime: Date.now(),
+            attachmentStatus: {
+                [tempSnapshotId]: { progress: 0 }
+            },
+            initialRequestData: data,
+            expectedAttachmentIds: expectedAttachmentIds,
+            eventDispatched: false,
+            processedSnapshots: new Set<string>(),
+            processedAttachmentPaths: new Set<string>()
+        });
 
-         console.log(`Connector Server: Started snapshot session ${sessionID} for ${uri}, expecting snapshot`);
-
-         this.sendResponse(res, 200, { sessionID: sessionID });
-
-         new Notice(`Receiving snapshot info for ${title}. Session: ${sessionID.substring(0, 8)}...`);
-         // Don't dispatch or check completion here
-     }
+        console.log(`Started snapshot session ${sessionID} for ${uri}`);
+        this.sendResponse(res, 200, { sessionID: sessionID });
+        new Notice(`Receiving snapshot for ${title}.`);
+    }
 
     private async handleSaveAttachment(req: http.IncomingMessage, res: http.ServerResponse, isStandalone: boolean): Promise<void> {
         const parsedUrl = url.parse(req.url || '', true);
         const sessionID = parsedUrl.query.sessionID as string;
 
-        console.log(`Connector Server: handleSaveAttachment called for session ${sessionID}`);
-
-        if (!sessionID) { /* ... */ this.sendResponse(res, 400, { error: 'sessionID query parameter is required' }); return; }
+        if (!sessionID) { this.sendResponse(res, 400, { error: 'sessionID query parameter is required' }); return; }
+        
         const session = this.sessions.get(sessionID);
-        if (!session) { /* ... */ this.sendResponse(res, 404, { error: 'Session not found or expired' }); return; }
+        if (!session) { this.sendResponse(res, 404, { error: 'Session not found or expired' }); return; }
 
         const metadataHeader = req.headers['x-metadata'] as string;
         const contentType = req.headers['content-type'] || 'application/octet-stream';
-        let metadata: AttachmentMetadata = {};
-
-        if (!metadataHeader) { /* ... */ this.sendResponse(res, 400, { error: 'X-Metadata header is required' }); return; }
-        try { metadata = JSON.parse(metadataHeader); } catch (e) { /* ... */ this.sendResponse(res, 400, { error: 'Invalid X-Metadata header' }); return; }
-        // console.log(`SaveAttachment: Parsed Metadata for session ${sessionID}:`, metadata);
-
+        
+        if (!metadataHeader) { this.sendResponse(res, 400, { error: 'X-Metadata header is required' }); return; }
+        
+        let metadata: AttachmentMetadata;
+        try { metadata = JSON.parse(metadataHeader); } catch (e) { this.sendResponse(res, 400, { error: 'Invalid X-Metadata header' }); return; }
+        
         const attachmentId = metadata.id || crypto.randomUUID();
         const title = metadata.title || 'Attachment';
         const sourceUrlForFilename = metadata.url || session.uri;
+        
+        // Generate filename and path
         const filename = this.generateFilename(title, contentType, sourceUrlForFilename);
         const filePath = path.join(this.tempDir, filename);
-
-        console.log(`Connector Server: Receiving attachment: ${title} (-> ${filePath}) for session ${sessionID}`);
-
-        // --- NEW: Add this attachment ID to expected set if not present ---
-        if (attachmentId && !session.expectedAttachmentIds.has(attachmentId)) {
-             console.log(`SaveAttachment: Adding dynamically received attachment ${attachmentId} to expected set for session ${sessionID}`);
-             session.expectedAttachmentIds.add(attachmentId);
+        
+        // IMPROVED: Multiple checks for duplicate attachments
+        
+        // 1. Check if this attachment ID has already been processed
+        if (session.attachmentStatus[attachmentId]?.progress === 100 && session.attachmentStatus[attachmentId]?.localPath) {
+            console.log(`Skipping duplicate attachment with ID ${attachmentId} (${title}) - already processed`);
+            
+            // Acknowledge with success
+            res.writeHead(201, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ 
+                status: 'success', 
+                filename: path.basename(session.attachmentStatus[attachmentId].localPath!),
+                canRecognize: contentType === 'application/pdf' && isStandalone 
+            }));
+            return;
         }
-        // --- ---------------------------------------------------------- ---
-        session.attachmentStatus[attachmentId] = { progress: 0, localPath: undefined, error: undefined };
+        
+        // 2. Check for duplicate by path (if processedAttachmentPaths exists)
+        if (session.processedAttachmentPaths && session.processedAttachmentPaths.has(filePath)) {
+            console.log(`Skipping duplicate attachment ${title} by path (${filePath}) for session ${sessionID}`);
+            
+            // Find the attachment with this path
+            const existingAttachment = Object.entries(session.attachmentStatus)
+                .find(([id, status]) => status.localPath === filePath);
+                
+            if (existingAttachment) {
+                // Link the new ID to the existing status
+                session.attachmentStatus[attachmentId] = session.attachmentStatus[existingAttachment[0]];
+                session.expectedAttachmentIds.add(attachmentId);
+                
+                // Acknowledge with success
+                res.writeHead(201, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ 
+                    status: 'success', 
+                    filename: filename,
+                    canRecognize: contentType === 'application/pdf' && isStandalone 
+                }));
+                return;
+            }
+        }
+        
+        // 3. Check for duplicate by content (title + URL + mime type)
+        const parentItem = session.items[0];
+        if (parentItem && parentItem.attachments) {
+            const existingAttachment = parentItem.attachments.find((att: any) => 
+                att.title === title && 
+                att.url === metadata.url && 
+                att.mimeType === contentType &&
+                // Make sure it has a valid status entry
+                att.id && 
+                session.attachmentStatus[att.id]?.progress === 100 &&
+                session.attachmentStatus[att.id]?.localPath);
+                
+            if (existingAttachment && existingAttachment.id) {
+                console.log(`Skipping duplicate attachment ${title} by content for session ${sessionID}`);
+                
+                // Link the new ID to the existing attachment's status
+                session.attachmentStatus[attachmentId] = { ...session.attachmentStatus[existingAttachment.id] };
+                session.expectedAttachmentIds.add(attachmentId);
+                
+                // Acknowledge with success
+                res.writeHead(201, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ 
+                    status: 'success', 
+                    filename: filename,
+                    canRecognize: contentType === 'application/pdf' && isStandalone 
+                }));
+                return;
+            }
+        }
 
+        console.log(`Receiving attachment: ${title} (${contentType}) for session ${sessionID}`);
+        
+        // Add to expected attachment IDs if not already present
+        if (!session.expectedAttachmentIds.has(attachmentId)) {
+            session.expectedAttachmentIds.add(attachmentId);
+        }
+        
+        // Initialize attachment status
+        session.attachmentStatus[attachmentId] = { progress: 0 };
 
         try {
             await pipeline(req, fs.createWriteStream(filePath));
-
-            console.log(`Connector Server: Attachment saved locally: ${filePath} for session ${sessionID}`);
+            
+            // Mark this attachment path as processed
+            session.processedAttachmentPaths.add(filePath);
+            
+            console.log(`Attachment saved: ${filePath}`);
             session.attachmentStatus[attachmentId].progress = 100;
             session.attachmentStatus[attachmentId].localPath = filePath;
 
-            // Update Item Data in Session
-            const parentItemId = metadata.parentItemID || session.items[0]?.id;
-            const parentItemIndex = session.items.findIndex(item => item.id === parentItemId);
-            if (parentItemIndex > -1) {
-                 const parentItem = session.items[parentItemIndex];
-                 if (!parentItem.attachments) parentItem.attachments = [];
-                 // Ensure the attachment has an ID before adding/updating
-                 const currentAttachmentId = attachmentId; // Use the determined ID
-                 const attachmentInfo = { id: currentAttachmentId, title: title, url: metadata.url, localPath: filePath, mimeType: contentType, parentItem: parentItemId, itemType: 'attachment', linkMode: 'imported_file' };
-                 const existingIndex = parentItem.attachments.findIndex((att: any) => att.id === currentAttachmentId);
-                 if (existingIndex > -1) parentItem.attachments[existingIndex] = { ...parentItem.attachments[existingIndex], ...attachmentInfo };
-                 else parentItem.attachments.push(attachmentInfo);
+            // Update item data
+            const parentItem = session.items[0];
+            if (parentItem) {
+                if (!parentItem.attachments) parentItem.attachments = [];
+                
+                // Create attachment info
+                const attachmentInfo = { 
+                    id: attachmentId, 
+                    title: title, 
+                    url: metadata.url, 
+                    localPath: filePath, 
+                    mimeType: contentType, 
+                    parentItem: metadata.parentItemID || parentItem.id, 
+                    itemType: 'attachment', 
+                    linkMode: 'imported_file' 
+                };
+                
+                // Check for existing attachment with same ID
+                const existingIndex = parentItem.attachments.findIndex((att: any) => att.id === attachmentId);
+                
+                if (existingIndex > -1) {
+                    // Update existing entry
+                    parentItem.attachments[existingIndex] = { ...parentItem.attachments[existingIndex], ...attachmentInfo };
+                } else {
+                    // Add new entry
+                    parentItem.attachments.push(attachmentInfo);
+                }
+            }
 
-                 // --- Ensure this attachment ID is in the expected set ---
-                 if (!session.expectedAttachmentIds.has(currentAttachmentId)) {
-                      session.expectedAttachmentIds.add(currentAttachmentId);
-                      console.log(`SaveAttachment: Added ID ${currentAttachmentId} to expected set post-find.`);
-                 }
-                 // ------------------------------------------------------
-            } else {
-                 console.warn(`SaveAttachment: Could not find parent item ${parentItemId} in session ${sessionID}.`);
-             }
-
-            this.sessions.set(sessionID, session); // Update session map
+            this.sessions.set(sessionID, session);
 
             res.writeHead(201, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ status: 'success', filename: filename, canRecognize: contentType === 'application/pdf' && isStandalone }));
+            res.end(JSON.stringify({ 
+                status: 'success', 
+                filename: filename, 
+                canRecognize: contentType === 'application/pdf' && isStandalone 
+            }));
 
-            this.checkAndDispatchIfComplete(sessionID); // Check AFTER responding
-
+            this.checkAndDispatchIfComplete(sessionID);
         } catch (error) {
-            console.error(`Error saving attachment ${filename} for session ${sessionID}:`, error);
+            console.error(`Error saving attachment ${filename}:`, error);
             session.attachmentStatus[attachmentId].progress = -1;
             session.attachmentStatus[attachmentId].error = error.message;
             this.sessions.set(sessionID, session);
             fs.unlink(filePath, () => {});
             this.sendResponse(res, 500, { error: 'Failed to save attachment' });
-
-            this.checkAndDispatchIfComplete(sessionID); // Check even on error
+            this.checkAndDispatchIfComplete(sessionID);
         }
     }
 
     private async handleSaveSingleFile(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
         const body = await this.readRequestBody(req);
         let data;
-        try { data = JSON.parse(body); } catch (e) { /* ... */ this.sendResponse(res, 400, { error: 'Invalid JSON data' }); return; }
+        try { data = JSON.parse(body); } catch (e) { this.sendResponse(res, 400, { error: 'Invalid JSON data' }); return; }
 
         const sessionID = data.sessionID;
-        if (!sessionID) { /* ... */ this.sendResponse(res, 400, { error: 'sessionID is required' }); return; }
+        if (!sessionID) { this.sendResponse(res, 400, { error: 'sessionID is required' }); return; }
+        
         const session = this.sessions.get(sessionID);
-        if (!session) { /* ... */ this.sendResponse(res, 404, { error: 'Session not found or expired' }); return;}
+        if (!session) { this.sendResponse(res, 404, { error: 'Session not found or expired' }); return; }
 
         const snapshotContent = data.snapshotContent;
-        if (typeof snapshotContent !== 'string') { /* ... */ this.sendResponse(res, 400, { error: 'Invalid snapshot content' }); return; }
+        if (typeof snapshotContent !== 'string') { this.sendResponse(res, 400, { error: 'Invalid snapshot content' }); return; }
 
         const title = data.title || session.items[0]?.title || 'Snapshot';
-        // --- Determine ID more carefully ---
-        const providedId = data.id;
+        
+        // IMPROVED: Check if we've already processed an HTML snapshot for this session
+        // This is the key fix for preventing duplicate snapshots
+        if (session.processedSnapshots && session.processedSnapshots.size > 0) {
+            console.log(`Already processed an HTML snapshot for session ${sessionID}, skipping duplicate`);
+            
+            // Still acknowledge the request to keep Zotero happy
+            res.writeHead(204);
+            res.end();
+            return;
+        }
+        
+        // Extra fallback check for older sessions that might not have the processedSnapshots field
         const existingSnapshotAttachment = session.items[0]?.attachments?.find((a: any) => a.mimeType === 'text/html');
-        const attachmentId = providedId || existingSnapshotAttachment?.id || crypto.randomUUID();
-        // --- ----------------------------- ---
+        if (existingSnapshotAttachment?.id && session.attachmentStatus[existingSnapshotAttachment.id]?.progress === 100) {
+            console.log(`Already have a processed HTML snapshot via attachment check for session ${sessionID}, skipping duplicate`);
+            
+            // Still acknowledge the request to keep Zotero happy
+            res.writeHead(204);
+            res.end();
+            return;
+        }
+        
+        // Determine a stable ID for the snapshot
+        const snapshotIdBase = crypto.createHash('md5').update(data.url || session.uri).digest('hex').substring(0, 10);
+        const attachmentId = data.id || `html-${snapshotIdBase}`;
+        
+        // Generate filename and path
         const filename = this.generateFilename(title, 'text/html', data.url || session.uri);
         const filePath = path.join(this.tempDir, filename);
 
-        console.log(`Connector Server: Receiving snapshot: ${title} (-> ${filePath}) for session ${sessionID}`);
-
-        // --- NEW: Add this snapshot ID to expected set ---
-        if (attachmentId && !session.expectedAttachmentIds.has(attachmentId)) {
-             console.log(`SaveSingleFile: Adding snapshot attachment ${attachmentId} to expected set for session ${sessionID}`);
-             session.expectedAttachmentIds.add(attachmentId);
+        console.log(`Processing HTML snapshot: ${title} for session ${sessionID}`);
+        
+        // Find any temporary placeholder ID
+        let tempSnapshotId: string | undefined;
+        for (const id of session.expectedAttachmentIds) {
+            if (id.startsWith('html-snapshot-')) {
+                tempSnapshotId = id;
+                break;
+            }
         }
-        // --- ------------------------------------------- ---
-        session.attachmentStatus[attachmentId] = { progress: 0, localPath: undefined, error: undefined };
-
-
+        
+        // Replace placeholder ID with real ID
+        if (tempSnapshotId && tempSnapshotId !== attachmentId) {
+            session.expectedAttachmentIds.delete(tempSnapshotId);
+            delete session.attachmentStatus[tempSnapshotId];
+            session.expectedAttachmentIds.add(attachmentId);
+        } else if (!session.expectedAttachmentIds.has(attachmentId)) {
+            session.expectedAttachmentIds.add(attachmentId);
+        }
+        
+        // Initialize attachment status
+        session.attachmentStatus[attachmentId] = { progress: 0 };
+        
         try {
             await fs.promises.writeFile(filePath, snapshotContent, 'utf-8');
-
-            console.log(`Connector Server: Snapshot saved locally: ${filePath} for session ${sessionID}`);
+            
+            // Mark this snapshot as processed
+            session.processedSnapshots.add(attachmentId);
+            
+            console.log(`Snapshot saved: ${filePath}`);
             session.attachmentStatus[attachmentId].progress = 100;
             session.attachmentStatus[attachmentId].localPath = filePath;
 
-             // Update Item Data in Session
-             const parentItemIndex = 0;
-             if (session.items.length > 0) {
-                 const parentItem = session.items[parentItemIndex];
-                 if (!parentItem.attachments) parentItem.attachments = [];
-                 const attachmentInfo = { id: attachmentId, title: title, url: data.url || session.uri, localPath: filePath, mimeType: 'text/html', itemType: 'attachment', linkMode: 'imported_file', charset: 'utf-8' };
-                 const existingIndex = parentItem.attachments.findIndex((att: any) => att.id === attachmentId || att.mimeType === 'text/html');
-                 if (existingIndex > -1) parentItem.attachments[existingIndex] = { ...parentItem.attachments[existingIndex], ...attachmentInfo };
-                 else parentItem.attachments.push(attachmentInfo);
-             }
+            // Update item data
+            const parentItem = session.items[0];
+            if (parentItem) {
+                if (!parentItem.attachments) parentItem.attachments = [];
+                
+                const attachmentInfo = { 
+                    id: attachmentId, 
+                    title: title, 
+                    url: data.url || session.uri, 
+                    localPath: filePath, 
+                    mimeType: 'text/html', 
+                    itemType: 'attachment', 
+                    linkMode: 'imported_file', 
+                    charset: 'utf-8' 
+                };
+                
+                // Remove any existing HTML snapshots
+                const existingIndex = parentItem.attachments.findIndex((att: any) => 
+                    att.mimeType === 'text/html' || att.id === attachmentId);
+                    
+                if (existingIndex > -1) {
+                    parentItem.attachments[existingIndex] = attachmentInfo;
+                } else {
+                    parentItem.attachments.push(attachmentInfo);
+                }
+            }
 
-            this.sessions.set(sessionID, session); // Update session map
+            this.sessions.set(sessionID, session);
 
-            res.writeHead(204); // Acknowledge
+            res.writeHead(204);
             res.end();
 
-            this.checkAndDispatchIfComplete(sessionID); // Check AFTER responding
-
+            this.checkAndDispatchIfComplete(sessionID);
         } catch (error) {
-            console.error(`Error saving snapshot ${filename} for session ${sessionID}:`, error);
-             session.attachmentStatus[attachmentId].progress = -1;
-             session.attachmentStatus[attachmentId].error = error.message;
-             this.sessions.set(sessionID, session);
+            console.error(`Error saving snapshot ${filename}:`, error);
+            session.attachmentStatus[attachmentId].progress = -1;
+            session.attachmentStatus[attachmentId].error = error.message;
+            this.sessions.set(sessionID, session);
             fs.unlink(filePath, () => {});
             this.sendResponse(res, 500, { error: 'Failed to save snapshot' });
-
-            this.checkAndDispatchIfComplete(sessionID); // Check even on error
+            this.checkAndDispatchIfComplete(sessionID);
         }
     }
 
     private handleGetSelectedCollection(req: http.IncomingMessage, res: http.ServerResponse): void {
-       // ... (no changes needed) ...
-        console.log("Connector Server: Handling getSelectedCollection");
+        console.log("Handling getSelectedCollection");
         this.sendResponse(res, 200, {
             id: "obsidian",
             name: "Obsidian Vault",
@@ -537,36 +670,24 @@ export class ConnectorServer {
         if (!sessionID || !this.sessions.has(sessionID)) { this.sendResponse(res, 404, { error: 'Session not found' }); return; }
 
         const session = this.sessions.get(sessionID)!;
-        console.log(`Connector Server: Handling sessionProgress for ${sessionID}`);
-
-        // Wait a moment to ensure any in-progress attachments are processed
-        await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Re-get session to ensure we have latest data
-        const updatedSession = this.sessions.get(sessionID);
-        if (!updatedSession) {
-            // Session was deleted while we were waiting
-            this.sendResponse(res, 404, { error: 'Session not found or expired' });
-            return;
-        }
+        // Wait briefly to allow any in-progress attachments to be processed
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Check if session is complete
-        const isDone = this.isSessionComplete(updatedSession);
+        const isDone = this.isSessionComplete(session);
 
         // Build progress items for response
-        const progressItems = (updatedSession.items || []).map(item => {
-            const itemAttachments = Array.isArray(item.attachments) ? item.attachments : [];
+        const progressItems = (session.items || []).map(item => {
             const attachmentProgressList: any[] = [];
             
-            // Report status for all expected attachments
-            for (const expectedId of updatedSession.expectedAttachmentIds) {
-                const status = updatedSession.attachmentStatus[expectedId];
-                const initialAttachment = itemAttachments.find((att:any) => att.id === expectedId);
+            for (const expectedId of session.expectedAttachmentIds) {
+                const status = session.attachmentStatus[expectedId];
+                const initialAttachment = (item.attachments || []).find((att:any) => att.id === expectedId);
                 attachmentProgressList.push({
                     id: expectedId,
-                    progress: status?.progress ?? 0, // Default to 0 if no status yet
+                    progress: status?.progress ?? 0,
                     error: status?.error,
-                    // Include title if available from initial data
                     title: initialAttachment?.title
                 });
             }
@@ -578,73 +699,46 @@ export class ConnectorServer {
             };
         });
 
-        // Log progress status
-        console.log(`SessionProgress: Session ${sessionID} reporting isDone=${isDone}, with ${updatedSession.expectedAttachmentIds.size} expected attachments and ${progressItems[0]?.attachments?.length} reported attachments`);
-        
         // Send response to Zotero
         this.sendResponse(res, 200, { items: progressItems, done: isDone });
 
-        // If session is complete and event not yet dispatched, trigger the check
-        if (isDone && !updatedSession.eventDispatched) {
-            console.log(`SessionProgress: Session ${sessionID} determined complete, attempting dispatch.`);
+        // If session is complete and event not yet dispatched, trigger dispatch
+        if (isDone && !session.eventDispatched) {
             this.checkAndDispatchIfComplete(sessionID);
-        }
-        
-        // Conditional cleanup after responding
-        if (isDone) {
-            setTimeout(() => {
-                if (this.sessions.has(sessionID)) {
-                    const currentSession = this.sessions.get(sessionID)!;
-                    if (this.isSessionComplete(currentSession)) {
-                        console.log(`Connector Server: Cleaning up completed session ${sessionID} after progress check.`);
-                        this.sessions.delete(sessionID);
-                    } else {
-                        console.log(`Connector Server: Session ${sessionID} completion check failed before cleanup.`);
-                    }
-                }
-            }, 5000);
         }
     }
 
-
     private handleHasAttachmentResolvers(req: http.IncomingMessage, res: http.ServerResponse): void {
-       // ... (no changes needed) ...
         this.sendResponse(res, 200, false);
     }
 
     private handleSaveAttachmentFromResolver(req: http.IncomingMessage, res: http.ServerResponse): void {
-       // ... (no changes needed) ...
         this.sendResponse(res, 501, { error: 'Attachment resolving not implemented' });
     }
 
     // --- Utility Methods ---
 
     private sendResponse(res: http.ServerResponse, statusCode: number, body: any): void {
-       // ... (no changes needed) ...
-         if (res.headersSent) {
-            console.warn(`Connector Server: Attempted to send response for ${res.req.method} ${res.req.url} after headers were sent.`);
+        if (res.headersSent) {
+            console.warn(`Attempted to send response after headers were sent.`);
             return;
         }
-        console.log(`Connector Server: Sending Response - ${statusCode} ${JSON.stringify(body).substring(0, 100)}...`);
         res.setHeader('Content-Type', 'application/json');
         res.writeHead(statusCode);
         res.end(JSON.stringify(body));
     }
 
     private sendMethodNotAllowed(res: http.ServerResponse, endpoint: string): void {
-       // ... (no changes needed) ...
-         console.warn(`Connector Server: Method Not Allowed - ${res.req.method} for /connector/${endpoint}`);
-         this.sendResponse(res, 405, { error: 'Method Not Allowed' });
-     }
+        console.warn(`Method Not Allowed - ${res.req.method} for /connector/${endpoint}`);
+        this.sendResponse(res, 405, { error: 'Method Not Allowed' });
+    }
 
-     private handleNotImplemented(res: http.ServerResponse, reason: string = 'Not implemented'): void {
-       // ... (no changes needed) ...
-         console.warn(`Connector Server: Not Implemented - ${res.req.method} ${res.req.url} (${reason})`);
-         this.sendResponse(res, 501, { error: 'Not Implemented', reason: reason });
-     }
+    private handleNotImplemented(res: http.ServerResponse, reason: string = 'Not implemented'): void {
+        console.warn(`Not Implemented - ${res.req.url} (${reason})`);
+        this.sendResponse(res, 501, { error: 'Not Implemented', reason: reason });
+    }
 
     private async readRequestBody(req: http.IncomingMessage): Promise<string> {
-       // ... (no changes needed) ...
         const chunks: Buffer[] = [];
         for await (const chunk of req) {
             chunks.push(Buffer.from(chunk));
@@ -653,11 +747,10 @@ export class ConnectorServer {
     }
 
     private generateFilename(title: string, mimeType: string, sourceUrl?: string): string {
-       // ... (no changes needed) ...
         const extension = mimeType.split('/')[1]?.split('+')[0] ||
-                           (mimeType === 'application/pdf' ? 'pdf' :
-                           (mimeType === 'text/html' ? 'html' :
-                           'bin'));
+                          (mimeType === 'application/pdf' ? 'pdf' :
+                          (mimeType === 'text/html' ? 'html' :
+                          'bin'));
         const sanitizedTitle = (title || 'Untitled')
             .replace(/[<>:"/\\|?*]/g, '_')
             .replace(/\.+/g, '.')
@@ -665,91 +758,115 @@ export class ConnectorServer {
             .replace(/^[ _.-]+/, '')
             .substring(0, 100);
 
-         let baseName = sanitizedTitle;
-         if (!baseName || baseName === '_' || title === 'Attachment' || title === 'Snapshot' || title === 'Untitled') {
-              const hash = crypto.createHash('sha1').update(sourceUrl || crypto.randomUUID()).digest('hex').substring(0, 10);
-              baseName = `attachment_${hash}`;
-         }
+        let baseName = sanitizedTitle;
+        if (!baseName || baseName === '_' || title === 'Attachment' || title === 'Snapshot' || title === 'Untitled') {
+            const hash = crypto.createHash('sha1').update(sourceUrl || crypto.randomUUID()).digest('hex').substring(0, 10);
+            baseName = `attachment_${hash}`;
+        }
         return `${baseName}.${extension}`;
     }
 
-    /**
-     * Dispatches the event *only if* the session is complete and the event hasn't been dispatched yet.
-     * Adds a delay to handle cases where multiple attachments are being sent in quick succession.
-     */
     private checkAndDispatchIfComplete(sessionID: string): void {
         const session = this.sessions.get(sessionID);
-        if (!session) {
-            console.warn(`checkAndDispatchIfComplete: Session ${sessionID} not found.`);
-            return;
-        }
+        if (!session) return;
         
-        if (session.eventDispatched) {
-            console.log(`checkAndDispatchIfComplete: Event for session ${sessionID} already dispatched.`);
-            return;
-        }
+        if (session.eventDispatched) return;
 
         // Check if session is complete
         if (this.isSessionComplete(session)) {
-            console.log(`Session ${sessionID} appears complete and event not yet dispatched.`);
+            console.log(`Session ${sessionID} is complete, dispatching event`);
             
-            // Add a small delay before dispatching to ensure all attachments are fully processed
-            // This helps when multiple requests are coming in rapid succession
-            setTimeout(() => {
-                // Re-check session state after delay to be certain before dispatching
-                const currentSession = this.sessions.get(sessionID);
-                if (!currentSession || currentSession.eventDispatched) {
-                    return; // Session was deleted or event already dispatched
-                }
-                
-                // Double-check completeness
-                if (this.isSessionComplete(currentSession) && currentSession.items.length > 0) {
-                    // Get all successfully processed files
-                    const savedFiles = Object.values(currentSession.attachmentStatus)
-                        .filter(status => status.progress === 100 && status.localPath)
-                        .map(status => status.localPath!);
-                    
-                    console.log(`After delay, dispatching event for session ${sessionID} with ${savedFiles.length} files`);
-                    this.dispatchZoteroItemEvent(currentSession.items[0], savedFiles, sessionID);
-                    
-                    // Mark as dispatched to prevent duplicate events
-                    currentSession.eventDispatched = true;
-                    this.sessions.set(sessionID, currentSession);
-                } else {
-                    console.log(`After delay, session ${sessionID} is not ready for dispatch yet`);
-                }
-            }, 500); // 500ms delay before dispatching event
-        } else {
-            console.log(`checkAndDispatchIfComplete: Session ${sessionID} not complete yet.`);
+            // Get successfully processed files
+            const savedFiles = Object.values(session.attachmentStatus)
+                .filter(status => status.progress === 100 && status.localPath)
+                .map(status => status.localPath!);
+            
+            // Dispatch event
+            this.dispatchZoteroItemEvent(session.items[0], savedFiles, sessionID);
+            
+            // Mark as dispatched but keep the session alive
+            // This is a key change - we don't delete the session here
+            session.eventDispatched = true;
+            this.sessions.set(sessionID, session);
+            
+            // Set up monitoring for additional attachments
+            this.monitorForAdditionalAttachments(sessionID);
         }
     }
 
+    /**
+     * Monitor for additional attachments that might arrive late
+     */
+    private monitorForAdditionalAttachments(sessionID: string): void {
+        let checkCount = 0;
+        let lastFileCount = 0;
+        
+        console.log(`Starting attachment monitor for session ${sessionID}`);
+        
+        const monitor = setInterval(() => {
+            checkCount++;
+            const session = this.sessions.get(sessionID);
+            
+            if (!session) {
+                clearInterval(monitor);
+                return;
+            }
+            
+            // Get currently completed files
+            const currentFiles = Object.values(session.attachmentStatus)
+                .filter(status => status.progress === 100 && status.localPath)
+                .map(status => status.localPath!);
+            
+            // Check if we have new completed files since last check
+            if (currentFiles.length > lastFileCount) {
+                console.log(`Found ${currentFiles.length - lastFileCount} new attachments`);
+                
+                // Dispatch additional files event
+                this.dispatchAdditionalAttachments(session.items[0].id, 
+                    currentFiles.slice(lastFileCount), sessionID);
+                
+                lastFileCount = currentFiles.length;
+            }
+            
+            // Monitor for up to 5 minutes (300 checks at 1 second each)
+            if (checkCount >= 300) {
+                console.log(`Finished monitoring session ${sessionID}`);
+                clearInterval(monitor);
+            }
+        }, 1000); // Check every second
+    }
+    
+    /**
+     * Dispatch event for additional attachments
+     */
+    private dispatchAdditionalAttachments(itemId: string, newFiles: string[], sessionID: string): void {
+        if (typeof document === 'undefined') return;
+        
+        console.log(`Dispatching additional-attachments for ${newFiles.length} files`);
+        
+        const event = new CustomEvent('zotero-additional-attachments', {
+            detail: {
+                itemId: itemId,
+                files: newFiles,
+                sessionID: sessionID
+            }
+        });
+        document.dispatchEvent(event);
+    }
 
     /**
-     * Dispatches the custom event for the Obsidian plugin.
-     * Sends a deep copy of the current state of the item from the session.
+     * Dispatches the main event with item data
      */
     private dispatchZoteroItemEvent(item: any, newFiles: string[], sessionID: string): void {
-        // ... (logic remains the same) ...
-        if (typeof document === 'undefined') {
-            console.warn("Connector Server: Cannot dispatch event, 'document' not available.");
-            return;
-        }
+        if (typeof document === 'undefined') return;
 
         const session = this.sessions.get(sessionID);
-        if (!session) {
-            console.error(`Cannot dispatch event: Session ${sessionID} not found.`);
-            return;
-        }
+        if (!session) return;
 
         const currentItemState = session.items.find(i => i.id === item.id);
-        if (!currentItemState) {
-             console.error(`Cannot dispatch event: Item ${item.id} not found in session ${sessionID}.`);
-             return;
-        }
+        if (!currentItemState) return;
 
-        console.log(`Connector Server: Dispatching zotero-item-received for item ${currentItemState.id}, session ${sessionID}`);
-        console.log(`Dispatching attachments:`, JSON.stringify(currentItemState.attachments || [], null, 2));
+        console.log(`Dispatching zotero-item-received event`);
 
         const event = new CustomEvent('zotero-item-received', {
             detail: {
@@ -762,68 +879,39 @@ export class ConnectorServer {
     }
 
     /**
-     * Checks if all *expected* attachments have reported a final status (100 or -1).
+     * Checks if all expected attachments have reported a final status
      */
     private isSessionComplete(session: SessionData): boolean {
-        if (!session || !session.items || session.items.length === 0) {
-             console.log("isSessionComplete check: Session invalid or has no items.");
-             return true; // No items/expectations = complete
-         }
-        if (!session.expectedAttachmentIds) {
-             console.warn(`isSessionComplete check: Session ${session.items[0]?.id} missing expectedAttachmentIds set.`);
-             return false; // Cannot determine completion without expectations
-         }
+        if (!session || !session.items || session.items.length === 0) return true;
+        if (!session.expectedAttachmentIds || session.expectedAttachmentIds.size === 0) return true;
 
-         // --- NEW: Check against expectedAttachmentIds Set ---
-         let processedCount = 0;
-         let erroredCount = 0;
-         let missingStatusCount = 0;
+        let processedCount = 0;
 
-         for (const expectedId of session.expectedAttachmentIds) {
-             const status = session.attachmentStatus[expectedId];
-             if (status) {
-                 if (status.progress === 100) {
-                      processedCount++;
-                 } else if (status.progress === -1) {
-                      processedCount++; // Count errors as processed
-                      erroredCount++;
-                 }
-                 // else status.progress < 100, means not complete yet
-             } else {
-                 // Status for an expected ID is missing, session is not complete
-                 missingStatusCount++;
-                 // console.log(`isSessionComplete check: Status missing for expected attachment ${expectedId}`);
-             }
-         }
+        for (const expectedId of session.expectedAttachmentIds) {
+            const status = session.attachmentStatus[expectedId];
+            if (status && (status.progress === 100 || status.progress === -1)) {
+                processedCount++;
+            }
+        }
 
-         const isComplete = missingStatusCount === 0 && processedCount >= session.expectedAttachmentIds.size;
-         // --- END NEW ---
-
-         console.log(`isSessionComplete check for item ${session.items[0]?.id}: ` +
-                     `Expected IDs Count=${session.expectedAttachmentIds.size}, ` +
-                     `Processed (Done/Error)=${processedCount} (Errors: ${erroredCount}), ` +
-                     `Missing Status Count=${missingStatusCount}. ` +
-                     `Result=${isComplete}`);
-
-         return isComplete;
+        return processedCount >= session.expectedAttachmentIds.size;
     }
 
-
     private cleanupOldSessions(): void {
-       // ... (no changes needed) ...
         const now = Date.now();
-        console.log(`Connector Server: Running session cleanup (Current time: ${now}, Max age: ${SESSION_MAX_AGE}ms)`);
         let deletedCount = 0;
+        
         for (const [sessionId, sessionData] of this.sessions.entries()) {
-            if (now - sessionData.startTime > SESSION_MAX_AGE) {
-                console.log(`Connector Server: Cleaning up expired session ${sessionId} (Started: ${sessionData.startTime})`);
+            // Only clean up sessions that have been dispatched
+            if (sessionData.eventDispatched && now - sessionData.startTime > SESSION_MAX_AGE) {
+                console.log(`Cleaning up expired session ${sessionId}`);
                 this.sessions.delete(sessionId);
                 deletedCount++;
             }
         }
+        
         if (deletedCount > 0) {
-             console.log(`Connector Server: Cleaned up ${deletedCount} expired sessions.`);
-         }
+            console.log(`Cleaned up ${deletedCount} expired sessions.`);
+        }
     }
-
 } // End of ConnectorServer class

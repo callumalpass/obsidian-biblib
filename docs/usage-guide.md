@@ -24,11 +24,15 @@ This is the primary way to add a new reference manually.
         *   Select the field `Type` (Standard, Number, Date).
         *   Choose the `Field name` from the dropdown (includes standard CSL fields) or type a custom name. *A warning appears for non-standard CSL names.*
         *   Enter the `Value`.
-    *   **Attach File (Optional):**
-        *   Under the "Attachment" section, select:
-            *   `Import file`: Click **"Choose file"** to select a PDF/EPUB from your computer. BibLib will copy it into your vault.
-            *   `Link to existing file`: Click **"Choose file"** to select a PDF/EPUB already inside your Obsidian vault.
-            *   `None`: No attachment.
+    *   **Add Attachments (Optional):**
+        *   Under the "Attachments" section:
+            *   Click **"Add Attachment"** to add one or more files
+            *   Choose from the dropdown:
+                *   `Import file`: Select a file from your computer (PDF, EPUB, or any other file type). BibLib will copy it into your vault.
+                *   `Link to existing file`: Select a file already inside your Obsidian vault.
+            *   You can add multiple attachments of different types to a single note
+            *   Each attachment will be displayed in a list below with a remove button if needed
+            *   All attachments will be available in templates as `{{attachments}}`
     *   **Link Related Notes (Optional):**
         *   Click **"Add Related Note"**.
         *   Search for and select existing notes in your vault that relate to this reference.
@@ -69,6 +73,31 @@ To add a chapter that belongs to a book already present as a literature note:
 5.  **Create the Chapter Note:** Click **"Create Chapter Note"**.
 
 BibLib creates a new note (Type: `chapter`) with the chapter's details and links it conceptually to the parent book via fields like `container-title` and potentially `container-author` in the frontmatter.
+
+## Using Multiple Attachments
+
+BibLib supports adding multiple attachments to a single literature note. Here's how to use this feature:
+
+1. When creating a literature note, in the "Attachments" section:
+   - Use the dropdown to select either "Import file" or "Link to existing file"
+   - Click "Add Attachment" to add the selected attachment type
+   - Repeat to add multiple attachments of different types
+   - Each attachment appears in a list with a "Remove" button if needed
+
+2. In your templates, you can access multiple attachments using these variables:
+   - `{{attachments}}`: Array of formatted attachment links with file type indicators (e.g., `[[path/to/file.pdf|PDF]]`)
+   - `{{pdflink}}`: Array of raw attachment paths
+   - `{{quoted_attachments}}`: Array of formatted attachments with quotes around them
+   - For backward compatibility, `{{attachment}}` and `{{raw_pdflink}}` provide access to the first attachment
+
+3. To use multiple attachments in templates:
+   ```
+   {{#attachments}}
+   - {{.}}
+   {{/attachments}}
+   ```
+
+4. During bulk import, attachments are also managed as a list, and multiple attachments can be imported or linked per reference.
 
 ## Using the Zotero Connector (Desktop)
 

@@ -64,11 +64,14 @@ When rendering a template, BibLib makes the following data available:
     *   `{{authors_family}}`: Array of author last names only.
     *   `{{authors_given}}`: Array of author first names only.
     *   *Similar variables exist for other roles*: `{{editors}}`, `{{editors_raw}}`, `{{editors_family}}`, `{{translators}}`, etc., based on roles present in the reference.
-*   **Attachment:**
-    *   `{{pdflink}}`: The vault path to the primary linked/imported attachment (e.g., `biblib/attachments/Smith2023/Smith2023.pdf`). Empty string if no attachment.
-    *   `{{attachment}}`: A pre-formatted Obsidian wikilink to the attachment (e.g., `[[path/to/file.pdf|PDF]]`). Empty string if no attachment.
-    *   `{{raw_pdflink}}`: Same as `{{pdflink}}`.
-    *   `{{quoted_attachment}}`: The `{{attachment}}` string wrapped in double quotes (`"[[...]]"`), useful for placing links inside YAML arrays. Empty string if no attachment.
+*   **Attachments:**
+    *   `{{pdflink}}`: An array of vault paths to all linked/imported attachments. Empty array if no attachments.
+    *   `{{attachments}}`: An array of pre-formatted Obsidian wikilinks to all attachments (e.g., `[[path/to/file.pdf|PDF]]`, `[[path/to/file.epub|EPUB]]`). Empty array if no attachments.
+    *   `{{quoted_attachments}}`: The `{{attachments}}` array items wrapped in double quotes (`"[[...]]"`), useful for placing links inside YAML arrays.
+    *   For backward compatibility:
+        *   `{{attachment}}`: Pre-formatted wikilink to the first attachment only. Empty string if no attachments.
+        *   `{{raw_pdflink}}`: Path to the first attachment only. Empty string if no attachments.
+        *   `{{quoted_attachment}}`: The first attachment wikilink wrapped in quotes.
 *   **Related Notes:** (Available if notes were linked in the creation modal)
     *   `{{links}}`: An array of pre-formatted Obsidian wikilinks to the related notes (e.g., `["[[Note A]]", "[[Folder/Note B]]"]`).
     *   `{{linkPaths}}`: An array of the raw file paths for the related notes (e.g., `["Note A.md", "Folder/Note B.md"]`).
@@ -136,7 +139,8 @@ Keywords: {{#keyword}}{{.}}{{^@last}}, {{/@last}}{{/keyword}}
 **Header Template:**
 
 *   `# {{title}} ({{year}})` -> "# Quantum Computing Basics (2023)"
-*   `## {{#pdflink}}[[{{pdflink}}|PDF]] - {{/pdflink}}{{title}}` -> "## [[path/file.pdf|PDF]] - Quantum Computing Basics" (if PDF exists) OR "## Quantum Computing Basics" (if no PDF)
+*   `## {{#pdflink}}[[{{.}}|FILE]] - {{/pdflink}}{{title}}` -> "## [[path/file.pdf|FILE]] - Quantum Computing Basics" (if file exists) OR "## Quantum Computing Basics" (if no files)
+*   `# {{title}} | {{#attachments}}{{.}} {{/attachments}}` -> "# Quantum Computing Basics | [[path/file.pdf|PDF]] [[path/file.epub|EPUB]]" (lists all attachments)
 *   `{{citekey}}: {{title}}` -> "Smith2023: Quantum Computing Basics"
 
 **Custom Frontmatter Fields:**
@@ -156,6 +160,9 @@ Keywords: {{#keyword}}{{.}}{{^@last}}, {{/@last}}{{/keyword}}
 *   **Field Name:** `full_citation`
     *   **Template:** `{{authors}} ({{year}}). {{title}}. *{{container-title}}*, {{volume}}{{#issue}}({{issue}}){{/issue}}, {{page}}. {{#DOI}}doi:{{DOI}}{{/DOI}}`
     *   **Output YAML:** `full_citation: Smith, A. et al. (2023). A Primer on Quantum Computing Algorithms. *Journal of Theoretical Physics*, 42(4), 123-145. doi:10.1234/jtp.2023.5678`
+*   **Field Name:** `attachments_list`
+    *   **Template:** `[{{#attachments}}{{^@first}},{{/@first}}"{{.}}"{{/attachments}}]`
+    *   **Output YAML:** `attachments_list: ["[[path/to/paper.pdf|PDF]]", "[[path/to/supplement.xlsx|XLSX]]"]`
 
 **Citekey Template:**
 
