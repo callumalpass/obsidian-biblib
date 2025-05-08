@@ -1,4 +1,4 @@
-import * as jsyaml from 'js-yaml';
+import { stringifyYaml } from 'obsidian';
 import { BibliographyPluginSettings } from '../types';
 import { Citation, Contributor, AdditionalField } from '../types/citation';
 import { TemplateEngine } from '../utils/template-engine';
@@ -91,7 +91,7 @@ export class FrontmatterBuilderService {
       );
       
       // Generate formatted YAML
-      return jsyaml.dump(frontmatter, { noRefs: true, sortKeys: true });
+      return stringifyYaml(frontmatter);
     } catch (error) {
       console.error('Error creating frontmatter:', error);
       throw error;

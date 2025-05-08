@@ -12,7 +12,6 @@
 	"author": "",
 	"license": "MIT",
 	"devDependencies": {
-		"@types/js-yaml": "^4.0.9",
 		"@types/node": "^16.11.6",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
 		"@typescript-eslint/parser": "5.29.0",
@@ -26,7 +25,6 @@
 		"@citation-js/date": "^0.5.1",
 		"@citation-js/plugin-bibtex": "^0.5.0",
 		"buffer": "^6.0.3",
-		"citation-js": "^0.5.0",
-		"js-yaml": "^4.1.0"
+		"citation-js": "^0.5.0"
 	}
 }
