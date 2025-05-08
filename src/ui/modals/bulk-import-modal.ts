@@ -34,7 +34,7 @@ export class BulkImportModal extends Modal {
         contentEl.addClass('bibliography-bulk-import-modal');
 
         // Modal title
-        contentEl.createEl('h2', { text: 'Bulk Import References' });
+        contentEl.createEl('h2', { text: 'Bulk import references' });
 
         // Warning message
         const warningEl = contentEl.createDiv({ cls: 'bulk-import-warning' });
@@ -59,7 +59,7 @@ export class BulkImportModal extends Modal {
             .setName('Import file')
             .setDesc('Select a BibTeX (.bib) or CSL-JSON (.json) file to import')
             .addButton(button => button
-                .setButtonText('Choose File')
+                .setButtonText('Choose file')
                 .onClick(() => {
                     // Create and trigger an input element to select a file
                     const input = document.createElement('input');
@@ -91,7 +91,7 @@ export class BulkImportModal extends Modal {
         const fileInfoEl = contentEl.createDiv({ cls: 'file-info', text: 'No file selected' });
 
         // Import settings
-        contentEl.createEl('h3', { text: 'Import Settings' });
+        contentEl.createEl('h3', { text: 'Import settings' });
 
         // Attachment handling
         new Setting(contentEl)
@@ -152,7 +152,7 @@ export class BulkImportModal extends Modal {
         // Import button
         const importButtonContainer = contentEl.createDiv({ cls: 'import-button-container' });
         const importButton = importButtonContainer.createEl('button', {
-            text: 'Start Import',
+            text: 'Start import',
             cls: 'mod-cta'
         });
         
@@ -209,7 +209,7 @@ export class BulkImportModal extends Modal {
                 
                 // Re-enable the button
                 importButton.disabled = false;
-                importButton.textContent = 'Start Import';
+                importButton.textContent = 'Start import';
             }
         };
     }

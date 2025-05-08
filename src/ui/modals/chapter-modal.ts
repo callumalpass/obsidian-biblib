@@ -120,7 +120,7 @@ export class ChapterModal extends Modal {
         contentEl.addClass('chapter-modal'); 
 
         // Modal title
-        contentEl.createEl('h2', { text: 'Create Book Chapter Entry' });
+        contentEl.createEl('h2', { text: 'Create book chapter entry' });
         
         // Load available book entries for dropdown
         this.bookEntries = await this.noteCreationService.getBookEntries();
@@ -134,7 +134,7 @@ export class ChapterModal extends Modal {
     
     private createMainForm(contentEl: HTMLElement) {
         // --- Chapter Identification --- 
-        new Setting(contentEl).setName('Chapter Identification').setHeading();
+        new Setting(contentEl).setName('Chapter identification').setHeading();
 
         // Citekey input (required)
         new Setting(contentEl)
@@ -198,7 +198,7 @@ export class ChapterModal extends Modal {
             });
 
         // --- Book Selection ---
-        new Setting(contentEl).setName('Book Information').setHeading();
+        new Setting(contentEl).setName('Book information').setHeading();
 
         // Book selector (required)
         const bookSetting = new Setting(contentEl)
@@ -329,7 +329,7 @@ export class ChapterModal extends Modal {
             .onClick(() => this.addAdditionalField('', '', 'standard'));
             
         // --- Related Notes Section ---
-        contentEl.createEl('h4', { text: 'Related Notes' });
+        contentEl.createEl('h4', { text: 'Related notes' });
         const relatedNotesSetting = new Setting(contentEl)
             .setName('Link related notes')
             .setDesc('Select existing notes in your vault that relate to this chapter.');
@@ -368,7 +368,7 @@ export class ChapterModal extends Modal {
         
         // Submit button
         const submitButton = finalButtonContainer.createEl('button', { 
-            text: 'Create Chapter Note', 
+            text: 'Create chapter note', 
             cls: 'mod-cta create-button' // Use call to action style
         });
         submitButton.onclick = async () => { // Make async
@@ -395,7 +395,7 @@ export class ChapterModal extends Modal {
         const attachmentContainer = contentEl.createDiv({ cls: 'attachment-container' });
         
         // Add section heading
-        attachmentContainer.createEl('div', { cls: 'setting-item-heading', text: 'Chapter Attachments' });
+        attachmentContainer.createEl('div', { cls: 'setting-item-heading', text: 'Chapter attachments' });
         
         // Create attachment setting
         const attachmentSetting = new Setting(attachmentContainer)
@@ -411,7 +411,7 @@ export class ChapterModal extends Modal {
         // Add button - add it directly to the setting
         attachmentSetting.addButton(button => {
             button
-                .setButtonText('Add Attachment')
+                .setButtonText('Add attachment')
                 .setCta() // Make it a call-to-action button
                 .onClick(() => {
                     // Handle adding attachment based on the selected type

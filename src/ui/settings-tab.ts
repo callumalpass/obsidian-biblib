@@ -432,7 +432,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 			li.appendText('Custom frontmatter fields can be queried in Obsidian\'s search and used by other plugins');
 		});
 		notesUl.createEl('li', {}, (li) => {
-			li.createEl('strong', { text: 'Field Names: ' });
+			li.createEl('strong', { text: 'Field names: ' });
 			li.appendText('Use simple, lowercase names without spaces (e.g., ');
 			li.createEl('code', { text: 'reading-status' });
 			li.appendText(', ');
@@ -473,7 +473,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 			li.createEl('code', { text: '[[{{#container-title}}{{container-title}} Papers{{/container-title}}{{^container-title}}Research Papers{{/container-title}}]]' });
 		});
 
-		customFieldsGuideDiv.createEl('strong', { text: 'Tips for Custom Frontmatter Fields', cls:'setting-guide-subtitle' });
+		customFieldsGuideDiv.createEl('strong', { text: 'Tips for custom frontmatter fields', cls:'setting-guide-subtitle' });
 		const tipsUl = customFieldsGuideDiv.createEl('ul');
 		tipsUl.createEl('li', { text: 'Use [[brackets]] in templates to create Obsidian links' });
 		tipsUl.createEl('li', { text: 'Use #hashtags in templates to add inline tags' });
@@ -494,7 +494,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 			li.appendText(' syntax');
 		});
 
-		customFieldsGuideDiv.createEl('strong', { text: 'Creating YAML Arrays with Templates', cls:'setting-guide-subtitle' });
+		customFieldsGuideDiv.createEl('strong', { text: 'Creating YAML arrays with templates', cls:'setting-guide-subtitle' });
 		customFieldsGuideDiv.createEl('p', { text: 'If you want to create a YAML array (not a string) from a template with multiple items, follow these rules:' });
 		const yamlArrayUl = customFieldsGuideDiv.createEl('ul');
 		yamlArrayUl.createEl('li', {}, (li) => {
@@ -588,7 +588,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('Add custom frontmatter field')
 			.addButton(button => button
-				.setButtonText('Add Field')
+				.setButtonText('Add field')
 				.onClick(async () => {
 					// Create a new field with default values
 					const newField = {
@@ -622,7 +622,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 		// --- Citekey Generation Guide ---
 		const citekeyGuideEl = containerEl.createEl('div', { cls: 'setting-item-description' });
 		const citekeyDetails = citekeyGuideEl.createEl('details');
-		citekeyDetails.createEl('summary', { text: 'Citekey Generation Guide' });
+		citekeyDetails.createEl('summary', { text: 'Citekey generation guide' });
 		const citekeyGuideDiv = citekeyDetails.createEl('div');
 
 		// Removed introductory paragraph to match middle guide structure

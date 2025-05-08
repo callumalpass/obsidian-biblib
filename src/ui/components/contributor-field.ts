@@ -40,7 +40,7 @@ export class ContributorField {
         // Given name input
         this.givenInput = contributorDiv.createEl('input', { 
             type: 'text', 
-            placeholder: 'Given Name', 
+            placeholder: 'Given name', 
             cls: 'bibliography-input bibliography-contributor-given' 
         });
         this.givenInput.value = this.contributor.given ?? '';
@@ -56,7 +56,7 @@ export class ContributorField {
         // Family name input
         this.familyInput = contributorDiv.createEl('input', { 
             type: 'text', 
-            placeholder: 'Family Name', 
+            placeholder: 'Family name', 
             cls: 'bibliography-input bibliography-contributor-family' 
         });
         this.familyInput.value = this.contributor.family ?? '';

@@ -367,7 +367,7 @@ export class BibliographyModal extends Modal {
         // Add button - add it directly to the setting
         attachmentSetting.addButton(button => {
             button
-                .setButtonText('Add Attachment')
+                .setButtonText('Add attachment')
                 .setCta() // Make it a call-to-action button
                 .onClick(() => {
                     // Handle adding attachment based on the selected type
@@ -475,13 +475,13 @@ export class BibliographyModal extends Modal {
             .setDesc('Type of reference')
             .addDropdown(dropdown => {
                 // Add common types first
-                dropdown.addOption('article-journal', 'Journal Article');
+                dropdown.addOption('article-journal', 'Journal article');
                 dropdown.addOption('book', 'Book');
-                dropdown.addOption('chapter', 'Book Chapter');
-                dropdown.addOption('paper-conference', 'Conference Paper');
+                dropdown.addOption('chapter', 'Book chapter');
+                dropdown.addOption('paper-conference', 'Conference paper');
                 dropdown.addOption('report', 'Report');
                 dropdown.addOption('thesis', 'Thesis');
-                dropdown.addOption('webpage', 'Web Page');
+                dropdown.addOption('webpage', 'Web page');
                 
                 // Add divider
                 dropdown.addOption('divider1', '------------------');
@@ -706,7 +706,7 @@ export class BibliographyModal extends Modal {
         formContainer.createEl('hr');
 
         // --- Related Notes Section ---
-        formContainer.createEl('h4', { text: 'Related Notes' });
+        formContainer.createEl('h4', { text: 'Related notes' });
         const relatedNotesSetting = new Setting(formContainer)
             .setName('Link related notes')
             .setDesc('Select existing notes in your vault that relate to this entry.');
@@ -717,7 +717,7 @@ export class BibliographyModal extends Modal {
 
         // Add button to trigger note selection
         relatedNotesSetting.addButton(button => button
-            .setButtonText('Add Related Note')
+            .setButtonText('Add related note')
             .onClick(() => {
                 // Open the Note Suggest Modal
                 new NoteSuggestModal(this.app, (selectedFile) => {
@@ -778,7 +778,7 @@ export class BibliographyModal extends Modal {
         
         // Submit button
         const submitButton = finalButtonContainer.createEl('button', { 
-            text: 'Create Note', 
+            text: 'Create note', 
             cls: 'mod-cta create-button' // Use call to action style
         });
         submitButton.onclick = async () => { // Make async
@@ -1204,7 +1204,7 @@ export class BibliographyModal extends Modal {
             const submitButton = this.contentEl.querySelector('.create-button') as HTMLButtonElement | null;
             if (submitButton) {
                 submitButton.disabled = false;
-                submitButton.textContent = 'Create Note';
+                submitButton.textContent = 'Create note';
             }
         }
     }

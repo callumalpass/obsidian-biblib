@@ -64,7 +64,7 @@ export class StatusBarService {
             iconSpan.innerHTML = '●'; // Filled circle for active
             
             const textSpan = this.statusBarItem.createSpan({ cls: 'status-text' });
-            textSpan.textContent = 'Zotero Connected';
+            textSpan.textContent = 'Zotero connected';
         } else {
             // Server is not running
             this.statusBarItem.empty();
@@ -76,7 +76,7 @@ export class StatusBarService {
             iconSpan.innerHTML = '○'; // Empty circle for inactive
             
             const textSpan = this.statusBarItem.createSpan({ cls: 'status-text' });
-            textSpan.textContent = 'Zotero Disconnected';
+            textSpan.textContent = 'Zotero disconnected';
         }
     }
 

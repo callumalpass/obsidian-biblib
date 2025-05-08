@@ -138,15 +138,15 @@ export class AdditionalFieldComponent {
         let valueInput: HTMLInputElement | HTMLTextAreaElement;
 
         if (this.field.type === 'number') {
-            valueInput = this.valueInputContainer.createEl('input', { type: 'number', placeholder: 'Enter Number', cls: commonClasses });
+            valueInput = this.valueInputContainer.createEl('input', { type: 'number', placeholder: 'Enter number', cls: commonClasses });
         } else if (this.field.type === 'date') {
             valueInput = this.valueInputContainer.createEl('input', { type: 'date', cls: commonClasses });
         } else {
             if (this.field.name === 'abstract' || this.field.name === 'note') {
-                 valueInput = this.valueInputContainer.createEl('textarea', { placeholder: 'Enter Value', cls: commonClasses });
+                 valueInput = this.valueInputContainer.createEl('textarea', { placeholder: 'Enter value', cls: commonClasses });
                  valueInput.rows = 2;
             } else {
-                 valueInput = this.valueInputContainer.createEl('input', { type: 'text', placeholder: 'Enter Value', cls: commonClasses });
+                 valueInput = this.valueInputContainer.createEl('input', { type: 'text', placeholder: 'Enter value', cls: commonClasses });
             }
         }
 
