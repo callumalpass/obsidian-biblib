@@ -760,7 +760,10 @@ export class ConnectorServer {
 
         let baseName = sanitizedTitle;
         if (!baseName || baseName === '_' || title === 'Attachment' || title === 'Snapshot' || title === 'Untitled') {
-            const hash = crypto.createHash('sha1').update(sourceUrl || crypto.randomUUID()).digest('hex').substring(0, 10);
+            // Create a deterministic hash from the source URL or title to help with duplicate detection
+            // This ensures the same source always gets the same filename, helping deduplication
+            const sourceData = sourceUrl || title || crypto.randomUUID();
+            const hash = crypto.createHash('sha1').update(sourceData).digest('hex').substring(0, 10);
             baseName = `attachment_${hash}`;
         }
         return `${baseName}.${extension}`;

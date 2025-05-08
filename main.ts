@@ -19,9 +19,9 @@ import { NoteCreationService } from './src/services/note-creation-service';
 import { StatusBarService } from './src/services/status-bar-service';
 import './styles.css';
 
-// Uncomment to suppress non-error console logging in production
-// console.log = () => {};
-// console.warn = () => {};
+// Suppress non-error console logging in production
+console.log = () => {};
+console.warn = () => {};
 
 export default class BibliographyPlugin extends Plugin {
     settings: BibliographyPluginSettings;
@@ -428,17 +428,40 @@ export default class BibliographyPlugin extends Plugin {
         console.log(`Processing ${files.length} attachment(s) from Zotero`);
         let attachmentsAdded = 0;
         
+        // Track already processed attachments to prevent duplicates
+        const processedFiles = new Set<string>();
+        
+        // Get existing attachments from modal to check for duplicates
+        const existingAttachments = modal.getAttachmentData();
+        for (const existing of existingAttachments) {
+            if (existing.filename) {
+                processedFiles.add(existing.filename);
+            } else if (existing.file) {
+                processedFiles.add(existing.file.name);
+            } else if (existing.path) {
+                const fileName = existing.path.split(/[/\\]/).pop() || '';
+                if (fileName) processedFiles.add(fileName);
+            }
+        }
+        
         // Process each file in the array
         for (const filePath of files) {
             try {
                 // If 'files' contains actual File objects:
                 if (filePath instanceof File) {
+                    // Skip if we've already processed a file with this name
+                    if (processedFiles.has(filePath.name)) {
+                        console.log(`Skipping duplicate File object attachment: ${filePath.name}`);
+                        continue;
+                    }
+                    
                     const attachmentData: AttachmentData = {
                         type: AttachmentType.IMPORT,
                         file: filePath,
                         filename: filePath.name
                     };
                     modal.setAttachmentData(attachmentData);
+                    processedFiles.add(filePath.name);
                     attachmentsAdded++;
                     console.log(`Added File object attachment: ${filePath.name}`);
                 }
@@ -447,6 +470,13 @@ export default class BibliographyPlugin extends Plugin {
                     const fs = require('fs');
                     if (fs.existsSync(filePath)) {
                         const fileName = filePath.split(/[/\\]/).pop() || 'document.pdf';
+                        
+                        // Skip if we've already processed a file with this name or path
+                        if (processedFiles.has(fileName) || processedFiles.has(filePath)) {
+                            console.log(`Skipping duplicate file path attachment: ${fileName}`);
+                            continue;
+                        }
+                        
                         const fileData = fs.readFileSync(filePath);
                         
                         // Determine MIME type based on extension
@@ -463,6 +493,8 @@ export default class BibliographyPlugin extends Plugin {
                             filename: fileName
                         };
                         modal.setAttachmentData(attachmentData);
+                        processedFiles.add(fileName);
+                        processedFiles.add(filePath); // Also track the full path
                         attachmentsAdded++;
                         console.log(`Added file path attachment: ${fileName} (${mimeType})`);
                     } else {
@@ -495,7 +527,20 @@ export default class BibliographyPlugin extends Plugin {
             return;
         }
         
-        console.log(`Received ${files.length} additional attachment(s) for item ${itemId}`);
+        // Check if we're already tracking files to avoid duplicates
+        const processedAttachmentPaths = new Set<string>();
+        
+        // Check for duplicate paths before processing
+        files.forEach(file => {
+            if (typeof file === 'string') {
+                processedAttachmentPaths.add(file);
+            } else if (file instanceof File) {
+                processedAttachmentPaths.add(file.name);
+            }
+        });
+        
+        // Log with more detail about duplication status
+        console.log(`Received ${files.length} additional attachment(s) for item ${itemId} (${processedAttachmentPaths.size} unique)`);
         
         // Check if we have an active modal for this item
         if (this.activeZoteroItemId === itemId && this.activeZoteroModal) {

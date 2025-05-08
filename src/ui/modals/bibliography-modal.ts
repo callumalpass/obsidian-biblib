@@ -137,6 +137,13 @@ export class BibliographyModal extends Modal {
     }
     
     /**
+     * Get the current attachment data (for duplicate checking)
+     */
+    public getAttachmentData(): AttachmentData[] {
+        return this.attachmentData;
+    }
+    
+    /**
      * Set the attachment data (for use by external callers)
      */
     public setAttachmentData(data: AttachmentData): void {
