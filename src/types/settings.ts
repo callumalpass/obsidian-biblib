@@ -129,7 +129,7 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         bibliographyJsonPath: 'biblib/bibliography.json',
         citekeyListPath: 'citekeylist.md',
         bibtexFilePath: 'biblib/bibliography.bib',
-        headerTemplate: '# {{#pdflink}}[[{{pdflink}}|{{title}}]]{{/pdflink}}{{^pdflink}}{{title}}{{/pdflink}}',
+        headerTemplate: '# {{#title}}{{title}}{{/title}}{{^title}}{{citekey}}{{/title}} \n\n _Notes_',
         chapterHeaderTemplate: '# {{#pdflink}}[[{{pdflink}}|{{title}}]]{{/pdflink}}{{^pdflink}}{{title}}{{/pdflink}} (in {{container-title}})',
         literatureNoteTag: 'literature_note',
         openNoteOnCreate: true,
@@ -165,7 +165,7 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
                 },
                 {
                         name: 'attachment',
-                        template: '[{{#pdflink}}"[[{{pdflink}}]]"{{/pdflink}}]',
+                        template: '[{{#attachments}}{{.}},{{/attachments}}]',
                         enabled: true
                 },
                 {
