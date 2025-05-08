@@ -262,7 +262,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 		// --- Template System Guide ---
 		const variablesDesc = containerEl.createEl('div', { cls: 'setting-item-description' });
 		const detailsEl = variablesDesc.createEl('details');
-		detailsEl.createEl('summary', { text: 'Template System Guide' });
+		detailsEl.createEl('summary', { text: 'Template system guide' });
 		const guideDiv = detailsEl.createEl('div', { cls: 'template-variables-list' });
 
 		// Removed top-level title to match middle guide structure
@@ -290,7 +290,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 		this.createListItem(contribVarsUl, '{{authors_given}}', 'Array of author first names only');
 		this.createListItem(contribVarsUl, '{{editors}}, {{translators}}, etc.', 'Lists for other contributor types');
 
-		guideDiv.createEl('strong', { text: 'Linking Variables', cls:'setting-guide-subtitle' });
+		guideDiv.createEl('strong', { text: 'Linking variables', cls:'setting-guide-subtitle' });
 		const linkingVarsUl = guideDiv.createEl('ul');
 		this.createListItem(linkingVarsUl, '{{links}}', 'Array of Obsidian wikilinks to selected related notes (e.g., ["[[Note A]]", "[[Folder/Note B]]"]).');
 		this.createListItem(linkingVarsUl, '{{linkPaths}}', 'Array of raw file paths for selected related notes (e.g., ["Note A.md", "Folder/Note B.md"]).');
@@ -403,7 +403,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 		customFieldsDesc.createEl('p', { text: 'Define custom frontmatter fields with templated values. These will be added to new literature notes.' });
 
 		const customFieldsDetails = customFieldsDesc.createEl('details', { cls: 'custom-fields-help' });
-		customFieldsDetails.createEl('summary', { text: 'Custom Frontmatter Fields Guide' });
+		customFieldsDetails.createEl('summary', { text: 'Custom frontmatter fields guide' });
         const customFieldsGuideDiv = customFieldsDetails.createEl('div'); // Container for the guide content
 
 		customFieldsGuideDiv.createEl('p', { text: 'Custom frontmatter fields allow you to add any data you want to your literature notes using the same powerful template system as header templates and citekey generation. Fields will be added to the YAML frontmatter of your literature notes.' });
@@ -440,10 +440,10 @@ export class BibliographySettingTab extends PluginSettingTab {
 			li.appendText(')');
 		});
 
-		customFieldsGuideDiv.createEl('strong', { text: 'Common Use Cases', cls:'setting-guide-subtitle' });
+		customFieldsGuideDiv.createEl('strong', { text: 'Common use cases', cls:'setting-guide-subtitle' });
 		const useCasesTable = customFieldsGuideDiv.createEl('table');
 		const useCasesTHead = useCasesTable.createEl('thead');
-		this.createTableRow(useCasesTHead, ['Use Case', 'Field Name', 'Template Example'], true);
+		this.createTableRow(useCasesTHead, ['Use case', 'Field name', 'Template example'], true);
 		const useCasesTBody = useCasesTable.createEl('tbody');
 		this.createTableRow(useCasesTBody, ['Multiple aliases', 'aliases', '["{{title|sentence}}", "{{authors}} ({{year}})"]']);
 		this.createTableRow(useCasesTBody, ['Author links (as array)', 'author-links', '[{{#authors_family}}{{^@first}},{{/@first}}"[[Author/{{.}}]]"{{/authors_family}}]']);
@@ -454,7 +454,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 		this.createTableRow(useCasesTBody, ['Citation count', 'importance', '{{#authors_family.0}}major{{/authors_family.0}}{{^authors_family.0}}minor{{/authors_family.0}}']);
 		this.createTableRow(useCasesTBody, ['Field-specific data', 'field', '{{container-title|lowercase}}']);
 
-		customFieldsGuideDiv.createEl('strong', { text: 'Advanced Template Examples', cls:'setting-guide-subtitle' });
+		customFieldsGuideDiv.createEl('strong', { text: 'Advanced template examples', cls:'setting-guide-subtitle' });
 		const advancedUl = customFieldsGuideDiv.createEl('ul');
 		advancedUl.createEl('li', {}, (li) => {
 			li.createEl('strong', { text: 'Formatted abstract: ' });
