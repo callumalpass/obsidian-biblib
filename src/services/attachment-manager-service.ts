@@ -137,7 +137,6 @@ export class AttachmentManagerService {
             });
             
             if (foundMatchingName) {
-              console.log(`Found Zotero structure match: ${file.path}`);
               return file.path;
             }
           }
@@ -164,7 +163,7 @@ export class AttachmentManagerService {
       });
       
       if (zoteroFolderMatches.length > 0) {
-        console.log(`Found Zotero folder structure match: ${zoteroFolderMatches[0].path}`);
+        // console.log(`Found Zotero folder structure match: ${zoteroFolderMatches[0].path}`);
         return zoteroFolderMatches[0].path;
       }
       
@@ -300,7 +299,6 @@ export class AttachmentManagerService {
       // Verify the file exists in the vault
       const existingFile = this.app.vault.getAbstractFileByPath(normalizedPath);
       if (!(existingFile instanceof TFile)) {
-        console.warn(`Linked attachment not found in vault: ${normalizedPath}`);
         return null;
       }
       

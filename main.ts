@@ -321,7 +321,6 @@ export default class BibliographyPlugin extends Plugin {
         
         // Additional fix: Check if we've already processed this session ID
         if (sessionID && this.processedSessionIds.has(sessionID)) {
-            console.log(`Skipping duplicate item event for session ${sessionID}, already processed`);
             return;
         }
         
@@ -329,7 +328,6 @@ export default class BibliographyPlugin extends Plugin {
         if (this.processingItem) {
             // If we're already processing this exact item (by ID), just add the new attachments
             if (this.activeZoteroItemId === itemId && this.activeZoteroModal) {
-                console.log(`Adding attachments to existing modal for item ${itemId}`);
                 // Just process new attachments for the existing modal
                 this.processZoteroAttachments(files, this.activeZoteroModal);
                 return;
@@ -424,7 +422,6 @@ export default class BibliographyPlugin extends Plugin {
             return;
         }
         
-        console.log(`Processing ${files.length} attachment(s) from Zotero`);
         let attachmentsAdded = 0;
         
         // Track already processed attachments to prevent duplicates
@@ -450,7 +447,6 @@ export default class BibliographyPlugin extends Plugin {
                 if (filePath instanceof File) {
                     // Skip if we've already processed a file with this name
                     if (processedFiles.has(filePath.name)) {
-                        console.log(`Skipping duplicate File object attachment: ${filePath.name}`);
                         continue;
                     }
                     
@@ -462,7 +458,6 @@ export default class BibliographyPlugin extends Plugin {
                     modal.setAttachmentData(attachmentData);
                     processedFiles.add(filePath.name);
                     attachmentsAdded++;
-                    console.log(`Added File object attachment: ${filePath.name}`);
                 }
                 // If 'files' contains paths (requires Node 'fs' on desktop):
                 else if (typeof filePath === 'string' && !Platform.isMobile) {
@@ -472,7 +467,6 @@ export default class BibliographyPlugin extends Plugin {
                         
                         // Skip if we've already processed a file with this name or path
                         if (processedFiles.has(fileName) || processedFiles.has(filePath)) {
-                            console.log(`Skipping duplicate file path attachment: ${fileName}`);
                             continue;
                         }
                         
@@ -495,12 +489,11 @@ export default class BibliographyPlugin extends Plugin {
                         processedFiles.add(fileName);
                         processedFiles.add(filePath); // Also track the full path
                         attachmentsAdded++;
-                        console.log(`Added file path attachment: ${fileName} (${mimeType})`);
                     } else {
-                        console.warn(`Attachment file path not found: ${filePath}`);
+                        // console.warn(`Attachment file path not found: ${filePath}`);
                     }
                 } else if (typeof filePath === 'string' && Platform.isMobile) {
-                    console.warn("Cannot access file paths directly on mobile for Zotero attachments.");
+                    // console.warn("Cannot access file paths directly on mobile for Zotero attachments.");
                 }
             } catch (fileError) {
                 console.error(`Error processing attachment file ${filePath}:`, fileError);
@@ -522,7 +515,6 @@ export default class BibliographyPlugin extends Plugin {
         const { itemId, files, sessionID } = event.detail;
         
         if (!files || !Array.isArray(files) || files.length === 0) {
-            console.log("Additional attachments event received but no files were included");
             return;
         }
         
@@ -539,14 +531,12 @@ export default class BibliographyPlugin extends Plugin {
         });
         
         // Log with more detail about duplication status
-        console.log(`Received ${files.length} additional attachment(s) for item ${itemId} (${processedAttachmentPaths.size} unique)`);
         
         // Check if we have an active modal for this item
         if (this.activeZoteroItemId === itemId && this.activeZoteroModal) {
             // Process the new attachments and add them to the existing modal
             this.processZoteroAttachments(files, this.activeZoteroModal);
         } else {
-            console.log(`No active modal found for item ${itemId}, cannot add additional attachments`);
         }
     }
     
@@ -564,7 +554,6 @@ export default class BibliographyPlugin extends Plugin {
             // duplicates after modal is closed. Individual entries are cleaned up on their
             // own timer or when the set grows too large.
             
-            console.log("Zotero processing state reset");
         }, 100);
     }
 

@@ -14,7 +14,7 @@ const pipeline = promisify(stream.pipeline);
 
 // --- Constants ---
 const CONNECTOR_SERVER_VERSION = '1.0.7';
-const ZOTERO_APP_NAME = 'Obsidian Bibliography Plugin';
+const ZOTERO_APP_NAME = 'Obsidian BibLib';
 const CONNECTOR_API_VERSION_SUPPORTED = 3;
 const SESSION_CLEANUP_INTERVAL = 10 * 60 * 1000; // 10 minutes
 const SESSION_MAX_AGE = 30 * 60 * 1000; // 30 minutes (extended for slow attachments)
@@ -63,7 +63,6 @@ export class ConnectorServer {
         if (!fs.existsSync(this.tempDir)) {
             try {
                 fs.mkdirSync(this.tempDir, { recursive: true });
-                console.log(`Created temp directory: ${this.tempDir}`);
             } catch (err) {
                 console.error(`Failed to create temp directory ${this.tempDir}:`, err);
                 new Notice(`Error: Could not create temp directory for Zotero Connector: ${this.tempDir}`);
@@ -73,7 +72,6 @@ export class ConnectorServer {
 
     public async start(): Promise<void> {
         if (this.server) {
-            console.log('Connector server already running.');
             return;
         }
 
@@ -83,7 +81,6 @@ export class ConnectorServer {
 
         return new Promise((resolve, reject) => {
             this.server?.listen(port, '127.0.0.1', () => {
-                console.log(`Zotero Connector server started on http://127.0.0.1:${port}`);
                 new Notice(`Zotero Connector server listening on port ${port}`);
                 this.cleanupIntervalId = setInterval(() => this.cleanupOldSessions(), SESSION_CLEANUP_INTERVAL);
                 resolve();
@@ -112,7 +109,6 @@ export class ConnectorServer {
             }
             if (this.server) {
                 this.server.close(() => {
-                    console.log('Zotero Connector server stopped.');
                     new Notice('Zotero Connector server stopped');
                     this.server = null;
                     this.sessions.clear();
@@ -142,7 +138,6 @@ export class ConnectorServer {
 
         res.setHeader('X-Zotero-Version', ZOTERO_APP_NAME + ' ' + CONNECTOR_SERVER_VERSION);
 
-        console.log(`Connector Server: Request - ${method} ${pathname}${parsedUrl.search || ''}`);
 
         try {
             if (pathname.startsWith('/connector/')) {
@@ -152,7 +147,6 @@ export class ConnectorServer {
                  this.sendResponse(res, 200, { message: 'Obsidian Bibliography Connector Server Running', version: CONNECTOR_SERVER_VERSION });
             }
              else {
-                console.log(`Connector Server: Not Found - ${method} ${pathname}`);
                 this.sendResponse(res, 404, { error: 'Not Found' });
             }
         } catch (error) {
@@ -164,7 +158,6 @@ export class ConnectorServer {
     private async routeConnectorApi(endpoint: string, req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
         const method = req.method || 'GET';
 
-        console.log(`Connector Server: Routing endpoint - ${endpoint}, Method: ${method}`);
 
         switch (endpoint) {
             case 'ping':
@@ -207,13 +200,11 @@ export class ConnectorServer {
             // Translator Endpoint Handling
             case 'getTranslatorCode':
             case 'getTranslators':
-                 console.log(`Connector Server: Responding empty list for ${endpoint}`);
                  this.sendResponse(res, 200, []);
                  break;
             // Other Endpoints
             case 'delaySync':
             case 'updateSession':
-                 console.log(`Connector Server: Acknowledging (No-Op) - ${endpoint}`);
                  this.sendResponse(res, 200, { status: 'acknowledged' });
                  break;
             case 'installStyle':
@@ -223,7 +214,6 @@ export class ConnectorServer {
                 this.handleNotImplemented(res, `Endpoint '${endpoint}' likely not needed for Obsidian`);
                 break;
             default:
-                console.log(`Connector Server: Endpoint Not Found - ${endpoint}`);
                 this.sendResponse(res, 404, { error: `Connector endpoint '/connector/${endpoint}' not found` });
         }
     }
@@ -234,7 +224,6 @@ export class ConnectorServer {
         const clientVersion = req.headers['x-zotero-version'] || 'Unknown';
         const clientApiVersion = parseInt(req.headers['x-zotero-connector-api-version']?.toString() || '0', 10);
 
-        console.log(`Connector Ping from v${clientVersion}, API v${clientApiVersion}`);
 
         let body = '';
         if (req.method === 'POST') {
@@ -242,13 +231,11 @@ export class ConnectorServer {
              try {
                  const payload = JSON.parse(body);
                  if (payload.activeURL) {
-                     console.log(`Connector reported active URL: ${payload.activeURL}`);
                  }
              } catch (e) { /* ignore */ }
         }
 
         if (clientApiVersion > CONNECTOR_API_VERSION_SUPPORTED) {
-            console.warn(`Connector API version ${clientApiVersion} is newer than supported ${CONNECTOR_API_VERSION_SUPPORTED}`);
              this.sendResponse(res, 412, { error: 'Connector API version mismatch' });
             return;
         }
@@ -303,7 +290,6 @@ export class ConnectorServer {
             processedAttachmentPaths: new Set<string>()
         });
 
-        console.log(`Connector Server: Started session ${sessionID} for item from ${uri}, expecting ${expectedAttachmentIds.size} attachments`);
 
         this.sendResponse(res, 200, { sessionID: sessionID });
         new Notice(`Receiving item from Zotero.`);
@@ -321,7 +307,6 @@ export class ConnectorServer {
         // Check if this session already exists
         const existingSession = this.sessions.get(sessionID);
         if (existingSession) {
-            console.log(`Session ${sessionID} already exists for ${uri}, acknowledging duplicate saveSnapshot request`);
             this.sendResponse(res, 200, { sessionID: sessionID });
             return;
         }
@@ -354,7 +339,6 @@ export class ConnectorServer {
             processedAttachmentPaths: new Set<string>()
         });
 
-        console.log(`Started snapshot session ${sessionID} for ${uri}`);
         this.sendResponse(res, 200, { sessionID: sessionID });
         new Notice(`Receiving snapshot for ${title}.`);
     }
@@ -388,7 +372,6 @@ export class ConnectorServer {
         
         // 1. Check if this attachment ID has already been processed
         if (session.attachmentStatus[attachmentId]?.progress === 100 && session.attachmentStatus[attachmentId]?.localPath) {
-            console.log(`Skipping duplicate attachment with ID ${attachmentId} (${title}) - already processed`);
             
             // Acknowledge with success
             res.writeHead(201, { 'Content-Type': 'application/json' });
@@ -402,7 +385,6 @@ export class ConnectorServer {
         
         // 2. Check for duplicate by path (if processedAttachmentPaths exists)
         if (session.processedAttachmentPaths && session.processedAttachmentPaths.has(filePath)) {
-            console.log(`Skipping duplicate attachment ${title} by path (${filePath}) for session ${sessionID}`);
             
             // Find the attachment with this path
             const existingAttachment = Object.entries(session.attachmentStatus)
@@ -437,7 +419,6 @@ export class ConnectorServer {
                 session.attachmentStatus[att.id]?.localPath);
                 
             if (existingAttachment && existingAttachment.id) {
-                console.log(`Skipping duplicate attachment ${title} by content for session ${sessionID}`);
                 
                 // Link the new ID to the existing attachment's status
                 session.attachmentStatus[attachmentId] = { ...session.attachmentStatus[existingAttachment.id] };
@@ -454,7 +435,6 @@ export class ConnectorServer {
             }
         }
 
-        console.log(`Receiving attachment: ${title} (${contentType}) for session ${sessionID}`);
         
         // Add to expected attachment IDs if not already present
         if (!session.expectedAttachmentIds.has(attachmentId)) {
@@ -470,7 +450,6 @@ export class ConnectorServer {
             // Mark this attachment path as processed
             session.processedAttachmentPaths.add(filePath);
             
-            console.log(`Attachment saved: ${filePath}`);
             session.attachmentStatus[attachmentId].progress = 100;
             session.attachmentStatus[attachmentId].localPath = filePath;
 
@@ -543,7 +522,6 @@ export class ConnectorServer {
         // IMPROVED: Check if we've already processed an HTML snapshot for this session
         // This is the key fix for preventing duplicate snapshots
         if (session.processedSnapshots && session.processedSnapshots.size > 0) {
-            console.log(`Already processed an HTML snapshot for session ${sessionID}, skipping duplicate`);
             
             // Still acknowledge the request to keep Zotero happy
             res.writeHead(204);
@@ -554,7 +532,6 @@ export class ConnectorServer {
         // Extra fallback check for older sessions that might not have the processedSnapshots field
         const existingSnapshotAttachment = session.items[0]?.attachments?.find((a: any) => a.mimeType === 'text/html');
         if (existingSnapshotAttachment?.id && session.attachmentStatus[existingSnapshotAttachment.id]?.progress === 100) {
-            console.log(`Already have a processed HTML snapshot via attachment check for session ${sessionID}, skipping duplicate`);
             
             // Still acknowledge the request to keep Zotero happy
             res.writeHead(204);
@@ -570,7 +547,6 @@ export class ConnectorServer {
         const filename = this.generateFilename(title, 'text/html', data.url || session.uri);
         const filePath = path.join(this.tempDir, filename);
 
-        console.log(`Processing HTML snapshot: ${title} for session ${sessionID}`);
         
         // Find any temporary placeholder ID
         let tempSnapshotId: string | undefined;
@@ -599,7 +575,6 @@ export class ConnectorServer {
             // Mark this snapshot as processed
             session.processedSnapshots.add(attachmentId);
             
-            console.log(`Snapshot saved: ${filePath}`);
             session.attachmentStatus[attachmentId].progress = 100;
             session.attachmentStatus[attachmentId].localPath = filePath;
 
@@ -648,7 +623,6 @@ export class ConnectorServer {
     }
 
     private handleGetSelectedCollection(req: http.IncomingMessage, res: http.ServerResponse): void {
-        console.log("Handling getSelectedCollection");
         this.sendResponse(res, 200, {
             id: "obsidian",
             name: "Obsidian Vault",
@@ -720,7 +694,6 @@ export class ConnectorServer {
 
     private sendResponse(res: http.ServerResponse, statusCode: number, body: any): void {
         if (res.headersSent) {
-            console.warn(`Attempted to send response after headers were sent.`);
             return;
         }
         res.setHeader('Content-Type', 'application/json');
@@ -729,12 +702,10 @@ export class ConnectorServer {
     }
 
     private sendMethodNotAllowed(res: http.ServerResponse, endpoint: string): void {
-        console.warn(`Method Not Allowed - ${res.req.method} for /connector/${endpoint}`);
         this.sendResponse(res, 405, { error: 'Method Not Allowed' });
     }
 
     private handleNotImplemented(res: http.ServerResponse, reason: string = 'Not implemented'): void {
-        console.warn(`Not Implemented - ${res.req.url} (${reason})`);
         this.sendResponse(res, 501, { error: 'Not Implemented', reason: reason });
     }
 
@@ -777,7 +748,6 @@ export class ConnectorServer {
 
         // Check if session is complete
         if (this.isSessionComplete(session)) {
-            console.log(`Session ${sessionID} is complete, dispatching event`);
             
             // Get successfully processed files
             const savedFiles = Object.values(session.attachmentStatus)
@@ -804,7 +774,6 @@ export class ConnectorServer {
         let checkCount = 0;
         let lastFileCount = 0;
         
-        console.log(`Starting attachment monitor for session ${sessionID}`);
         
         const monitor = setInterval(() => {
             checkCount++;
@@ -822,7 +791,6 @@ export class ConnectorServer {
             
             // Check if we have new completed files since last check
             if (currentFiles.length > lastFileCount) {
-                console.log(`Found ${currentFiles.length - lastFileCount} new attachments`);
                 
                 // Dispatch additional files event
                 this.dispatchAdditionalAttachments(session.items[0].id, 
@@ -833,7 +801,6 @@ export class ConnectorServer {
             
             // Monitor for up to 5 minutes (300 checks at 1 second each)
             if (checkCount >= 300) {
-                console.log(`Finished monitoring session ${sessionID}`);
                 clearInterval(monitor);
             }
         }, 1000); // Check every second
@@ -845,7 +812,6 @@ export class ConnectorServer {
     private dispatchAdditionalAttachments(itemId: string, newFiles: string[], sessionID: string): void {
         if (typeof document === 'undefined') return;
         
-        console.log(`Dispatching additional-attachments for ${newFiles.length} files`);
         
         const event = new CustomEvent('zotero-additional-attachments', {
             detail: {
@@ -869,7 +835,6 @@ export class ConnectorServer {
         const currentItemState = session.items.find(i => i.id === item.id);
         if (!currentItemState) return;
 
-        console.log(`Dispatching zotero-item-received event`);
 
         const event = new CustomEvent('zotero-item-received', {
             detail: {
@@ -907,14 +872,12 @@ export class ConnectorServer {
         for (const [sessionId, sessionData] of this.sessions.entries()) {
             // Only clean up sessions that have been dispatched
             if (sessionData.eventDispatched && now - sessionData.startTime > SESSION_MAX_AGE) {
-                console.log(`Cleaning up expired session ${sessionId}`);
                 this.sessions.delete(sessionId);
                 deletedCount++;
             }
         }
         
         if (deletedCount > 0) {
-            console.log(`Cleaned up ${deletedCount} expired sessions.`);
         }
     }
 } // End of ConnectorServer class
