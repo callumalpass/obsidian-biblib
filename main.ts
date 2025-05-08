@@ -17,7 +17,6 @@ import { NoteContentBuilderService } from './src/services/note-content-builder-s
 import { AttachmentManagerService } from './src/services/attachment-manager-service';
 import { NoteCreationService } from './src/services/note-creation-service';
 import { StatusBarService } from './src/services/status-bar-service';
-import './styles.css';
 
 // Suppress non-error console logging in production
 console.log = () => {};
