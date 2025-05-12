@@ -328,7 +328,7 @@ export class ChapterModal extends Modal {
             .setButtonText('Add field')
             .onClick(() => this.addAdditionalField('', '', 'standard'));
             
-        // --- Related Notes Section ---
+        // --- Related notes section ---
         contentEl.createEl('h4', { text: 'Related notes' });
         const relatedNotesSetting = new Setting(contentEl)
             .setName('Link related notes')
