@@ -281,6 +281,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 		this.createListItem(basicVarsUl, '{{volume}}, {{number}}, {{page}}', 'Publication details');
 		this.createListItem(basicVarsUl, '{{language}}, {{abstract}}, {{edition}}', 'Additional metadata');
 		this.createListItem(basicVarsUl, '{{currentDate}}', "Today's date (YYYY-MM-DD)");
+		this.createListItem(basicVarsUl, '{{currentTime}}', "Current time in ISO format (HH:MM:SS)");
 		this.createListItem(basicVarsUl, '{{annote_content}}', "Content from BibTeX annote field (bulk import only)");
 
 		guideDiv.createEl('strong', { text: 'Contributor variables', cls:'setting-guide-subtitle' });

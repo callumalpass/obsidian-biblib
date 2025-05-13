@@ -76,7 +76,9 @@ When rendering a template, BibLib makes the following data available:
     *   `{{links}}`: An array of pre-formatted Obsidian wikilinks to the related notes (e.g., `["[[Note A]]", "[[Folder/Note B]]"]`).
     *   `{{linkPaths}}`: An array of the raw file paths for the related notes (e.g., `["Note A.md", "Folder/Note B.md"]`).
     *   `{{links_string}}`: A single string containing all wikilinks, separated by ", " (e.g., `"[[Note A]], [[Folder/Note B]]"`).
-*   **Current Date:** `{{currentDate}}` (Today's date in YYYY-MM-DD format).
+*   **Current Date & Time:** 
+    *   `{{currentDate}}` (Today's date in YYYY-MM-DD format)
+    *   `{{currentTime}}` (Current time in ISO format, HH:MM:SS)
 *   **Annotation Content (Bulk Import Only):** `{{annote_content}}` (Content from the BibTeX `annote` field, potentially joined from multiple fields).
 
 ## Formatting Helpers (Pipes `|`)

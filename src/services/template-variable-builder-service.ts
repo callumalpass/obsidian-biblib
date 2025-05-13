@@ -20,8 +20,9 @@ export class TemplateVariableBuilderService {
   ): Record<string, any> {
     // Start with the basic variable set
     const variables: Record<string, any> = {
-      // Current date (useful for templates)
+      // Current date and time (useful for templates)
       currentDate: new Date().toISOString().split('T')[0],
+      currentTime: new Date().toISOString().split('T')[1].split('.')[0], // HH:MM:SS in ISO format
       
       // Formatted author list for display
       authors: this.formatAuthorsForTemplate(contributors),
