@@ -154,7 +154,9 @@ export class FrontmatterBuilderService {
           }
         } else if (field.type === 'number') {
           // Ensure numbers are stored as numbers, not strings
-          const numValue = parseFloat(field.value as any);
+          // Handle various possible value types for conversion to number
+          const stringValue = String(field.value);
+          const numValue = parseFloat(stringValue);
           valueToAdd = isNaN(numValue) ? field.value : numValue;
         }
         

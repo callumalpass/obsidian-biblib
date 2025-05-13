@@ -568,11 +568,8 @@ export class BibliographySettingTab extends PluginSettingTab {
 					})
 				);
 
-			// Adjust textarea height
-			const textarea = fieldSettingEl.controlEl.querySelector('textarea');
-			if (textarea) {
-				textarea.style.minHeight = '60px'; // Keep this style adjustment
-			}
+			// No need to adjust textarea height through JavaScript
+			// We'll use CSS classes for consistent styling
 
 			return fieldEl;
 		};

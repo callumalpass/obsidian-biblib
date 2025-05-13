@@ -61,7 +61,7 @@ export class StatusBarService {
             
             // Add icon and text
             const iconSpan = this.statusBarItem.createSpan({ cls: 'status-icon' });
-            iconSpan.innerHTML = '●'; // Filled circle for active
+            iconSpan.textContent = '●'; // Filled circle for active
             
             const textSpan = this.statusBarItem.createSpan({ cls: 'status-text' });
             textSpan.textContent = 'Zotero connected';
@@ -73,7 +73,7 @@ export class StatusBarService {
             
             // Add icon and text
             const iconSpan = this.statusBarItem.createSpan({ cls: 'status-icon' });
-            iconSpan.innerHTML = '○'; // Empty circle for inactive
+            iconSpan.textContent = '○'; // Empty circle for inactive
             
             const textSpan = this.statusBarItem.createSpan({ cls: 'status-text' });
             textSpan.textContent = 'Zotero disconnected';

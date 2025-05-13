@@ -190,7 +190,10 @@ const ZOTERO_CONVERTERS = {
         }
     },
     CREATORS: {
-        toTarget: (creators: any[] | undefined): any[] | undefined => creators?.map(mapZoteroCreatorToCsl).filter(Boolean) as any[] | undefined
+        toTarget: (creators: any[] | undefined) => {
+            if (!creators) return undefined;
+            return creators.map(mapZoteroCreatorToCsl).filter(Boolean);
+        }
     },
     TAGS: {
         toTarget: (tags: any[] | undefined): string | undefined => (tags && tags.length > 0 ? tags.map(tag => tag.tag).join(', ') : undefined)
