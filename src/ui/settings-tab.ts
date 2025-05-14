@@ -403,6 +403,17 @@ export class BibliographySettingTab extends PluginSettingTab {
 
 		customFieldsDesc.createEl('p', { text: 'Define custom frontmatter fields with templated values. These will be added to new literature notes.' });
 
+		// Add warning outside the collapsible guide so it's always visible
+		customFieldsDesc.createEl('p', {}, (p) => {
+			p.createEl('strong', { text: 'Warning: ' });
+			p.appendText('Do not define templates for CSL-standard fields, as doing so may produce invalid bibliography files. ');
+			p.createEl('a', { 
+				text: 'See the CSL specification',
+				href: 'https://docs.citationstyles.org/en/stable/specification.html#appendix-iv-variables'
+			});
+			p.appendText(' for a list of standard variables.');
+		});
+
 		const customFieldsDetails = customFieldsDesc.createEl('details', { cls: 'custom-fields-help' });
 		customFieldsDetails.createEl('summary', { text: 'Custom frontmatter fields guide' });
         const customFieldsGuideDiv = customFieldsDetails.createEl('div'); // Container for the guide content
@@ -413,6 +424,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 			p.createEl('strong', { text: 'Warning: ' });
 			p.appendText('While custom fields offer flexibility, remember that the core strength of bibliographic data lies in standardized formats like CSL-JSON. Custom fields may not necessarily be readable by external CSL tools (like Zotero or reference managers) that expect standard fields. Prioritize using standard fields where possible.');
 		});
+
 
 		customFieldsGuideDiv.createEl('strong', { text: 'Important notes about custom fields', cls:'setting-guide-subtitle' });
 		const notesUl = customFieldsGuideDiv.createEl('ul');
