@@ -169,11 +169,6 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
                         enabled: true
                 },
                 {
-                        name: 'keyword',
-                        template: '[]',
-                        enabled: true
-                },
-                {
                         name: 'related',
                         template: '[{{links}}]',
                         enabled: true
