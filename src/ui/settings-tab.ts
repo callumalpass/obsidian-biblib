@@ -1,5 +1,6 @@
-import { App, Platform, PluginSettingTab, Setting, normalizePath, setIcon } from 'obsidian';
+import { App, Platform, PluginSettingTab, Setting, normalizePath, setIcon, Notice } from 'obsidian';
 import BibliographyPlugin from '../../main';
+import { CSL_ALL_CSL_FIELDS } from '../utils/csl-variables';
 
 export class BibliographySettingTab extends PluginSettingTab {
 	plugin: BibliographyPlugin;
@@ -542,6 +543,13 @@ export class BibliographySettingTab extends PluginSettingTab {
 		const addCustomFieldRow = (field: { name: string, template: string, enabled: boolean }, container: HTMLElement) => {
 			const fieldEl = container.createDiv({ cls: 'custom-frontmatter-field' });
 
+			// Function to validate if field name is a CSL standard field
+			const validateCslField = (fieldName: string): boolean => {
+				return CSL_ALL_CSL_FIELDS.has(fieldName);
+			};
+
+			let nameInputEl: HTMLInputElement;
+			
 			const fieldSettingEl = new Setting(fieldEl)
 				.addToggle(toggle => toggle
 					.setValue(field.enabled)
@@ -550,14 +558,40 @@ export class BibliographySettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 				)
-				.addText(text => text
-					.setPlaceholder('Field name')
-					.setValue(field.name)
-					.onChange(async (value) => {
-						field.name = value;
-						await this.plugin.saveSettings();
-					})
-				)
+				.addText(text => {
+					text
+						.setPlaceholder('Field name')
+						.setValue(field.name)
+						.onChange(async (value) => {
+							// Check if the field name is a CSL standard field
+							if (validateCslField(value)) {
+								// Add error class to input
+								nameInputEl.addClass('is-invalid');
+								nameInputEl.parentElement?.addClass('has-error');
+								
+								// Show warning notice
+								new Notice(`"${value}" is a CSL standard field. Using it may produce invalid bibliography files.`, 5000);
+							} else {
+								// Remove error class if exists
+								nameInputEl.removeClass('is-invalid');
+								nameInputEl.parentElement?.removeClass('has-error');
+							}
+							
+							field.name = value;
+							await this.plugin.saveSettings();
+						});
+						
+					// Store reference to the input element
+					nameInputEl = text.inputEl;
+					
+					// Apply initial validation if needed
+					if (field.name && validateCslField(field.name)) {
+						nameInputEl.addClass('is-invalid');
+						nameInputEl.parentElement?.addClass('has-error');
+					}
+					
+					return text;
+				})
 				.addTextArea(text => text
 					.setPlaceholder('Template (e.g. {{authors|capitalize}})')
 					.setValue(field.template)

@@ -149,7 +149,7 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
                         enabled: true
                 },
                 {
-                        name: 'status',
+                        name: 'reading-status',
                         template: 'to-read',
                         enabled: true
                 },
