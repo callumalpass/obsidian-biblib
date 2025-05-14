@@ -550,6 +550,22 @@ export class BibliographySettingTab extends PluginSettingTab {
 
 			let nameInputEl: HTMLInputElement;
 			
+			// Create an element for field warnings that will be shown/hidden based on validation
+			const warningEl = fieldEl.createDiv({ 
+				cls: 'custom-field-warning',
+				attr: { style: 'display: none; margin-top: 8px; color: var(--text-error); font-size: 0.85em;' }
+			});
+			
+			// Function to update the warning message
+			const updateWarningMessage = (fieldName: string) => {
+				if (validateCslField(fieldName)) {
+					warningEl.setText(`Warning: "${fieldName}" is a CSL standard field. Using it may produce invalid bibliography files. It is recommended to use a different name.`);
+					warningEl.style.display = 'block';
+				} else {
+					warningEl.style.display = 'none';
+				}
+			};
+			
 			const fieldSettingEl = new Setting(fieldEl)
 				.addToggle(toggle => toggle
 					.setValue(field.enabled)
@@ -571,10 +587,16 @@ export class BibliographySettingTab extends PluginSettingTab {
 								
 								// Show warning notice
 								new Notice(`"${value}" is a CSL standard field. Using it may produce invalid bibliography files.`, 5000);
+								
+								// Update warning message
+								updateWarningMessage(value);
 							} else {
 								// Remove error class if exists
 								nameInputEl.removeClass('is-invalid');
 								nameInputEl.parentElement?.removeClass('has-error');
+								
+								// Hide warning message
+								warningEl.style.display = 'none';
 							}
 							
 							field.name = value;
@@ -588,6 +610,9 @@ export class BibliographySettingTab extends PluginSettingTab {
 					if (field.name && validateCslField(field.name)) {
 						nameInputEl.addClass('is-invalid');
 						nameInputEl.parentElement?.addClass('has-error');
+						
+						// Show warning message for initial state
+						updateWarningMessage(field.name);
 					}
 					
 					return text;

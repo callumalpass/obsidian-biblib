@@ -120,6 +120,11 @@
   font-size: var(--font-ui-smaller);
 }
 
+/* Specific class for textareas in custom frontmatter fields */
+.custom-frontmatter-textarea {
+  min-height: 60px;
+}
+
 /* Interaction States */
 .bibliography-modal input:hover,
 .bibliography-modal select:hover,
@@ -149,8 +154,10 @@
 
 /* Validation */
 .bibliography-modal input:invalid,
-.bibliography-modal select:invalid {
-  border-color: var(--text-error);
+.bibliography-modal select:invalid,
+.is-invalid, .has-error input {
+  border-color: var(--text-error) !important;
+  background-color: rgba(var(--color-red-rgb), 0.05) !important;
 }
 
 /* File Input (Hidden by default) */
@@ -523,6 +530,16 @@
   margin-bottom: var(--size-4-4); /* Use var */
   background-color: var(--background-secondary);
   /* Removed transition/shadow from original for cleaner look (per second section) */
+}
+
+/* Custom field warning message */
+.custom-field-warning {
+  padding: 6px 10px;
+  border-left: 3px solid var(--text-error);
+  background-color: rgba(var(--color-red-rgb), 0.05);
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
+  font-style: italic;
+  margin-top: 8px !important;
 }
 
 .custom-frontmatter-field .setting-item-control {
