@@ -7,7 +7,7 @@ import { TemplateEngine } from './template-engine';
 export class CitekeyGenerator {
        /**
         * Generates a citekey based on available data and configuration.
-        * Priority: Zotero Key > Template > Legacy Options > Fallback
+        * Priority: Zotero Key > Template > Fallback
         * @param citationData The citation data (e.g., CSL-JSON object)
         * @param options Citekey generation options from settings
         * @returns A generated citekey string
@@ -54,12 +54,8 @@ export class CitekeyGenerator {
                                return citekey || 'error_generating_citekey';
                        }
 
-                       // Priority 3: Use legacy options
-                       return this.generateWithLegacyOptions(citationData, config);
-
-               } catch (error) {
-                       console.error('Error generating citekey:', error);
-                       // Fallback citekey in case of unexpected errors
+                       // Fallback with a simple author-year format
+                       console.warn("No template provided for citekey generation, using fallback format");
                        const authorFallback = this.extractAuthorPart(citationData, config) || 'unknown';
                        const yearFallback = this.extractYearPart(citationData) || new Date().getFullYear().toString();
                        let fallbackCitekey = authorFallback + yearFallback;
@@ -75,6 +71,10 @@ export class CitekeyGenerator {
                        
                        // 3. Remove trailing punctuation (only internal punctuation is allowed)
                        return fallbackCitekey.replace(/[:.#$%&\-+?<>~/]+$/g, '');
+
+               } catch (error) {
+                       console.error('Error generating citekey:', error);
+                       return 'error_' + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
                }
        }
        
@@ -198,89 +198,6 @@ export class CitekeyGenerator {
        }
 
 
-       /**
-        * Generates a citekey using the legacy options.
-        * (Contains the original logic from the 'generate' method before template refactoring)
-        */
-       private static generateWithLegacyOptions(citationData: any, config: CitekeyOptions): string {
-               let citekey = '';
-               let authorPart = this.extractAuthorPart(citationData, config); // Already cleaned/lowercased
-               let yearPart = this.extractYearPart(citationData);
-
-               // Apply legacy abbreviation styles (note: authorPart is already lowercase)
-               if (config.authorAbbreviationStyle === 'firstThree' && authorPart.length > 3) {
-                       authorPart = authorPart.substring(0, 3);
-               } else if (config.authorAbbreviationStyle === 'firstFour' && authorPart.length > 4) {
-                       authorPart = authorPart.substring(0, 4);
-               }
-               // Capitalize the first letter of the author part for legacy formats
-               authorPart = authorPart.charAt(0).toUpperCase() + authorPart.slice(1);
-
-               // Handle multiple authors using legacy settings
-               const authors = citationData.author || citationData.creators?.filter((c: any) => c.creatorType === 'author');
-               if (config.includeMultipleAuthors && Array.isArray(authors) && authors.length > 1) {
-                       const maxAut = Math.min(config.maxAuthors, authors.length); // Use shorter var name
-
-                       if (authors.length === 2 && config.useTwoAuthorStyle === 'and') {
-                               const secondAuthorRaw = this.extractLastNameFromAuthor(authors[1]); // Raw last name
-                               if (secondAuthorRaw) {
-                                       let secondPart = secondAuthorRaw; // Already lowercased by extractLastNameFromAuthor
-                                       // Apply abbreviation to second author part
-                                       if (config.authorAbbreviationStyle === 'firstThree' && secondPart.length > 3) {
-                                               secondPart = secondPart.substring(0, 3);
-                                       } else if (config.authorAbbreviationStyle === 'firstFour' && secondPart.length > 4) {
-                                               secondPart = secondPart.substring(0, 4);
-                                       }
-                                       // Capitalize 'And' and the second author part
-                                       authorPart += 'And' + secondPart.charAt(0).toUpperCase() + secondPart.slice(1);
-                               }
-                       } else if (authors.length === 2 && config.useTwoAuthorStyle === 'initial') {
-                               const secondAuthorRaw = this.extractLastNameFromAuthor(authors[1]);
-                               if (secondAuthorRaw) {
-                                   authorPart += secondAuthorRaw.charAt(0).toUpperCase(); // Add capitalized initial
-                               }
-                       }
-                       else if (maxAut > 1) { // Handle 3+ authors up to maxAut
-                               for (let i = 1; i < maxAut; i++) {
-                                       const nextAuthorRaw = this.extractLastNameFromAuthor(authors[i]);
-                                       if (nextAuthorRaw) {
-                                               // Add capitalized author initial
-                                               authorPart += nextAuthorRaw.charAt(0).toUpperCase();
-                                       }
-                               }
-                               // Add EtAl suffix if needed
-                               if (authors.length > maxAut && config.useEtAl) {
-                                       authorPart += 'EtAl';
-                               }
-                       }
-                       else if (authors.length > 1 && maxAut === 1 && config.useEtAl) { // Handle case where maxAut is 1 but more authors exist
-                               authorPart += 'EtAl';
-                       }
-               }
-
-               // Combine author and year parts according to legacy format
-               const delimiter = config.authorYearDelimiter || ''; // Ensure delimiter is string
-               citekey = authorPart + delimiter + yearPart;
-
-               // Add unique suffix if the citekey is too short
-               if (citekey.length < config.minCitekeyLength) {
-                       const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-                       const shortDelimiter = config.shortCitekeyDelimiter || '';
-                       citekey += shortDelimiter + randomSuffix;
-               }
-
-               // Apply Pandoc's citekey rules for legacy output
-               // 1. Must start with a letter, digit, or underscore
-               if (!/^[a-zA-Z0-9_]/.test(citekey)) {
-                       citekey = '_' + citekey;
-               }
-               
-               // 2. Allow alphanumerics and Pandoc's permitted punctuation
-               citekey = citekey.replace(/[^a-zA-Z0-9_:.#$%&\-+?<>~/]/g, '');
-               
-               // 3. Remove trailing punctuation (only internal punctuation is allowed)
-               return citekey.replace(/[:.#$%&\-+?<>~/]+$/g, '');
-       }
 
 
        /**
@@ -396,17 +313,10 @@ export class CitekeyGenerator {
                // Alternatively, could return current year: return new Date().getFullYear().toString();
        }
 
-       // Default options remain the same, ensure citekeyTemplate is empty
+       // Default citekey generation options
        static readonly defaultOptions: CitekeyOptions = {
-               citekeyTemplate: '',
+               citekeyTemplate: '{{author|lowercase}}{{year}}',
                useZoteroKeys: true,
-               authorAbbreviationStyle: 'full',
-               includeMultipleAuthors: false,
-               maxAuthors: 3,
-               useTwoAuthorStyle: 'and',
-               useEtAl: true,
-               authorYearDelimiter: '',
-               shortCitekeyDelimiter: '',
                minCitekeyLength: 6
        };
 }

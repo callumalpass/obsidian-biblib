@@ -46,18 +46,6 @@ These settings control where BibLib saves notes and attachments. Use forward sla
         * `References/{{authors_family.0|lowercase}}/{{year}}/{{citekey}}` → `References/smith/2023/smith2023.md` (creates author-based organization)
         * `{{authors_family.0|lowercase}}{{#year}}_{{year}}{{/year}}` → `smith_2023.md` (no subfolders)
 
-*   **Legacy filename options:**
-    These settings are maintained for backward compatibility but are superseded by the filename template above.
-
-    *   **Use prefix for literature notes:**
-        *   **Description:** If enabled, the string defined in "Literature note prefix" will be added to the beginning of the filename when the template is not used or produces an empty result.
-        *   **Default:** `true` (Enabled)
-        *   **Usage:** This setting is only used as a fallback when the filename template is empty or disabled.
-
-    *   **Literature note prefix:**
-        *   **Description:** The prefix string to use if "Use prefix" is enabled. This field is disabled if the toggle above is off.
-        *   **Default:** `@`
-        *   **Usage:** Only used when the filename template is not being used.
 
 ## Zotero Connector Settings (Desktop Only)
 
@@ -129,24 +117,19 @@ Configure how the unique `citekey` (used for filenames and linking) is automatic
 *   **Citekey Generation Guide:** An expandable section explaining the purpose of citekeys and providing common format examples using the template system.
 
 *   **Citekey template:**
-    *   **Description:** The primary method for defining citekey formats. Uses the same template engine as other settings. If this field is *not empty*, it overrides the "Legacy" options below.
+    *   **Description:** The template for defining citekey formats. Uses the same template engine as other settings.
     *   **Default:** `{{author|lowercase}}{{title|titleword}}{{year}}` (e.g., `smithquantum2023`)
     *   **Syntax:** Use variables like `{{author}}`, `{{authors_family.0}}`, `{{year}}`, `{{title}}` combined with formatters like `|lowercase`, `|abbr3`, `|titleword`. Output is automatically sanitized (only letters and numbers kept).
-    *   **Usage:** Define your preferred citation key style here. Leaving this *empty* enables the legacy options below.
+    *   **Usage:** Define your preferred citation key style here.
 
-*   **Legacy citekey generation:**
-    *   **Description:** These options provide a simpler way to configure citekeys and are **only used if the "Citekey template" field above is empty.**
-    *   **Settings:**
-        *   **Author name format:** Choose how the first author's last name is abbreviated (`full`, `firstThree`, `firstFour`).
-        *   **Include multiple authors:** Toggle whether to include subsequent authors.
-        *   **(If multiple authors enabled):**
-            *   **Two-author style:** How to format for exactly two authors (`And` or `Initial` of second).
-            *   **Maximum authors:** How many authors to include before potentially using "EtAl".
-            *   **Use "EtAl" suffix:** Add "EtAl" if authors exceed the maximum.
-        *   **Author-year delimiter:** Character(s) placed between the author part and the year part (e.g., `_` for `Smith_2023`). Default is none.
-        *   **Use Zotero keys (if available):** **Important legacy option.** If importing from Zotero (e.g., via bulk import or potentially the connector) and this is ON, BibLib will prioritize using the key provided by Zotero instead of generating one using the other legacy rules. *Note: This setting is ignored if a "Citekey template" is defined above.*
-        *   **Minimum citekey length:** Add a random numeric suffix if the generated key is shorter than this.
-        *   **Short citekey delimiter:** Character(s) placed before the random suffix for short keys.
+*   **Use Zotero keys (if available):**
+    *   **Description:** If importing from Zotero (e.g., via bulk import or the connector) and this is ON, BibLib will prioritize using the key provided by Zotero instead of generating one using the template.
+    *   **Default:** `false`
+
+*   **Minimum citekey length:**
+    *   **Description:** Add a random numeric suffix if the generated key is shorter than this value.
+    *   **Default:** `6` 
+    *   **Usage:** Helps ensure citekeys are unique when there may be similar author/year combinations.
 
 ## Bulk Import Settings
 

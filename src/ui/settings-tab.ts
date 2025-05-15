@@ -685,8 +685,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 			cls: 'setting-item-description'
 		});
 
-		// Store the initial state to compare against
-		let wasInitiallyEmpty = this.plugin.settings.citekeyOptions.citekeyTemplate === '';
+		// No longer need to track empty state, since legacy options have been removed
 
 		// --- Citekey Generation Guide ---
 		const citekeyGuideEl = containerEl.createEl('div', { cls: 'setting-item-description' });
@@ -727,7 +726,6 @@ export class BibliographySettingTab extends PluginSettingTab {
 		citekeyTipsUl.createEl('li', { text: 'Citekeys should be unique across your library' });
 		citekeyTipsUl.createEl('li', { text: 'Keep citekeys short but descriptive' });
 		citekeyTipsUl.createEl('li', { text: 'Avoid spaces and special characters' });
-		citekeyTipsUl.createEl('li', { text: 'Leave the field empty to use legacy options below' });
 
 
 		// --- Citekey Template Setting ---
@@ -738,174 +736,42 @@ export class BibliographySettingTab extends PluginSettingTab {
 				frag.createEl('code', { text: '{{author|lowercase}}{{year}}' });
 				frag.appendText(' produces "smith2023". See the guide above for more examples.');
 				frag.createEl('br');
-				frag.appendText('If this field is empty, the legacy options below will be used.');
-				frag.createEl('br');
 				frag.appendText('Note: Old format with square brackets is auto-converted to the new syntax.');
 			}))
 			.addTextArea(text => text
 				.setPlaceholder('{{author}}{{year}}')
 				.setValue(this.plugin.settings.citekeyOptions.citekeyTemplate)
 				.onChange(async (value) => {
-					const trimmedValue = value.trim();
-					const isEmpty = trimmedValue === '';
-					let needsDisplayUpdate = false;
-
-					// Check if the emptiness state changed
-					if ((wasInitiallyEmpty && !isEmpty) || (!wasInitiallyEmpty && isEmpty)) {
-						needsDisplayUpdate = true;
-						wasInitiallyEmpty = isEmpty; // Update the state for the next change
-					}
-
-					// Always save the setting on change
-					this.plugin.settings.citekeyOptions.citekeyTemplate = trimmedValue;
+					// Save the setting on change
+					this.plugin.settings.citekeyOptions.citekeyTemplate = value.trim();
 					await this.plugin.saveSettings();
-
-					// Refresh display only if the emptiness state changed
-					if (needsDisplayUpdate) {
-						this.display(); // Refresh settings tab
-					}
 				}));
 
-		// --- Legacy Citekey Options (Show only if template is empty) ---
-		if (!this.plugin.settings.citekeyOptions.citekeyTemplate) {
-			new Setting(containerEl).setName('Legacy citekey generation').setHeading();
-			const legacySection = containerEl.createDiv(); // Use a container for styling/grouping
-			legacySection.addClass('settings-legacy-citekey'); // Add a class for potential styling
-			legacySection.createEl('p', {
-				text: 'These options are used only when the Citekey template field above is empty.',
-				cls: 'setting-item-description'
-			});
+		// Use Zotero keys
+		new Setting(containerEl)
+			.setName('Use Zotero keys (if available)')
+			.setDesc('When importing from Zotero, use their citekey instead of generating one using the template above.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.citekeyOptions.useZoteroKeys)
+				.onChange(async (value) => {
+					this.plugin.settings.citekeyOptions.useZoteroKeys = value;
+					await this.plugin.saveSettings();
+				})
+			);
 
-			// Author format options
-			new Setting(legacySection)
-				.setName('Author name format')
-				.setDesc('Choose how author names are formatted in citekeys')
-				.addDropdown(dropdown => dropdown
-					.addOptions({
-						'full': 'Full last name (e.g., "smith2023")',
-						'firstThree': 'First three letters (e.g., "smi2023")',
-						'firstFour': 'First four letters (e.g., "smit2023")'
-					})
-					.setValue(this.plugin.settings.citekeyOptions.authorAbbreviationStyle)
-					.onChange(async (value: 'full' | 'firstThree' | 'firstFour') => {
-						this.plugin.settings.citekeyOptions.authorAbbreviationStyle = value;
-						await this.plugin.saveSettings();
-					})
-				);
-
-			// Multiple authors options
-			new Setting(legacySection)
-				.setName('Include multiple authors')
-				.setDesc('Include information from multiple authors in the citekey')
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.citekeyOptions.includeMultipleAuthors)
-					.onChange(async (value) => {
-						this.plugin.settings.citekeyOptions.includeMultipleAuthors = value;
-						await this.plugin.saveSettings();
-						this.display(); // Refresh to show/hide dependent settings
-					})
-				);
-
-			// Show dependent options only if 'Include multiple authors' is true
-			if (this.plugin.settings.citekeyOptions.includeMultipleAuthors) {
-				// Two-author style
-				new Setting(legacySection)
-					.setName('Two-author style')
-					.setDesc('How to format citekeys with exactly two authors')
-					.setClass('setting-indent') // Indent this setting
-					.addDropdown(dropdown => dropdown
-						.addOptions({
-							'and': 'Use "And" (e.g., "smithAndJones2023")',
-							'initial': 'Use initial (e.g., "smithJ2023")'
-						})
-						.setValue(this.plugin.settings.citekeyOptions.useTwoAuthorStyle)
-						.onChange(async (value: 'and' | 'initial') => {
-							this.plugin.settings.citekeyOptions.useTwoAuthorStyle = value;
-							await this.plugin.saveSettings();
-						})
-					);
-
-				// Max authors
-				new Setting(legacySection)
-					.setName('Maximum authors')
-					.setDesc('Maximum number of authors to include in the citekey')
-					.setClass('setting-indent')
-					.addSlider(slider => slider
-						.setLimits(1, 5, 1)
-						.setValue(this.plugin.settings.citekeyOptions.maxAuthors)
-						.setDynamicTooltip()
-						.onChange(async (value) => {
-							this.plugin.settings.citekeyOptions.maxAuthors = value;
-							await this.plugin.saveSettings();
-						})
-					);
-
-				// Et al option
-				new Setting(legacySection)
-					.setName('Use "EtAl" suffix')
-					.setDesc('Add "EtAl" when there are more authors than the maximum (e.g., "smithEtAl2023")')
-					.setClass('setting-indent')
-					.addToggle(toggle => toggle
-						.setValue(this.plugin.settings.citekeyOptions.useEtAl)
-						.onChange(async (value) => {
-							this.plugin.settings.citekeyOptions.useEtAl = value;
-							await this.plugin.saveSettings();
-						})
-					);
-			} // End of 'Include multiple authors' dependent settings
-
-			// Delimiter settings
-			new Setting(legacySection)
-				.setName('Author-year delimiter')
-				.setDesc('Character to place between author and year (e.g., "_" for "smith_2023")')
-				.addText(text => text
-					.setPlaceholder('No delimiter')
-					.setValue(this.plugin.settings.citekeyOptions.authorYearDelimiter)
-					.onChange(async (value) => {
-						this.plugin.settings.citekeyOptions.authorYearDelimiter = value;
-						await this.plugin.saveSettings();
-					})
-				);
-
-			// Use Zotero keys (moved inside legacy section as template overrides this)
-			new Setting(legacySection)
-				.setName('Use Zotero keys (if available)')
-				.setDesc('When importing from Zotero, use their citekey instead of generating one using the options above.')
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.citekeyOptions.useZoteroKeys)
-					.onChange(async (value) => {
-						this.plugin.settings.citekeyOptions.useZoteroKeys = value;
-						await this.plugin.saveSettings();
-					})
-				);
-
-			// Advanced options
-			new Setting(legacySection)
-				.setName('Minimum citekey length')
-				.setDesc('Add a random suffix to citekeys shorter than this length')
-				.addSlider(slider => slider
-					.setLimits(3, 10, 1)
-					.setValue(this.plugin.settings.citekeyOptions.minCitekeyLength)
-					.setDynamicTooltip()
-					.onChange(async (value) => {
-						this.plugin.settings.citekeyOptions.minCitekeyLength = value;
-						await this.plugin.saveSettings();
-					})
-				);
-
-			new Setting(legacySection)
-				.setName('Short citekey delimiter')
-				.setDesc('Character to place before random suffix for short citekeys (e.g., "_" for "sm_123")')
-				.addText(text => text
-					.setPlaceholder('No delimiter')
-					.setValue(this.plugin.settings.citekeyOptions.shortCitekeyDelimiter)
-					.onChange(async (value) => {
-						this.plugin.settings.citekeyOptions.shortCitekeyDelimiter = value;
-						await this.plugin.saveSettings();
-					})
-				);
-
-		} // End of legacy options block (if !citekeyTemplate)
+		// Minimum citekey length  
+		new Setting(containerEl)
+			.setName('Minimum citekey length')
+			.setDesc('Add a random suffix to citekeys shorter than this length')
+			.addSlider(slider => slider
+				.setLimits(3, 10, 1)
+				.setValue(this.plugin.settings.citekeyOptions.minCitekeyLength)
+				.setDynamicTooltip()
+				.onChange(async (value) => {
+					this.plugin.settings.citekeyOptions.minCitekeyLength = value;
+					await this.plugin.saveSettings();
+				})
+			);
 
 		// --- Bulk Import Settings ---
 		new Setting(containerEl).setName('Bulk import').setHeading();
