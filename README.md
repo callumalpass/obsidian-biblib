@@ -1,8 +1,5 @@
 # **BibLib for Obsidian**
 
-> [!NOTE]  
-> This plugin is awaiting approval by the Obsidian team, so currently must be installed manually, or by using BRAT.
-
 > [!NOTE]
 > For more details on why and how to use this plugin, [see the docs](https://callumalpass.github.io/obsidian-biblib)
 
