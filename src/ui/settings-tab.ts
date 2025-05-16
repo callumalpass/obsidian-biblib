@@ -1,4 +1,4 @@
-import { App, Platform, PluginSettingTab, Setting, TextAreaComponent, normalizePath, setIcon, Notice } from 'obsidian';
+import { App, Platform, PluginSettingTab, Setting, TextAreaComponent, TextComponent, normalizePath, setIcon, Notice } from 'obsidian';
 import BibliographyPlugin from '../../main';
 import { CSL_ALL_CSL_FIELDS } from '../utils/csl-variables';
 import { TemplatePlaygroundComponent } from './components/template-playground';
@@ -16,6 +16,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 		callback(fragment);
 		return fragment;
 	}
+
 
 	// Helper function to create list items with code and text
 	private createListItem(parent: HTMLElement, codeText: string, description: string) {
@@ -45,39 +46,97 @@ export class BibliographySettingTab extends PluginSettingTab {
 			});
 		});
 	}
+	
+	/**
+	 * Creates fragment with just the text
+	 * (Tooltip functionality removed to simplify UI)
+	 * @param text The text to display 
+	 * @param tooltipText The tooltip text (unused now)
+	 * @returns A document fragment with text
+	 */
+	private createTooltip(text: string, tooltipText: string): DocumentFragment {
+		return this.createFragment(fragment => {
+			fragment.appendText(text);
+		});
+	}
+	
+	/**
+	 * Adds helper text below a component's input element
+	 * @param component The component to add helper text to
+	 * @param text The helper text
+	 */
+	private addHelperText(component: TextAreaComponent | TextComponent, text: string): void {
+		component.inputEl.parentElement?.createDiv({
+			cls: 'setting-item-description setting-helper-text',
+			text: text
+		});
+	}
 
+		/**
+	 * Enhances Zotero connector section with additional information
+	 * (Implementation removed as requested)
+	 */
+	private enhanceZoteroSettings(): void {
+		// Helper text removed as requested
+	}
+	
+	/**
+	 * Enhances bibliography export settings with helpful information
+	 * (Implementation removed as requested)
+	 */
+	private enhanceBibliographySettings(): void {
+		// Helper text removed as requested
+	}
+	
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
 
+		// Create main settings container with improved styling
+		const mainSettingsContainer = containerEl.createDiv({
+			cls: 'biblib-settings-container'
+		});
+
 		// ==================== General Settings Section ====================
-		this.renderGeneralSettings(containerEl);
+		this.renderGeneralSettings(mainSettingsContainer);
 
 		// ==================== File Path Settings Section ====================
-		this.renderFilePathSettings(containerEl);
+		this.renderFilePathSettings(mainSettingsContainer);
 
 		// ==================== Template System Section ====================
-		this.renderTemplatesSection(containerEl);
+		this.renderTemplatesSection(mainSettingsContainer);
 
 		// ==================== Citekey Generation Section ====================
-		this.renderCitekeyGenerationSection(containerEl);
+		this.renderCitekeyGenerationSection(mainSettingsContainer);
 
 		// ==================== Custom Frontmatter Fields Section ====================
-		this.renderCustomFrontmatterFieldsSection(containerEl);
+		this.renderCustomFrontmatterFieldsSection(mainSettingsContainer);
 
 		// ==================== Zotero Connector Section ====================
 		if (!Platform.isMobile) {
-			this.renderZoteroConnectorSection(containerEl);
+			this.renderZoteroConnectorSection(mainSettingsContainer);
 		}
 
 		// ==================== Bibliography Builder Section ====================
-		this.renderBibliographyBuilderSection(containerEl);
+		this.renderBibliographyBuilderSection(mainSettingsContainer);
+		
+		// Apply enhancements with setTimeout to ensure DOM is ready
+		setTimeout(() => {
+			this.enhanceFilePathSettings();
+			this.enhanceCitekeySettings();
+			if (!Platform.isMobile) {
+				this.enhanceZoteroSettings();
+			}
+			this.enhanceBibliographySettings();
+		}, 50);
 	}
 
 	/**
 	 * Renders general settings section
 	 */
 	private renderGeneralSettings(containerEl: HTMLElement): void {
+		// No heading for general settings as per guidelines
+		
 		new Setting(containerEl)
 			.setName('Literature note tag')
 			.setDesc('Tag used to identify literature notes in frontmatter')
@@ -100,14 +159,22 @@ export class BibliographySettingTab extends PluginSettingTab {
 	}
 
 	/**
-	 * Renders file path settings section
+	 * Enhances file path settings with additional documentation and tooltips
+	 * (Implementation removed as requested)
 	 */
-	private renderFilePathSettings(containerEl: HTMLElement): void {
-		new Setting(containerEl).setName('File paths').setHeading();
+	private enhanceFilePathSettings(): void {
+		// Helper text removed as requested
+	}
 
+	private renderFilePathSettings(containerEl: HTMLElement): void {
+		new Setting(containerEl).setName('File organization').setHeading();
+		
 		new Setting(containerEl)
 			.setName('Attachment folder path')
-			.setDesc('The folder where attachment files (PDFs, EPUBs, and other file types) will be stored. Use forward slashes for subfolders.')
+			.setDesc(this.createTooltip(
+				'The folder where attachment files (PDFs, EPUBs, and other file types) will be stored. Use forward slashes for subfolders.',
+				'This path is relative to your vault root. Attachments will be copied here when importing.'
+			))
 			.addText(text => text
 				.setPlaceholder('biblib')
 				.setValue(this.plugin.settings.attachmentFolderPath)
@@ -194,8 +261,8 @@ export class BibliographySettingTab extends PluginSettingTab {
 	 * Renders custom frontmatter fields section
 	 */
 	private renderCustomFrontmatterFieldsSection(containerEl: HTMLElement): void {
-		new Setting(containerEl).setName('Custom frontmatter fields').setHeading();
-
+		new Setting(containerEl).setName('Custom frontmatter').setHeading();
+		
 		const customFieldsDesc = containerEl.createEl('div', {
 			cls: 'setting-item-description'
 		});
@@ -356,10 +423,39 @@ export class BibliographySettingTab extends PluginSettingTab {
 	}
 
 	/**
+	 * Helper method to add explanation text to an existing setting
+	 * @param settingName The name of the setting to find
+	 * @param helpText The text to add
+	 */
+	private addSettingHelpText(settingName: string, helpText: string): void {
+		document.querySelectorAll('.setting-item').forEach(item => {
+			const nameEl = item.querySelector('.setting-item-name');
+			if (nameEl && nameEl.textContent === settingName) {
+				const descEl = item.querySelector('.setting-item-description');
+				if (descEl) {
+					const helpEl = document.createElement('div');
+					helpEl.className = 'setting-helper-text';
+					helpEl.textContent = helpText;
+					descEl.appendChild(helpEl);
+				}
+			}
+		});
+	}
+	
+	/**
+	 * Adds tooltips and helper text to citekey settings
+	 * (Implementation removed as requested)
+	 */
+	private enhanceCitekeySettings(): void {
+		// Helper text removed as requested
+	}
+
+	/**
 	 * Renders citekey generation section
 	 */
 	private renderCitekeyGenerationSection(containerEl: HTMLElement): void {
-		new Setting(containerEl).setName('Citekey generation').setHeading();
+		new Setting(containerEl).setName('Citation keys').setHeading();
+		
 		containerEl.createEl('p', {
 			text: 'Configure how citekeys are generated for new literature notes.',
 			cls: 'setting-item-description'
@@ -371,7 +467,11 @@ export class BibliographySettingTab extends PluginSettingTab {
 		// Create setting with textarea
 		new Setting(citekeyTemplateContainer)
 			.setName('Citekey template')
-			.setDesc('Define the pattern for automatically generated citation keys.')
+			.setDesc(this.createTooltip(
+					'Define the pattern for automatically generated citation keys.',
+					'Citation keys are unique identifiers used for referencing sources in academic writing. ' +
+					'They are typically composed of author names, year, and sometimes title elements.'
+				))
 			.addTextArea(text => {
 				citekeyTemplateField = text
 					.setPlaceholder('{{authors_family.0|lowercase}}{{year}}')
@@ -634,8 +734,8 @@ export class BibliographySettingTab extends PluginSettingTab {
 	}
 
 	private renderZoteroConnectorSection(containerEl: HTMLElement): void {
-		new Setting(containerEl).setName('Zotero Connector').setHeading();
-
+		new Setting(containerEl).setName('Zotero integration').setHeading();
+		
 		containerEl.createEl('p', {
 			text: 'Configure settings for the Zotero Connector integration. Note: This feature is only available on desktop.',
 			cls: 'setting-item-description'
@@ -708,7 +808,8 @@ export class BibliographySettingTab extends PluginSettingTab {
 	 * Renders bibliography builder section
 	 */
 	private renderBibliographyBuilderSection(containerEl: HTMLElement): void {
-		new Setting(containerEl).setName('Bibliography builder').setHeading();
+		new Setting(containerEl).setName('Bibliography export').setHeading();
+		
 		containerEl.createEl('p', {
 			text: 'Configure settings for the bibliography builder command.',
 			cls: 'setting-item-description'

@@ -7,7 +7,7 @@ import { TemplateEngine } from "../../utils/template-engine";
 enum TemplateMode {
     Normal = "normal",
     Citekey = "citekey", 
-    Yaml = "yaml"
+    Frontmatter = "frontmatter" // Renamed from Yaml to Frontmatter
 }
 
 /**
@@ -89,7 +89,7 @@ export class TemplatePlaygroundComponent {
         // Add mode options
         const modeOptions = [
             { value: TemplateMode.Normal, label: 'Normal' },
-            { value: TemplateMode.Yaml, label: 'YAML' },
+            { value: TemplateMode.Frontmatter, label: 'Frontmatter' },
             { value: TemplateMode.Citekey, label: 'Citekey' }
         ];
         
@@ -159,8 +159,8 @@ export class TemplatePlaygroundComponent {
             { label: 'Author + Coauthor Initial + Year', value: '{{authors_family.0|lowercase}}{{#authors_family.1}}{{authors_family.1|abbr1}}{{/authors_family.1}}{{year}}' },
             { label: 'Author + Year + Title Word', value: '{{authors_family.0|lowercase}}{{year}}{{title|titleword}}' },
             
-            // YAML-specific examples
-            { label: '-- YAML & Arrays --', value: '' },
+            // Frontmatter-specific examples
+            { label: '-- Frontmatter & Arrays --', value: '' },
             { label: 'Array with trailing commas', value: '[{{#authors}}"[[Author/{{.}}]]",{{/authors}}]' },
             { label: 'Array with conditional commas', value: '[{{#authors_family}}{{^@first}},{{/@first}}"{{.}}"{{/authors_family}}]' },
             { label: 'Fixed values array', value: '["{{title}}", "{{authors}} ({{year}})", "{{citekey}}"]' },
@@ -362,9 +362,9 @@ export class TemplatePlaygroundComponent {
             const modeSpecificData = this.getModeSpecificSampleData(this.currentMode);
             
             switch (this.currentMode) {
-                case TemplateMode.Yaml:
-                    // In YAML mode, show how arrays are handled in frontmatter
-                    this.renderYamlPreview(template, modeSpecificData);
+                case TemplateMode.Frontmatter:
+                    // In Frontmatter mode, show how templates are handled in frontmatter
+                    this.renderFrontmatterPreview(template, modeSpecificData);
                     break;
                     
                 case TemplateMode.Citekey:
@@ -413,8 +413,8 @@ export class TemplatePlaygroundComponent {
         // Make a deep copy for nested properties
         const data = JSON.parse(JSON.stringify(baseData));
         
-        if (mode === TemplateMode.Yaml) {
-            // In YAML mode, we want full arrays for authors - don't use the formatted string
+        if (mode === TemplateMode.Frontmatter) {
+            // In Frontmatter mode, we want full arrays for authors - don't use the formatted string
             // which helps with array template formatting
             
             // Ensure the actual raw values are used, not the formatted versions
@@ -483,10 +483,10 @@ export class TemplatePlaygroundComponent {
     
     
     /**
-     * Renders a preview of how a template would be handled in YAML frontmatter
+     * Renders a preview of how a template would be handled in frontmatter
      * in the context of BibLib
      */
-    private renderYamlPreview(template: string, data: Record<string, any>): void {
+    private renderFrontmatterPreview(template: string, data: Record<string, any>): void {
         try {
             // Check if this is potentially an array template
             const isArrayTemplate = template.trim().startsWith('[') && template.trim().endsWith(']');
@@ -498,33 +498,26 @@ export class TemplatePlaygroundComponent {
             
             this.previewContent.empty();
             
-            // Create a container for showing both standard and YAML representations
-            const previewContainer = this.previewContent.createDiv({
+            // First, add the frontmatter preview section (similar to normal/citekey modes)
+            const previewEl = this.previewContent.createDiv({
+                cls: 'template-playground-rendered'
+            });
+            
+            // Add the YAML/frontmatter representation
+            previewEl.createEl('pre', {
+                cls: 'frontmatter-preview-code'
+            }).createEl('code', {
+                text: `---\nfield: ${template.trim()}\n---\n`
+            });
+            
+            // Then, add explanation section below
+            const explanationContainer = this.previewContent.createDiv({
                 cls: 'yaml-preview-container'
             });
             
-            // Standard rendering
-            const standardSection = previewContainer.createDiv({
-                cls: 'yaml-preview-section'
-            });
-            
-            standardSection.createEl('h4', {
-                text: 'Template renders as:',
-                cls: 'yaml-preview-heading'
-            });
-            
-            standardSection.createEl('div', { 
-                cls: 'template-playground-rendered standard-rendering',
-                text: rendered 
-            });
-            
-            // YAML representation
-            const yamlSection = previewContainer.createDiv({
-                cls: 'yaml-preview-section'
-            });
-            
-            yamlSection.createEl('h4', {
-                text: 'In YAML frontmatter:',
+            // Add heading for explanation section
+            explanationContainer.createEl('h4', {
+                text: 'How frontmatter handles this template:',
                 cls: 'yaml-preview-heading'
             });
             
@@ -578,24 +571,21 @@ export class TemplatePlaygroundComponent {
                 yamlBehaviorExplanation = 'Simple strings are stored as-is in YAML frontmatter.';
             }
             
-            // Create yaml preview
-            const yamlPreviewEl = yamlSection.createEl('pre', {
-                cls: 'yaml-preview-code'
-            });
+            // Update the preview with the actual rendered frontmatter
+            const previewCode = previewEl.querySelector('code');
+            if (previewCode) {
+                previewCode.textContent = yamlRepresentation;
+            }
             
-            yamlPreviewEl.createEl('code', {
-                text: yamlRepresentation
-            });
-            
-            // Add explanation of how Obsidian's YAML treats the value
-            const explanationEl = previewContainer.createDiv({
+            // Add explanation to the explanation container
+            const explanationEl = explanationContainer.createEl('div', {
                 cls: 'yaml-preview-explanation'
             });
             
             explanationEl.createEl('p', { text: yamlBehaviorExplanation });
             
             // Add a focused guide about BibLib's array handling
-            const biblibNoteEl = previewContainer.createDiv({
+            const biblibNoteEl = explanationContainer.createEl('div', {
                 cls: 'yaml-preview-biblib-note'
             });
             
