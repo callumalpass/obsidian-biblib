@@ -358,15 +358,18 @@ export class TemplatePlaygroundComponent {
         try {
             const template = this.templateField.getValue();
             
+            // Create appropriate sample data based on mode
+            const modeSpecificData = this.getModeSpecificSampleData(this.currentMode);
+            
             switch (this.currentMode) {
                 case TemplateMode.Yaml:
                     // In YAML mode, show how arrays are handled in frontmatter
-                    this.renderYamlPreview(template);
+                    this.renderYamlPreview(template, modeSpecificData);
                     break;
                     
                 case TemplateMode.Citekey:
                     // In Citekey mode, render with citekey sanitization
-                    const citekeyRendered = TemplateEngine.render(template, this.sampleData, {
+                    const citekeyRendered = TemplateEngine.render(template, modeSpecificData, {
                         sanitizeForCitekey: true
                     });
                     
@@ -380,7 +383,7 @@ export class TemplatePlaygroundComponent {
                 case TemplateMode.Normal:
                 default:
                     // Standard rendering with no special options
-                    const rendered = TemplateEngine.render(template, this.sampleData);
+                    const rendered = TemplateEngine.render(template, modeSpecificData);
                     
                     this.previewContent.empty();
                     this.previewContent.createEl('div', { 
@@ -398,15 +401,100 @@ export class TemplatePlaygroundComponent {
         }
     }
     
+    /**
+     * Get mode-specific sample data to better emulate how each part of the 
+     * system processes templates
+     */
+    private getModeSpecificSampleData(mode: TemplateMode): Record<string, any> {
+        // Start with the base sample data
+        const baseData = this.sampleData;
+        
+        // Clone the data to avoid modifying the original
+        // Make a deep copy for nested properties
+        const data = JSON.parse(JSON.stringify(baseData));
+        
+        if (mode === TemplateMode.Yaml) {
+            // In YAML mode, we want full arrays for authors - don't use the formatted string
+            // which helps with array template formatting
+            
+            // Ensure the actual raw values are used, not the formatted versions
+            // This better emulates how the frontmatter builder processes arrays
+            
+            // 1. Fix authors variable to use full names instead of the formatted "J. Smith et al."
+            data.authors = baseData.authors_family.map((family: string, i: number) => {
+                const given = baseData.authors_given[i];
+                if (given) return `${given} ${family}`;
+                return family;
+            });
+            
+            // 2. Ensure other special variables are properly structured for templating
+            
+            // The authors_raw array with role property is what's used in the loop
+            if (!data.authors_raw) {
+                data.authors_raw = baseData.author.map((author: any) => {
+                    return {
+                        ...author,
+                        role: 'author'
+                    };
+                });
+            }
+            
+            // 3. Ensure editor, translator, and other contributor roles have both
+            // the singular formatted string and the arrays of component parts
+            const roles = ['editor', 'translator', 'contributor'];
+            roles.forEach(role => {
+                const roleKey = `${role}s`;
+                if (data[roleKey] && typeof data[roleKey] === 'string') {
+                    // If it's a formatted string like "E. Jones", convert to array of full names
+                    // for proper array iteration in templates
+                    const familyKey = `${role}s_family`;
+                    const givenKey = `${role}s_given`;
+                    
+                    if (data[familyKey] && Array.isArray(data[familyKey])) {
+                        data[roleKey] = data[familyKey].map((family: string, i: number) => {
+                            const given = data[givenKey]?.[i] || '';
+                            if (given) return `${given} ${family}`;
+                            return family;
+                        });
+                    }
+                }
+            });
+            
+            // 4. Ensure attachment variables are properly structured
+            // attachments should be an array of formatted links, while pdflink should be an array of paths
+            if (data.attachment && typeof data.attachment === 'string' && !Array.isArray(data.attachments)) {
+                data.attachments = [data.attachment];
+            }
+            
+            if (data.raw_pdflink && typeof data.raw_pdflink === 'string' && !Array.isArray(data.pdflink)) {
+                data.pdflink = [data.raw_pdflink];
+                data.raw_pdflinks = [data.raw_pdflink];
+            }
+            
+            // 5. Ensure links are properly formatted
+            if (data.linkPaths && Array.isArray(data.linkPaths) && !Array.isArray(data.links)) {
+                data.links = data.linkPaths.map((path: string) => `[[${path}]]`);
+                data.links_string = data.links.join(', ');
+            }
+        }
+        
+        return data;
+    }
+    
     
     /**
      * Renders a preview of how a template would be handled in YAML frontmatter
      * in the context of BibLib
      */
-    private renderYamlPreview(template: string): void {
+    private renderYamlPreview(template: string, data: Record<string, any>): void {
         try {
-            // First render the template normally
-            const rendered = TemplateEngine.render(template, this.sampleData);
+            // Check if this is potentially an array template
+            const isArrayTemplate = template.trim().startsWith('[') && template.trim().endsWith(']');
+            
+            // Render the template with appropriate options
+            const rendered = TemplateEngine.render(template, data, {
+                yamlArray: isArrayTemplate
+            });
             
             this.previewContent.empty();
             
@@ -445,15 +533,16 @@ export class TemplatePlaygroundComponent {
             let yamlBehaviorExplanation: string;
             
             // Check for patterns that would be interpreted differently in YAML
+            // Apply same logic as frontmatter-builder-service.ts
             
-            // Case 1: JSON Array format with square brackets
+            // Case 1: JSON Array format with square brackets that may have been processed by yamlArray option
             if (rendered.trim().startsWith('[') && rendered.trim().endsWith(']')) {
                 try {
                     // Attempt to parse as JSON to see if it's valid
-                    JSON.parse(rendered.trim());
+                    const parsedArray = JSON.parse(rendered.trim());
                     
-                    // It's a valid JSON array, which Obsidian will interpret as an array in YAML
-                    yamlRepresentation = `---\nfield: ${rendered.trim()}\n---`;
+                    // It's a valid JSON array, which would be proper in frontmatter
+                    yamlRepresentation = `---\nfield: ${JSON.stringify(parsedArray)}\n---`;
                     yamlBehaviorExplanation = 'This template produces a valid JSON array that will be properly parsed as an array in frontmatter.';
                 } catch (e) {
                     // It's not valid JSON, warn the user
@@ -532,10 +621,13 @@ export class TemplatePlaygroundComponent {
                 });
             });
             
+            // We removed the redundant "actual processing" section since it's
+            // already shown in the YAML preview above
+            
             jsonExampleContainer.createEl('p', { text: 'Renders correctly in frontmatter:' });
             jsonExampleContainer.createEl('pre', {}, pre => {
                 pre.createEl('code', { 
-                    text: 'author-links: ["[[Author/Smith]]","[[Author/Rodriguez]]","[[Author/Zhang]]"]'
+                    text: 'author-links: ["[[Author/John Smith]]","[[Author/Maria Rodriguez]]","[[Author/Wei Zhang]]"]'
                 });
             });
             
@@ -554,7 +646,7 @@ export class TemplatePlaygroundComponent {
             mistakeContainer.createEl('p', { text: 'This renders as multi-line text, not an array:' });
             mistakeContainer.createEl('pre', {}, pre => {
                 pre.createEl('code', { 
-                    text: 'author-links: |\n  - [[Author/Smith]]\n  - [[Author/Rodriguez]]\n  - [[Author/Zhang]]'
+                    text: 'author-links: |\n  - [[Author/John Smith]]\n  - [[Author/Maria Rodriguez]]\n  - [[Author/Wei Zhang]]'
                 });
             });
         } catch (error) {
