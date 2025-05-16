@@ -1,4 +1,4 @@
-import { Notice } from 'obsidian';
+import { App, Notice } from 'obsidian';
 import * as http from 'http';
 import * as https from 'https';
 import * as fs from 'fs';
@@ -49,6 +49,7 @@ interface AttachmentMetadata {
  */
 export class ConnectorServer {
     private server: http.Server | null = null;
+    private app: App;
     private settings: BibliographyPluginSettings;
     private tempDir: string;
     private sessions: Map<string, SessionData> = new Map();
@@ -56,7 +57,8 @@ export class ConnectorServer {
     private processedAttachmentPaths: Map<string, string> = new Map(); // Track attachment paths by session+filename
     private cleanupIntervalId: NodeJS.Timeout | null = null;
 
-    constructor(settings: BibliographyPluginSettings) {
+    constructor(app: App, settings: BibliographyPluginSettings) {
+        this.app = app;
         this.settings = settings;
         this.tempDir = settings.tempPdfPath || path.join(os.tmpdir(), 'obsidian-bibliography');
 
