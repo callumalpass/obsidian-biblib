@@ -2,6 +2,15 @@ import { TextAreaComponent, ButtonComponent, setIcon } from "obsidian";
 import { TemplateEngine } from "../../utils/template-engine";
 
 /**
+ * Template mode for the playground
+ */
+enum TemplateMode {
+    Normal = "normal",
+    Citekey = "citekey", 
+    Yaml = "yaml"
+}
+
+/**
  * Creates a template playground where users can experiment with template syntax
  * and see the rendered output in real-time
  */
@@ -10,8 +19,7 @@ export class TemplatePlaygroundComponent {
     private templateField: TextAreaComponent;
     private previewContent: HTMLElement;
     private sampleData: Record<string, any>;
-    private citekeyMode = false;
-    private yamlMode = false;
+    private currentMode: TemplateMode = TemplateMode.Normal;
 
     /**
      * Creates a new template playground component
@@ -63,74 +71,45 @@ export class TemplatePlaygroundComponent {
             cls: 'template-playground-toolbar'
         });
         
-        // Create mode toggles container
+        // Create mode selection dropdown container
         const modesContainer = toolbarEl.createDiv({
             cls: 'template-playground-modes'
         });
         
-        // Create citekey mode toggle
-        const citekeyToggleContainer = modesContainer.createDiv({
-            cls: 'template-playground-toggle'
-        });
-        
-        citekeyToggleContainer.createEl('span', {
-            text: 'Citekey Mode:',
+        modesContainer.createEl('span', {
+            text: 'Template Mode:',
             cls: 'template-playground-toggle-label'
         });
         
-        const citekeyToggleButton = new ButtonComponent(citekeyToggleContainer);
-        citekeyToggleButton
-            .setButtonText(this.citekeyMode ? 'ON' : 'OFF')
-            .onClick(() => {
-                this.citekeyMode = !this.citekeyMode;
-                citekeyToggleButton.setButtonText(this.citekeyMode ? 'ON' : 'OFF');
-                if (this.citekeyMode) {
-                    citekeyToggleButton.buttonEl.addClass('is-active');
-                } else {
-                    citekeyToggleButton.buttonEl.removeClass('is-active');
-                }
-                this.updatePreview();
-            });
-        
-        if (this.citekeyMode) {
-            citekeyToggleButton.buttonEl.addClass('is-active');
-        }
-        
-        // Create YAML mode toggle
-        const yamlToggleContainer = modesContainer.createDiv({
-            cls: 'template-playground-toggle'
+        // Create select element for mode selection
+        const modeSelect = modesContainer.createEl('select', {
+            cls: 'template-playground-mode-select'
         });
         
-        yamlToggleContainer.createEl('span', {
-            text: 'YAML Mode:',
-            cls: 'template-playground-toggle-label',
-            attr: { title: 'Show how arrays are handled in YAML frontmatter' }
+        // Add mode options
+        const modeOptions = [
+            { value: TemplateMode.Normal, label: 'Normal' },
+            { value: TemplateMode.Yaml, label: 'YAML' },
+            { value: TemplateMode.Citekey, label: 'Citekey' }
+        ];
+        
+        modeOptions.forEach(option => {
+            const optionEl = modeSelect.createEl('option', {
+                value: option.value,
+                text: option.label
+            });
+            
+            if (option.value === this.currentMode) {
+                optionEl.selected = true;
+            }
         });
         
-        const yamlToggleButton = new ButtonComponent(yamlToggleContainer);
-        yamlToggleButton
-            .setButtonText(this.yamlMode ? 'ON' : 'OFF')
-            .onClick(() => {
-                this.yamlMode = !this.yamlMode;
-                yamlToggleButton.setButtonText(this.yamlMode ? 'ON' : 'OFF');
-                if (this.yamlMode) {
-                    yamlToggleButton.buttonEl.addClass('is-active');
-                    
-                    // If turning on YAML mode, disable citekey mode
-                    if (this.citekeyMode) {
-                        this.citekeyMode = false;
-                        citekeyToggleButton.setButtonText('OFF');
-                        citekeyToggleButton.buttonEl.removeClass('is-active');
-                    }
-                } else {
-                    yamlToggleButton.buttonEl.removeClass('is-active');
-                }
-                this.updatePreview();
-            });
-        
-        if (this.yamlMode) {
-            yamlToggleButton.buttonEl.addClass('is-active');
-        }
+        // Add change event listener
+        modeSelect.addEventListener('change', (e) => {
+            const target = e.target as HTMLSelectElement;
+            this.currentMode = target.value as TemplateMode;
+            this.updatePreview();
+        });
         
         // Create examples dropdown
         const examplesContainer = toolbarEl.createDiv({
@@ -379,20 +358,36 @@ export class TemplatePlaygroundComponent {
         try {
             const template = this.templateField.getValue();
             
-            if (this.yamlMode) {
-                // In YAML mode, show how arrays are handled in frontmatter
-                this.renderYamlPreview(template);
-            } else {
-                // Standard rendering (possibly with citekey sanitization)
-                const rendered = TemplateEngine.render(template, this.sampleData, {
-                    sanitizeForCitekey: this.citekeyMode
-                });
-                
-                this.previewContent.empty();
-                this.previewContent.createEl('div', { 
-                    cls: 'template-playground-rendered',
-                    text: rendered 
-                });
+            switch (this.currentMode) {
+                case TemplateMode.Yaml:
+                    // In YAML mode, show how arrays are handled in frontmatter
+                    this.renderYamlPreview(template);
+                    break;
+                    
+                case TemplateMode.Citekey:
+                    // In Citekey mode, render with citekey sanitization
+                    const citekeyRendered = TemplateEngine.render(template, this.sampleData, {
+                        sanitizeForCitekey: true
+                    });
+                    
+                    this.previewContent.empty();
+                    this.previewContent.createEl('div', { 
+                        cls: 'template-playground-rendered citekey-rendering',
+                        text: citekeyRendered 
+                    });
+                    break;
+                    
+                case TemplateMode.Normal:
+                default:
+                    // Standard rendering with no special options
+                    const rendered = TemplateEngine.render(template, this.sampleData);
+                    
+                    this.previewContent.empty();
+                    this.previewContent.createEl('div', { 
+                        cls: 'template-playground-rendered',
+                        text: rendered 
+                    });
+                    break;
             }
         } catch (error) {
             this.previewContent.empty();
@@ -402,6 +397,7 @@ export class TemplatePlaygroundComponent {
             });
         }
     }
+    
     
     /**
      * Renders a preview of how a template would be handled in YAML frontmatter
