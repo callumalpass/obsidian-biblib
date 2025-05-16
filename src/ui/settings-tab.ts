@@ -448,7 +448,118 @@ export class BibliographySettingTab extends PluginSettingTab {
 			text: 'BibLib uses a powerful template system across all content. Templates use a Mustache-like syntax for literature notes, filenames, and frontmatter fields.'
 		});
 		
-		// Create template playground component first for visibility
+		// Add template guide FIRST - move it from the bottom to the top
+		const templateGuideContainer = containerEl.createDiv({ 
+			cls: 'template-guide-container',
+			attr: { style: 'margin-top: 16px; margin-bottom: 24px;' }
+		});
+		
+		templateGuideContainer.createEl('h3', { 
+			text: 'Template System Guide',
+			cls: 'setting-item-name' 
+		});
+		
+		// Make the guide a collapsible details element (collapsed by default)
+		const detailsEl = templateGuideContainer.createEl('details');
+		detailsEl.createEl('summary', { text: 'Template system guide (Click to expand)' });
+		const guideDiv = detailsEl.createEl('div', { cls: 'template-variables-list' });
+
+		guideDiv.createEl('p', { text: 'The template system supports variable replacement, formatting options, conditionals, and loops.' });
+
+		guideDiv.createEl('strong', { text: 'Basic variables', cls:'setting-guide-subtitle' });
+		const basicVarsUl = guideDiv.createEl('ul');
+		this.createListItem(basicVarsUl, '{{title}}', 'Title of the work');
+		this.createListItem(basicVarsUl, '{{citekey}}', 'Citation key');
+		this.createListItem(basicVarsUl, '{{year}}, {{month}}, {{day}}', 'Publication date parts');
+		this.createListItem(basicVarsUl, '{{container-title}}', 'Journal or book title containing the work');
+		this.createListItem(basicVarsUl, '{{authors}}', 'List of authors (formatted as "J. Smith et al." for 3+ authors, full names in arrays)');
+		this.createListItem(basicVarsUl, '{{authors_family}}', 'Array of author family names (["Smith", "Jones", ...])');
+		this.createListItem(basicVarsUl, '{{authors_given}}', 'Array of author given names (["John", "Maria", ...])');
+		this.createListItem(basicVarsUl, '{{pdflink}}', 'Array of attachment file paths');
+		this.createListItem(basicVarsUl, '{{attachments}}', 'Array of formatted attachment links (e.g., [[file.pdf|PDF]])');
+		this.createListItem(basicVarsUl, '{{DOI}}, {{URL}}', 'Digital identifiers');
+		this.createListItem(basicVarsUl, '{{currentDate}}', "Today's date (YYYY-MM-DD)");
+
+		guideDiv.createEl('strong', { text: 'Special array variables', cls:'setting-guide-subtitle' });
+		guideDiv.createEl('p', { text: 'These variables are arrays that can be used with loop syntax:' });
+		const arrayVarsUl = guideDiv.createEl('ul');
+		this.createListItem(arrayVarsUl, '{{authors}}, {{authors_family}}, {{authors_given}}', 'Author information arrays');
+		this.createListItem(arrayVarsUl, '{{editors}}, {{translators}}, etc.', 'Other contributor role arrays (when present)');
+		this.createListItem(arrayVarsUl, '{{pdflink}}, {{attachments}}', 'Attachment path and link arrays');
+		this.createListItem(arrayVarsUl, '{{links}}', 'Array of links to related notes');
+		
+		guideDiv.createEl('strong', { text: 'Creating arrays in frontmatter', cls:'setting-guide-subtitle' });
+		guideDiv.createEl('p', { text: 'To create YAML arrays in frontmatter templates, use JSON array syntax with square brackets:' });
+		const arrayExamplesUl = guideDiv.createEl('ul');
+		this.createListItem(arrayExamplesUl, '[{{#authors}}"[[Author/{{.}}]]",{{/authors}}]', 'Creates array like ["[[Author/John Smith]]", "[[Author/Maria Jones]]"]');
+		this.createListItem(arrayExamplesUl, '[{{#authors_family}}{{^@first}},{{/@first}}"{{.}}"{{/authors_family}}]', 'Array with commas between items (no trailing comma)');
+		this.createListItem(arrayExamplesUl, '["{{title}}", {{#DOI}}"{{DOI}}",{{/DOI}} "{{year}}"]', 'Fixed array with conditional elements');
+		
+		guideDiv.createEl('p', { 
+			text: 'Important: Arrays must be valid JSON to be processed correctly. Common issues to avoid:'
+		});
+		
+		const arrayIssuesUl = guideDiv.createEl('ul');
+		this.createListItem(arrayIssuesUl, 'Trailing commas', 'Example: ["item1", "item2",] - the last comma breaks the array');
+		this.createListItem(arrayIssuesUl, 'Missing quotes', 'All text items must be quoted: ["ok"] not [ok]');
+		this.createListItem(arrayIssuesUl, 'Unbalanced brackets', 'Ensure opening [ has a matching closing ]');
+		this.createListItem(arrayIssuesUl, 'Use {{^@first}}, {{/@first}} to add commas only between items, not after the last item', '');
+		
+		guideDiv.createEl('p', { 
+			text: 'Use the Template Playground in YAML mode to test your array templates.'
+		});
+		
+		guideDiv.createEl('strong', { text: 'Formatting options', cls:'setting-guide-subtitle' });
+		guideDiv.createEl('p', { text: 'You can format any variable using pipe syntax:' });
+		const formatOptsUl = guideDiv.createEl('ul');
+		this.createListItem(formatOptsUl, '{{variable|uppercase}}', 'ALL UPPERCASE');
+		this.createListItem(formatOptsUl, '{{variable|lowercase}}', 'all lowercase');
+		this.createListItem(formatOptsUl, '{{variable|capitalize}}', 'Capitalize First Letter Of Each Word');
+		this.createListItem(formatOptsUl, '{{title|titleword}}', 'Extract first significant word from title');
+
+		guideDiv.createEl('strong', { text: 'Conditionals and loops', cls:'setting-guide-subtitle' });
+		const conditionalsUl = guideDiv.createEl('ul');
+		this.createListItem(conditionalsUl, '{{#variable}}Content shown if variable exists{{/variable}}', 'Positive conditional');
+		this.createListItem(conditionalsUl, '{{^variable}}Content shown if variable is empty{{/variable}}', 'Negative conditional');
+		this.createListItem(conditionalsUl, '{{#array}}{{.}} is the current item{{/array}}', 'Loop through arrays ({{.}} refers to current item)');
+		this.createListItem(conditionalsUl, '{{#array}}{{^@first}}, {{/@first}}{{.}}{{/array}}', 'Using array position metadata (@first, @last, etc.)');
+		
+		guideDiv.createEl('strong', { text: 'Loop position metadata', cls:'setting-guide-subtitle' });
+		guideDiv.createEl('p', { text: 'When iterating through arrays, you can use these special variables to control formatting:' });
+		const loopMetadataUl = guideDiv.createEl('ul');
+		this.createListItem(loopMetadataUl, '{{@index}}', 'Zero-based index (0, 1, 2, ...)');
+		this.createListItem(loopMetadataUl, '{{@number}}', 'One-based index (1, 2, 3, ...)');
+		this.createListItem(loopMetadataUl, '{{@first}}', 'Boolean - true if first item');
+		this.createListItem(loopMetadataUl, '{{@last}}', 'Boolean - true if last item');
+		this.createListItem(loopMetadataUl, '{{@odd}}', 'Boolean - true for odd-indexed items (1, 3, 5, ...)');
+		this.createListItem(loopMetadataUl, '{{@even}}', 'Boolean - true for even-indexed items (0, 2, 4, ...)');
+		this.createListItem(loopMetadataUl, '{{@length}}', 'Total length of the array being iterated');
+		
+		guideDiv.createEl('p', { text: 'Example using position metadata:' });
+		guideDiv.createEl('pre', {}, pre => {
+			pre.createEl('code', { 
+				text: '{{#authors}}\n  {{@number}}. {{.}}{{^@last}},{{/@last}}{{#@last}}.{{/@last}}\n{{/authors}}'
+			});
+		});
+		guideDiv.createEl('p', { text: 'Would produce: "1. John Smith, 2. Maria Rodriguez, 3. Wei Zhang."' });
+
+		guideDiv.createEl('strong', { text: 'Accessing nested data', cls:'setting-guide-subtitle' });
+		guideDiv.createEl('p', { text: 'Use dot notation to access nested properties and array items:' });
+		const nestedUl = guideDiv.createEl('ul');
+		this.createListItem(nestedUl, '{{authors_family.0}}', 'First author family name');
+		this.createListItem(nestedUl, '{{issued.date-parts.0.0}}', 'Year from nested CSL date structure');
+		this.createListItem(nestedUl, '{{#authors}}{{#@first}}First author: {{.}}{{/@first}}{{/authors}}', 'Conditional within a loop');
+		
+		guideDiv.createEl('p', {}, (p) => {
+			p.appendText('See the ');
+			const link = p.createEl('a', {
+				text: 'full documentation',
+				href: "https://callumalpass.github.io/obsidian-biblib"
+			});
+			p.appendText(' for more details on the template system.');
+		});
+		
+		// Now add the template playground AFTER the guide
 		const playgroundContainer = containerEl.createDiv({ cls: 'template-playground-wrapper' });
 		
 		playgroundContainer.createEl('h3', { 
@@ -519,58 +630,6 @@ export class BibliographySettingTab extends PluginSettingTab {
 			this.createListItem(list, '# [[{{pdflink}}|{{title}}]]', 'Title linked to PDF');
 			this.createListItem(list, '# {{#pdflink}}[[{{pdflink}}]]{{/pdflink}}{{^pdflink}}{{title}}{{/pdflink}}', 'PDF link if available, otherwise title');
 			this.createListItem(list, '# {{citekey}}: {{title}}', 'Citekey and title');
-		});
-
-		// Add template guide last
-		const templateGuideContainer = containerEl.createDiv({ 
-			cls: 'template-guide-container',
-			attr: { style: 'margin-top: 24px;' }
-		});
-		
-		templateGuideContainer.createEl('h3', { 
-			text: 'Template System Guide',
-			cls: 'setting-item-name' 
-		});
-		
-		// Make the guide a collapsible details element
-		const detailsEl = templateGuideContainer.createEl('details');
-		detailsEl.createEl('summary', { text: 'Click to expand the template system guide' });
-		const guideDiv = detailsEl.createEl('div', { cls: 'template-variables-list' });
-
-		guideDiv.createEl('p', { text: 'The template system supports variable replacement, formatting options, conditionals, and loops.' });
-
-		guideDiv.createEl('strong', { text: 'Basic variables', cls:'setting-guide-subtitle' });
-		const basicVarsUl = guideDiv.createEl('ul');
-		this.createListItem(basicVarsUl, '{{title}}', 'Title of the work');
-		this.createListItem(basicVarsUl, '{{citekey}}', 'Citation key');
-		this.createListItem(basicVarsUl, '{{year}}, {{month}}, {{day}}', 'Publication date parts');
-		this.createListItem(basicVarsUl, '{{container-title}}', 'Journal or book title containing the work');
-		this.createListItem(basicVarsUl, '{{authors}}', 'Formatted author list');
-		this.createListItem(basicVarsUl, '{{pdflink}}', 'Path to attached PDF (if any)');
-		this.createListItem(basicVarsUl, '{{DOI}}, {{URL}}', 'Digital identifiers');
-		this.createListItem(basicVarsUl, '{{currentDate}}', "Today's date (YYYY-MM-DD)");
-
-		guideDiv.createEl('strong', { text: 'Formatting options', cls:'setting-guide-subtitle' });
-		guideDiv.createEl('p', { text: 'You can format any variable using pipe syntax:' });
-		const formatOptsUl = guideDiv.createEl('ul');
-		this.createListItem(formatOptsUl, '{{variable|uppercase}}', 'ALL UPPERCASE');
-		this.createListItem(formatOptsUl, '{{variable|lowercase}}', 'all lowercase');
-		this.createListItem(formatOptsUl, '{{variable|capitalize}}', 'Capitalize First Letter Of Each Word');
-		this.createListItem(formatOptsUl, '{{title|titleword}}', 'Extract first significant word from title');
-
-		guideDiv.createEl('strong', { text: 'Conditionals and loops', cls:'setting-guide-subtitle' });
-		const conditionalsUl = guideDiv.createEl('ul');
-		this.createListItem(conditionalsUl, '{{#variable}}Content shown if variable exists{{/variable}}', '');
-		this.createListItem(conditionalsUl, '{{^variable}}Content shown if variable is empty{{/variable}}', '');
-		this.createListItem(conditionalsUl, '{{#array}}{{.}} is the current item{{/array}}', 'Loop through arrays');
-
-		guideDiv.createEl('p', {}, (p) => {
-			p.appendText('See the ');
-			const link = p.createEl('a', {
-				text: 'full documentation',
-				href: 'https://github.com/hans/obsidian-citation-plugin/wiki/Templates'
-			});
-			p.appendText(' for more details on the template system.');
 		});
 	}
 
