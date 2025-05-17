@@ -1,5 +1,7 @@
 import { TextAreaComponent, ButtonComponent, setIcon } from "obsidian";
 import { TemplateEngine } from "../../utils/template-engine";
+import { analyzeYamlTemplateOutput } from "../../utils/yaml-utils";
+import { SampleDataGenerator } from "../../utils/sample-data-generator";
 
 /**
  * Template mode for the playground
@@ -27,7 +29,7 @@ export class TemplatePlaygroundComponent {
      * @param containerEl - Parent element to attach playground to
      */
     constructor(containerEl: HTMLElement) {
-        this.sampleData = this.getSampleData();
+        this.sampleData = SampleDataGenerator.getSampleData();
         this.initialize(containerEl);
     }
 
@@ -440,79 +442,24 @@ export class TemplatePlaygroundComponent {
      * system processes templates
      */
     private getModeSpecificSampleData(mode: TemplateMode): Record<string, any> {
-        // Start with the base sample data
-        const baseData = this.sampleData;
+        // Map the internal enum to the format expected by the sample data generator
+        let dataMode: 'normal' | 'citekey' | 'frontmatter' = 'normal';
         
-        // Clone the data to avoid modifying the original
-        // Make a deep copy for nested properties
-        const data = JSON.parse(JSON.stringify(baseData));
-        
-        if (mode === TemplateMode.Frontmatter) {
-            // In Frontmatter mode, we want full arrays for authors - don't use the formatted string
-            // which helps with array template formatting
-            
-            // Ensure the actual raw values are used, not the formatted versions
-            // This better emulates how the frontmatter builder processes arrays
-            
-            // 1. Fix authors variable to use full names instead of the formatted "J. Smith et al."
-            data.authors = baseData.authors_family.map((family: string, i: number) => {
-                const given = baseData.authors_given[i];
-                if (given) return `${given} ${family}`;
-                return family;
-            });
-            
-            // 2. Ensure other special variables are properly structured for templating
-            
-            // The authors_raw array with role property is what's used in the loop
-            if (!data.authors_raw) {
-                data.authors_raw = baseData.author.map((author: any) => {
-                    return {
-                        ...author,
-                        role: 'author'
-                    };
-                });
-            }
-            
-            // 3. Ensure editor, translator, and other contributor roles have both
-            // the singular formatted string and the arrays of component parts
-            const roles = ['editor', 'translator', 'contributor'];
-            roles.forEach(role => {
-                const roleKey = `${role}s`;
-                if (data[roleKey] && typeof data[roleKey] === 'string') {
-                    // If it's a formatted string like "E. Jones", convert to array of full names
-                    // for proper array iteration in templates
-                    const familyKey = `${role}s_family`;
-                    const givenKey = `${role}s_given`;
-                    
-                    if (data[familyKey] && Array.isArray(data[familyKey])) {
-                        data[roleKey] = data[familyKey].map((family: string, i: number) => {
-                            const given = data[givenKey]?.[i] || '';
-                            if (given) return `${given} ${family}`;
-                            return family;
-                        });
-                    }
-                }
-            });
-            
-            // 4. Ensure attachment variables are properly structured
-            // attachments should be an array of formatted links, while pdflink should be an array of paths
-            if (data.attachment && typeof data.attachment === 'string' && !Array.isArray(data.attachments)) {
-                data.attachments = [data.attachment];
-            }
-            
-            if (data.raw_pdflink && typeof data.raw_pdflink === 'string' && !Array.isArray(data.pdflink)) {
-                data.pdflink = [data.raw_pdflink];
-                data.raw_pdflinks = [data.raw_pdflink];
-            }
-            
-            // 5. Ensure links are properly formatted
-            if (data.linkPaths && Array.isArray(data.linkPaths) && !Array.isArray(data.links)) {
-                data.links = data.linkPaths.map((path: string) => `[[${path}]]`);
-                data.links_string = data.links.join(', ');
-            }
+        switch (mode) {
+            case TemplateMode.Frontmatter:
+                dataMode = 'frontmatter';
+                break;
+            case TemplateMode.Citekey:
+                dataMode = 'citekey';
+                break;
+            case TemplateMode.Normal:
+            default:
+                dataMode = 'normal';
+                break;
         }
         
-        return data;
+        // Use the shared utility to get mode-specific sample data
+        return SampleDataGenerator.getModeSpecificSampleData(dataMode, this.sampleData);
     }
     
     
@@ -555,55 +502,9 @@ export class TemplatePlaygroundComponent {
                 cls: 'yaml-preview-heading'
             });
             
-            // Create sample frontmatter with rendered value
-            let yamlRepresentation: string;
-            let yamlBehaviorExplanation: string;
-            
-            // Check for patterns that would be interpreted differently in YAML
-            // Apply same logic as frontmatter-builder-service.ts
-            
-            // Case 1: JSON Array format with square brackets that may have been processed by yamlArray option
-            if (rendered.trim().startsWith('[') && rendered.trim().endsWith(']')) {
-                try {
-                    // Attempt to parse as JSON to see if it's valid
-                    const parsedArray = JSON.parse(rendered.trim());
-                    
-                    // It's a valid JSON array, which would be proper in frontmatter
-                    yamlRepresentation = `---\nfield: ${JSON.stringify(parsedArray)}\n---`;
-                    yamlBehaviorExplanation = 'This template produces a valid JSON array that will be properly parsed as an array in frontmatter.';
-                } catch (e) {
-                    // It's not valid JSON, warn the user
-                    yamlRepresentation = `---\nfield: "${rendered.trim()}"\n---`;
-                    yamlBehaviorExplanation = 'This looks like an array but is not valid JSON. The template needs to include commas between items. It will be treated as a regular string.';
-                }
-            }
-            // Case 2: Multi-line strings with dashes
-            else if (rendered.trim().startsWith('-') && rendered.includes('\n')) {
-                const cleanedRendered = rendered.trim();
-                yamlRepresentation = '---\nfield:\n' + cleanedRendered.split('\n').map(line => `  ${line}`).join('\n') + '\n---';
-                yamlBehaviorExplanation = 'In BibLib, this format with dashes is NOT automatically parsed as an array. To create arrays, use the JSON syntax with square brackets.';
-            }
-            // Case 3: Comma-separated list
-            else if (rendered.includes(',') && 
-                !rendered.includes('\n') && 
-                !rendered.includes('{') && 
-                !rendered.includes('}')) {
-                
-                yamlRepresentation = `---\nfield: ${rendered}\n---`;
-                yamlBehaviorExplanation = 'Comma-separated values are treated as a single string in frontmatter, not as an array.';
-            }
-            // Case 4: Multi-line strings
-            else if (rendered.includes('\n')) {
-                yamlRepresentation = '---\nfield: |\n' + 
-                    rendered.split('\n').map(line => `  ${line}`).join('\n') +
-                    '\n---';
-                yamlBehaviorExplanation = 'Multi-line text is stored using the pipe syntax (|) in YAML, which preserves line breaks.';
-            }
-            // Case 5: Simple string
-            else {
-                yamlRepresentation = `---\nfield: ${rendered}\n---`;
-                yamlBehaviorExplanation = 'Simple strings are stored as-is in YAML frontmatter.';
-            }
+            // Use our shared utility to analyze the YAML output
+            const analysis = analyzeYamlTemplateOutput(template, rendered);
+            const { yamlRepresentation, yamlBehaviorExplanation } = analysis;
             
             // Update the preview with the actual rendered frontmatter
             const previewCode = previewEl.querySelector('code');
@@ -682,81 +583,4 @@ export class TemplatePlaygroundComponent {
         }
     }
     
-    /**
-     * Returns sample data for template preview
-     */
-    private getSampleData(): Record<string, any> {
-        // Based on TemplateVariableBuilderService.buildVariables()
-        return {
-            // Basic citation metadata
-            id: "smith_neural2024",
-            citekey: "smith_neural2024",
-            type: "article-journal",
-            title: "Neural Networks for Climate Prediction",
-            issued: {
-                "date-parts": [[2024, 3, 15]]
-            },
-            year: 2024,
-            month: 3,
-            day: 15,
-            URL: "https://example.org/10.1234/climate.2024.001",
-            DOI: "10.1234/climate.2024.001",
-            publisher: "Journal of Climate Science",
-            "container-title": "Journal of Climate Science",
-            abstract: "This study presents a novel neural network framework for improving climate model accuracy and computational efficiency.",
-            volume: 15,
-            issue: 2,
-            page: "123-145",
-            "collection-title": "",
-            "publisher-place": "Cambridge",
-            language: "en",
-            
-            // Author metadata
-            author: [
-                { family: "Smith", given: "John" },
-                { family: "Rodriguez", given: "Maria" },
-                { family: "Zhang", given: "Wei" }
-            ],
-
-            // Computed fields that match TemplateVariableBuilderService output
-            // Current date/time
-            currentDate: new Date().toISOString().split('T')[0],
-            currentTime: new Date().toISOString().split('T')[1].split('.')[0],
-            
-            // Formatted author lists
-            authors: "J. Smith et al.",
-            authors_raw: [
-                { family: "Smith", given: "John", role: "author" },
-                { family: "Rodriguez", given: "Maria", role: "author" },
-                { family: "Zhang", given: "Wei", role: "author" }
-            ],
-            authors_family: ["Smith", "Rodriguez", "Zhang"],
-            authors_given: ["John", "Maria", "Wei"],
-            
-            // Editor metadata
-            editors: ["Jones"],
-            editors_family: ["Jones"],
-            editors_given: ["Emily"],
-            
-            // Attachment data
-            pdflink: ["biblib/smith_neural2024/paper.pdf"],
-            raw_pdflink: "biblib/smith_neural2024/paper.pdf",
-            htmllink: "biblib/smith_neural2024/supplementary.html",
-            attachments: [
-                "[[biblib/smith_neural2024/paper.pdf|PDF]]",
-                "[[biblib/smith_neural2024/supplementary.html|HTML]]"
-            ],
-            attachment: "[[biblib/smith_neural2024/paper.pdf|PDF]]",
-            quoted_attachments: [
-                "\"[[biblib/smith_neural2024/paper.pdf|PDF]]\"",
-                "\"[[biblib/smith_neural2024/supplementary.html|HTML]]\""
-            ],
-            quoted_attachment: "\"[[biblib/smith_neural2024/paper.pdf|PDF]]\"",
-            
-            // Related notes
-            links: ["[[Research/Climate Science/Overview]]", "[[Projects/ML Applications]]"],
-            linkPaths: ["Research/Climate Science/Overview.md", "Projects/ML Applications.md"],
-            links_string: "[[Research/Climate Science/Overview]], [[Projects/ML Applications]]"
-        };
-    }
 }

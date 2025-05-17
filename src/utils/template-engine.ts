@@ -6,6 +6,7 @@
  * - Header templates
  * - Citekey generation
  */
+import { processYamlArray } from './yaml-utils';
 
 export interface TemplateOptions {
     /** Whether to sanitize output for citekeys (alphanumeric only) */
@@ -57,75 +58,10 @@ export class TemplateEngine {
         
         // Process special YAML array format if requested
         if (options.yamlArray && template.startsWith('[') && template.endsWith(']')) {
-            return this.processYamlArray(result);
+            return processYamlArray(result);
         }
         
         return result;
-    }
-    
-    /**
-     * Process templates for YAML arrays, ensuring they can be properly parsed as JSON
-     * Handles a special case where we want to create an array in YAML frontmatter
-     */
-    private static processYamlArray(result: string): string {
-        // Handle empty arrays specially
-        if (result.trim() === '[]' || result.trim() === '[ ]') {
-            return '[]'; // Return a valid empty array
-        }
-        
-        // If it's a simple array pattern like [{{...}}{{...}}], ensure it becomes valid JSON
-        // Step 1: Check if it's a potential array pattern
-        if (result.startsWith('[') && result.endsWith(']')) {
-            try {
-                // Try to parse as JSON - if it works, great
-                JSON.parse(result);
-                return result; // Already valid JSON, return as is
-            } catch (e) {
-                // Failed to parse as JSON, try to fix
-                
-                // Special case for empty arrays after template substitution
-                if (result.replace(/\s/g, '') === '[]') {
-                    return '[]';
-                }
-                
-                // Not valid JSON - attempt to fix common issues
-                // We'll extract the actual content from between the brackets
-                const content = result.substring(1, result.length - 1).trim();
-                
-                // If content is empty after trimming, return empty array
-                if (!content) {
-                    return '[]';
-                }
-                
-                // Split by commas, but not commas within double quotes
-                const splitPattern = /,(?=(?:[^"]*"[^"]*")*[^"]*$)/;
-                let items = content.split(splitPattern).map(item => item.trim());
-                
-                // Remove empty items
-                items = items.filter(item => item !== '');
-                
-                // If no items after filtering, return empty array
-                if (items.length === 0) {
-                    return '[]';
-                }
-                
-                // Make sure each item is properly quoted if it's not already
-                items = items.map(item => {
-                    if (item.startsWith('"') && item.endsWith('"')) {
-                        return item; // Already quoted
-                    }
-                    // For items that look like Obsidian links, quote them
-                    if (item.includes('[[') && item.includes(']]')) {
-                        return `"${item.replace(/"/g, '\\"')}"`;
-                    }
-                    return item; // Keep as is for now
-                });
-                
-                // Reconstruct as valid JSON array
-                return '[' + items.join(',') + ']';
-            }
-        }
-        return result; // Not an array pattern
     }
     
     /**

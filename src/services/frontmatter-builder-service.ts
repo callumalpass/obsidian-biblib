@@ -3,6 +3,7 @@ import { BibliographyPluginSettings } from '../types';
 import { Citation, Contributor, AdditionalField } from '../types/citation';
 import { TemplateEngine } from '../utils/template-engine';
 import { TemplateVariableBuilderService } from './template-variable-builder-service';
+import { processYamlArray } from '../utils/yaml-utils';
 
 /**
  * Input for building a YAML frontmatter
@@ -234,8 +235,11 @@ export class FrontmatterBuilderService {
       if ((renderedValue.startsWith('[') && renderedValue.endsWith(']')) || 
           (renderedValue.startsWith('{') && renderedValue.endsWith('}'))) {
         try {
+          // For array templates, process with our shared utility function first
+          const processedValue = isArrayTemplate ? processYamlArray(renderedValue) : renderedValue;
+          
           // Parse as JSON for arrays and objects
-          frontmatter[field.name] = JSON.parse(renderedValue);
+          frontmatter[field.name] = JSON.parse(processedValue);
         } catch (e) {
           // Special handling for array templates that should be empty arrays
           if (isArrayTemplate && (renderedValue.trim() === '[]' || renderedValue.trim() === '[ ]')) {
