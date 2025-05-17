@@ -166,20 +166,54 @@ export class TemplatePlaygroundComponent {
             
             // Text Formatting
             { label: '-- Text Formatting --', value: '' },
-            { label: 'Title with Capitalization', value: '{{title|capitalize}}' },
-            { label: 'Abstract Truncated', value: '{{abstract|truncate:150}}...' },
-            { label: 'First Letter Only', value: '{{authors_given.0|abbr1}}. {{authors_family.0}}' },
-            { label: 'Multiple Formats Combined', value: '{{title|uppercase|truncate:20}}' },
-            { label: 'Name Initials', value: '{{#authors_given}}{{.|abbr1}}.{{/authors_given}}' },
+            { label: 'Title with capitalization', value: '{{title|capitalize}}' },
+            { label: 'Text in all uppercase', value: '{{title|uppercase}}' },
+            { label: 'Text in all lowercase', value: '{{title|lowercase}}' },
+            { label: 'Title case styling', value: '{{title|title}}' },
+            { label: 'Sentence case', value: '{{title|sentence}}' },
+            { label: 'Abstract truncated', value: '{{abstract|truncate:150}}' },
+            { label: 'Abstract with ellipsis', value: '{{abstract|ellipsis:150}}' },
+            { label: 'Trim whitespace', value: '{{title|trim}}' },
+            { label: 'Add prefix', value: '{{title|prefix:PAPER: }}' },
+            { label: 'Add suffix', value: '{{title|suffix: [READ THIS]}}' },
+            { label: 'Replace text', value: '{{abstract|replace:neural:AI}}' },
+            { label: 'Slice string', value: '{{title|slice:0:10}}...' },
+            { label: 'Pad with zeros', value: '{{month|pad:2:0}}/{{day|pad:2:0}}/{{year}}' },
+            { label: 'First letter only', value: '{{authors_given.0|abbr1}}. {{authors_family.0}}' },
+            { label: 'Multiple formats combined', value: '{{title|uppercase|truncate:20}}' },
+            { label: 'Name initials', value: '{{#authors_given}}{{.|abbr1}}.{{/authors_given}}' },
+            
+            // Date Formatting
+            { label: '-- Date Formatting --', value: '' },
+            { label: 'ISO date format', value: '{{issued|date:iso}}' },
+            { label: 'Short date format', value: '{{issued|date:short}}' },
+            { label: 'Long date format', value: '{{issued|date:long}}' },
+            { label: 'Year only', value: '{{issued|date:year}}' },
+            { label: 'Month/day/year', value: '{{month|number|pad:2:0}}/{{day|number|pad:2:0}}/{{year}}' },
+            { label: 'Current date', value: '{{currentDate}}' },
+            
+            // Number Formatting
+            { label: '-- Number Formatting --', value: '' },
+            { label: 'Format as number', value: '{{volume|number}}' },
+            { label: 'Number with decimals', value: '{{volume|number:2}}' },
+            { label: 'Count items in array', value: 'Author count: {{authors_family|count}}' },
+            
+            // URL and Collection Handling
+            { label: '-- URL and Collections --', value: '' },
+            { label: 'URL encode', value: '{{title|urlencode}}' },
+            { label: 'Join array with delimiter', value: '{{authors_family|join: and }}' },
+            { label: 'Split string', value: '{{page|split:-}}' },
+            { label: 'Convert to JSON', value: '{{authors_raw|json}}' },
             
             // Citekeys
             { label: '-- Citekey Formats --', value: '' },
-            { label: 'Author + Year', value: '{{authors_family.0|lowercase}}{{year}}' },
-            { label: 'Author + Coauthor Initial + Year', value: '{{authors_family.0|lowercase}}{{#authors_family.1}}{{authors_family.1|abbr1}}{{/authors_family.1}}{{year}}' },
-            { label: 'Author + Year + Title Word', value: '{{authors_family.0|lowercase}}{{year}}{{title|titleword}}' },
-            { label: 'First 3 Letters + Year', value: '{{authors_family.0|abbr3}}{{year}}' },
-            { label: 'All Initials + Year', value: '{{#authors_family}}{{.|abbr1}}{{/authors_family}}{{year}}' },
-            { label: 'Author Underscore Year', value: '{{authors_family.0|lowercase}}_{{year}}' },
+            { label: 'Author + year', value: '{{authors_family.0|lowercase}}{{year}}' },
+            { label: 'Author + coauthor initial + year', value: '{{authors_family.0|lowercase}}{{#authors_family.1}}{{authors_family.1|abbr1}}{{/authors_family.1}}{{year}}' },
+            { label: 'Author + year + title word', value: '{{authors_family.0|lowercase}}{{year}}{{title|titleword}}' },
+            { label: 'First 3 letters + year', value: '{{authors_family.0|abbr3}}{{year}}' },
+            { label: 'All initials + year', value: '{{#authors_family}}{{.|abbr1}}{{/authors_family}}{{year}}' },
+            { label: 'Author underscore year', value: '{{authors_family.0|lowercase}}_{{year}}' },
+            { label: 'Random string + year', value: '{{year}}_{{rand|5}}' },
             
             // Frontmatter-specific examples
             { label: '-- Frontmatter & Arrays --', value: '' },
@@ -199,15 +233,24 @@ export class TemplatePlaygroundComponent {
             { label: 'Warning Callout', value: '> [!warning] Important\n> This citation has {{#DOI}}a DOI but {{/DOI}}{{^DOI}}no DOI, {{/DOI}}verify details before use.' },
             { label: 'Multi-section Callouts', value: '> [!note] Publication\n> {{container-title}} ({{year}})\n\n> [!example] Citation\n> {{authors_family.0}} et al. ({{year}}). {{title}}.\n\n> [!tip] Related Topics\n> - Topic 1\n> - Topic 2' },
             
+            // Advanced Formatter Usage
+            { label: '-- Advanced Formatter Examples --', value: '' },
+            { label: 'Citation with URL link', value: '{{authors}} ({{year}}). [{{title|sentence}}]({{#DOI}}https://doi.org/{{DOI}}{{/DOI}}{{^DOI}}{{URL}}{{/DOI}}) *{{container-title|sentence}}*, {{volume}}({{issue}}), {{page}}.' },
+            { label: 'Formatted date string', value: 'Published on {{day|pad:2:0}}/{{month|pad:2:0}}/{{year}} ({{issued|date:long}})' },
+            { label: 'Smart DOI link', value: '{{#DOI}}[Direct Link]({{DOI|prefix:https://doi.org/}} "Click to view publication"){{/DOI}}{{^DOI}}No DOI available{{/DOI}}' },
+            { label: 'Generate unique identifier', value: '{{citekey}}-{{rand|8}}' },
+            { label: 'Search-friendly tags', value: '#paper #{{year}} {{#keywords}}#{{.|lowercase|replace: :_}}{{/keywords}}' },
+            { label: 'Combined text operations', value: '{{abstract|truncate:100|replace:neural:AI|suffix:... [read more]}}' },
+            
             // Complete Templates
             { label: '-- Complete Templates --', value: '' },
-            { label: 'Academic Note', value: '# {{title}}\n\n**Authors**: {{authors}}\n**Year**: {{year}}\n**Journal**: {{container-title}}\n**DOI**: {{#DOI}}{{DOI}}{{/DOI}}{{^DOI}}N/A{{/DOI}}\n\n{{#abstract}}## Abstract\n\n{{abstract}}{{/abstract}}\n\n## Attachments\n{{#attachments}}- {{.}}\n{{/attachments}}{{^attachments}}- No attachments available{{/attachments}}\n\n## Key Points\n\n- \n\n## Notes\n\n' },
-            { label: 'Book Note', value: '# {{title}}\n\n**Author**: {{authors}}\n**Year**: {{year}}\n**Publisher**: {{publisher}}{{#publisher-place}}, {{publisher-place}}{{/publisher-place}}\n**ISBN**: {{ISBN}}\n\n{{#abstract}}## Summary\n\n{{abstract}}{{/abstract}}\n\n## Key Ideas\n\n- \n\n## Quotes\n\n> \n\n## Personal Reflections\n\n' },
-            { label: 'Compact Reference', value: '---\nauthors: {{authors}}\nyear: {{year}}\ntitle: {{title}}\nsource: {{container-title}}\ndoi: {{DOI}}\ntags: [literature, {{type}}]\n---\n\n# {{title}}\n\n*{{authors}} ({{year}})*\n\n{{#abstract}}{{abstract}}{{/abstract}}\n\n## Highlights\n\n- ' },
-            { label: 'Zettelkasten Note', value: '# {{citekey}}: {{title|capitalize}}\n\n## Summary\n\n{{#abstract}}{{abstract}}{{/abstract}}{{^abstract}}*No abstract available*{{/abstract}}\n\n## Concepts\n\n## Notes\n\n- \n\n## Connections and Links\n{{#DOI}}- DOI: [{{DOI}}](https://doi.org/{{DOI}})\n{{/DOI}}{{#URL}}- URL: [Link]({{URL}})\n{{/URL}}{{#attachments}}- {{.}}\n{{/attachments}}\n\n**Citation**: {{authors}} ({{year}}). {{title}}. {{container-title}}.' },
-            { label: 'Literature Review Entry', value: '# {{title}}\n\n> [!info] Metadata\n> - **Authors**: {{authors}}\n> - **Year**: {{year}}\n> - **Journal**: {{container-title}}\n> - **DOI**: {{#DOI}}[{{DOI}}](https://doi.org/{{DOI}}){{/DOI}}{{^DOI}}N/A{{/DOI}}\n\n> [!abstract] Abstract\n> {{abstract}}\n\n## Research Question\n\n## Methodology\n\n## Key Findings\n\n## Limitations\n\n## Application to My Research\n\n## References\n{{#attachments}}- {{.}}\n{{/attachments}}' },
-            { label: 'Cornell Notes Style', value: '# {{title}} ({{year}})\n\n> [!info] Metadata\n> **Authors**: {{authors}}\n> **Publication**: {{container-title}}\n\n## Cues/Questions\n- \n- \n- \n\n## Notes\n\n\n\n## Summary\n\n' },
-            { label: 'Scientific Paper Analysis', value: '# {{title}}\n\n**Citation**: {{authors}} ({{year}}). {{title}}. *{{container-title}}*. {{#DOI}}https://doi.org/{{DOI}}{{/DOI}}\n\n## IMRAD Structure\n\n### Introduction\n*What problem is being addressed?*\n\n\n### Methods\n*How did they study the problem?*\n\n\n### Results\n*What did they find?*\n\n\n### Discussion\n*What do the results mean?*\n\n\n## Evaluation\n\n### Strengths\n- \n\n### Limitations\n- \n\n### Future Research\n- \n\n## Personal Notes\n\n'}
+            { label: 'Academic note', value: '# {{title}}\n\n**Authors**: {{authors}}\n**Year**: {{year}}\n**Journal**: {{container-title}}\n**DOI**: {{#DOI}}{{DOI}}{{/DOI}}{{^DOI}}N/A{{/DOI}}\n\n{{#abstract}}## Abstract\n\n{{abstract}}{{/abstract}}\n\n## Attachments\n{{#attachments}}- {{.}}\n{{/attachments}}{{^attachments}}- No attachments available{{/attachments}}\n\n## Key Points\n\n- \n\n## Notes\n\n' },
+            { label: 'Book note', value: '# {{title}}\n\n**Author**: {{authors}}\n**Year**: {{year}}\n**Publisher**: {{publisher}}{{#publisher-place}}, {{publisher-place}}{{/publisher-place}}\n**ISBN**: {{ISBN}}\n\n{{#abstract}}## Summary\n\n{{abstract}}{{/abstract}}\n\n## Key Ideas\n\n- \n\n## Quotes\n\n> \n\n## Personal Reflections\n\n' },
+            { label: 'Compact reference', value: '---\nauthors: {{authors}}\nyear: {{year}}\ntitle: {{title}}\nsource: {{container-title}}\ndoi: {{DOI}}\ntags: [literature, {{type}}]\n---\n\n# {{title}}\n\n*{{authors}} ({{year}})*\n\n{{#abstract}}{{abstract|ellipsis:300}}{{/abstract}}\n\n## Highlights\n\n- ' },
+            { label: 'Zettelkasten note', value: '# {{citekey}}: {{title|capitalize}}\n\n## Summary\n\n{{#abstract}}{{abstract}}{{/abstract}}{{^abstract}}*No abstract available*{{/abstract}}\n\n## Concepts\n\n## Notes\n\n- \n\n## Connections and Links\n{{#DOI}}- DOI: [{{DOI}}](https://doi.org/{{DOI}})\n{{/DOI}}{{#URL}}- URL: [Link]({{URL}})\n{{/URL}}{{#attachments}}- {{.}}\n{{/attachments}}\n\n**Citation**: {{authors}} ({{year}}). {{title}}. {{container-title}}.' },
+            { label: 'Literature review entry', value: '# {{title}}\n\n> [!info] Metadata\n> - **Authors**: {{authors}}\n> - **Year**: {{year}}\n> - **Journal**: {{container-title}}\n> - **DOI**: {{#DOI}}[{{DOI}}](https://doi.org/{{DOI}}){{/DOI}}{{^DOI}}N/A{{/DOI}}\n\n> [!abstract] Abstract\n> {{abstract}}\n\n## Research Question\n\n## Methodology\n\n## Key Findings\n\n## Limitations\n\n## Application to My Research\n\n## References\n{{#attachments}}- {{.}}\n{{/attachments}}' },
+            { label: 'Cornell notes style', value: '# {{title}} ({{year}})\n\n> [!info] Metadata\n> **Authors**: {{authors}}\n> **Publication**: {{container-title}}\n\n## Cues/Questions\n- \n- \n- \n\n## Notes\n\n\n\n## Summary\n\n' },
+            { label: 'Scientific paper analysis', value: '# {{title}}\n\n**Citation**: {{authors}} ({{year}}). {{title}}. *{{container-title}}*. {{#DOI}}https://doi.org/{{DOI}}{{/DOI}}\n\n## IMRAD Structure\n\n### Introduction\n*What problem is being addressed?*\n\n\n### Methods\n*How did they study the problem?*\n\n\n### Results\n*What did they find?*\n\n\n### Discussion\n*What do the results mean?*\n\n\n## Evaluation\n\n### Strengths\n- \n\n### Limitations\n- \n\n### Future Research\n- \n\n## Personal Notes\n\n'}
         ];
         
         examples.forEach(example => {

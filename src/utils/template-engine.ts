@@ -212,31 +212,116 @@ export class TemplateEngine {
      * Format a value based on specified format
      */
     private static formatValue(value: any, format: string): string {
+        // Check for formatters with parameters (e.g. truncate:30)
+        const formatParts = format.split(':');
+        const formatName = formatParts[0];
+        const formatArgs = formatParts.slice(1);
+        
         // Check if this is a special "rand" formatter for random sequences
-        if (format.startsWith('rand')) {
+        if (formatName.startsWith('rand')) {
             // Extract the length from the format string (e.g., 'rand5' → length=5)
-            const lengthMatch = format.match(/^rand(\d+)$/);
+            const lengthMatch = formatName.match(/^rand(\d+)$/);
             if (lengthMatch) {
                 const length = parseInt(lengthMatch[1], 10);
                 return this.generateRandomString(length);
             }
         }
+
+        // Get the string representation of the value for text operations
+        const stringValue = String(value);
         
-        switch (format) {
+        // Process formatters with their potential arguments
+        switch (formatName) {
+            // Text case formatters
             case 'upper':
             case 'uppercase':
-                return String(value).toUpperCase();
+                return stringValue.toUpperCase();
                 
             case 'lower':
             case 'lowercase':
-                return String(value).toLowerCase();
+                return stringValue.toLowerCase();
                 
             case 'capitalize':
-                return String(value).charAt(0).toUpperCase() + String(value).slice(1).toLowerCase();
+                return stringValue.replace(/(?:^|\s)\S/g, match => match.toUpperCase());
                 
             case 'sentence':
-                return String(value).charAt(0).toUpperCase() + String(value).slice(1);
+                return stringValue.charAt(0).toUpperCase() + stringValue.slice(1);
                 
+            case 'title':
+                return stringValue.replace(/(?:^|\s)\S/g, match => match.toUpperCase());
+                
+            // Length-based formatters
+            case 'truncate':
+                const length = formatArgs.length > 0 ? parseInt(formatArgs[0], 10) : 30;
+                return stringValue.length > length 
+                    ? stringValue.substring(0, length) 
+                    : stringValue;
+                
+            case 'ellipsis':
+                const maxLength = formatArgs.length > 0 ? parseInt(formatArgs[0], 10) : 30;
+                return stringValue.length > maxLength 
+                    ? stringValue.substring(0, maxLength) + '...'
+                    : stringValue;
+                
+            // Content manipulation formatters
+            case 'replace':
+                if (formatArgs.length >= 2) {
+                    const find = formatArgs[0];
+                    const replace = formatArgs[1];
+                    return stringValue.replace(new RegExp(find, 'g'), replace);
+                }
+                return stringValue;
+                
+            case 'trim':
+                return stringValue.trim();
+                
+            case 'prefix':
+                return formatArgs.length > 0 
+                    ? formatArgs[0] + stringValue
+                    : stringValue;
+                
+            case 'suffix':
+                return formatArgs.length > 0 
+                    ? stringValue + formatArgs[0]
+                    : stringValue;
+                
+            case 'pad':
+                if (formatArgs.length >= 2) {
+                    const length = parseInt(formatArgs[0], 10);
+                    const padChar = formatArgs[1] || ' ';
+                    return stringValue.padStart(length, padChar);
+                }
+                return stringValue;
+                
+            case 'slice':
+                if (formatArgs.length >= 2) {
+                    const start = parseInt(formatArgs[0], 10);
+                    const end = parseInt(formatArgs[1], 10);
+                    return stringValue.slice(start, end);
+                } else if (formatArgs.length == 1) {
+                    const start = parseInt(formatArgs[0], 10);
+                    return stringValue.slice(start);
+                }
+                return stringValue;
+                
+            // Number formatters
+            case 'number':
+                try {
+                    const num = parseFloat(stringValue);
+                    if (isNaN(num)) return stringValue;
+                    
+                    const precision = formatArgs.length > 0 
+                        ? parseInt(formatArgs[0], 10)
+                        : undefined;
+                        
+                    return precision !== undefined
+                        ? num.toFixed(precision)
+                        : num.toString();
+                } catch (e) {
+                    return stringValue;
+                }
+                
+            // Data structure formatters
             case 'json':
                 try {
                     return JSON.stringify(value);
@@ -250,30 +335,97 @@ export class TemplateEngine {
                 }
                 return '0';
                 
+            // Date formatters  
             case 'date':
                 try {
                     const date = new Date(value);
+                    if (formatArgs.length > 0) {
+                        // Simple date format patterns
+                        const format = formatArgs[0];
+                        if (format === 'iso') return date.toISOString();
+                        if (format === 'short') return date.toLocaleDateString();
+                        if (format === 'long') return date.toLocaleDateString(undefined, {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                        if (format === 'year') return date.getFullYear().toString();
+                        if (format === 'month') return (date.getMonth() + 1).toString();
+                        if (format === 'day') return date.getDate().toString();
+                    }
                     return date.toLocaleDateString();
                 } catch (e) {
-                    return String(value);
+                    return stringValue;
                 }
                 
-            // Citekey specific formatters
+            // Abbreviation formatters
+            case 'abbr':
+            case 'abbr1':
+                return stringValue.charAt(0);
+                
+            case 'abbr2':
+                return stringValue.substring(0, 2);
+                
             case 'abbr3':
-                return String(value).substring(0, 3);
+                return stringValue.substring(0, 3);
                 
             case 'abbr4':
-                return String(value).substring(0, 4);
+                return stringValue.substring(0, 4);
                 
+            // Specialized formatters
             case 'titleword':
-                return this.extractTitleWord(String(value), 1);
+                return this.extractTitleWord(stringValue, 1);
                 
             case 'shorttitle':
-                return this.extractTitleWord(String(value), 3);
+                return this.extractTitleWord(stringValue, 3);
+                
+            // Split and join
+            case 'split':
+                if (formatArgs.length >= 1) {
+                    const delimiter = formatArgs[0] || ',';
+                    return stringValue.split(delimiter).join(',');
+                }
+                return stringValue;
+                
+            case 'join':
+                if (Array.isArray(value) && formatArgs.length >= 1) {
+                    const joinChar = formatArgs[0] || ',';
+                    return value.join(joinChar);
+                }
+                return Array.isArray(value) ? value.join(',') : stringValue;
+                
+            // URL formatting
+            case 'urlencode':
+                return encodeURIComponent(stringValue);
+                
+            case 'urldecode':
+                return decodeURIComponent(stringValue);
                 
             default:
+                // If format includes a colon but formatter isn't recognized
+                if (formatParts.length > 1) {
+                    return stringValue;
+                }
+                
+                // Check for a truncate formatter with a number (truncate30)
+                const truncateMatch = formatName.match(/^truncate(\d+)$/);
+                if (truncateMatch) {
+                    const truncateLength = parseInt(truncateMatch[1], 10);
+                    return stringValue.length > truncateLength
+                        ? stringValue.substring(0, truncateLength)
+                        : stringValue;
+                }
+                
+                // Check for an abbreviation formatter with a number (abbr5)
+                const abbrMatch = formatName.match(/^abbr(\d+)$/);
+                if (abbrMatch) {
+                    const abbrLength = parseInt(abbrMatch[1], 10);
+                    return stringValue.substring(0, abbrLength);
+                }
+                
                 // If format is not recognized, return value as is
-                return String(value);
+                return stringValue;
         }
     }
     
