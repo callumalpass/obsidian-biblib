@@ -694,11 +694,11 @@ export class BibliographySettingTab extends PluginSettingTab {
 
 		// Create setting with textarea
 		new Setting(headerTemplateContainer)
-			.setName('Header template')
-			.setDesc('Template for the first header in literature notes.')
+			.setName('Note content template')
+			.setDesc('Template for the entire note body content. Define the complete structure of your literature notes here including headings, sections, and references. Frontmatter is configured separately.')
 			.addTextArea(text => {
 				headerTemplateField = text
-					.setPlaceholder('# {{title}}')
+					.setPlaceholder('# {{title}}\n\n## Summary\n\n## Key points\n\n## References\n{{#pdflink}}[[{{pdflink}}]]{{/pdflink}}')
 					.setValue(this.plugin.settings.headerTemplate)
 					.onChange(async (value) => {
 						this.plugin.settings.headerTemplate = value;
@@ -722,14 +722,18 @@ export class BibliographySettingTab extends PluginSettingTab {
 		});
 
 		headerExamplesContainer.createEl('details', {}, details => {
-			details.createEl('summary', { text: 'Common header patterns' });
+			details.createEl('summary', { text: 'Note template examples' });
 			const list = details.createEl('ul');
 			
-			this.createListItem(list, '# {{title}}', 'Just the title');
-			this.createListItem(list, '# {{title}} ({{year}})', 'Title with year in parentheses');
-			this.createListItem(list, '# [[{{pdflink}}|{{title}}]]', 'Title linked to PDF');
-			this.createListItem(list, '# {{#pdflink}}[[{{pdflink}}]]{{/pdflink}}{{^pdflink}}{{title}}{{/pdflink}}', 'PDF link if available, otherwise title');
-			this.createListItem(list, '# {{citekey}}: {{title}}', 'Citekey and title');
+			// Basic examples
+			this.createListItem(list, '# {{title}}', 'Simple title only');
+			this.createListItem(list, '# {{title}} ({{year}})\n\n*{{authors}}*', 'Title with year and authors');
+			this.createListItem(list, '# {{title}}\n\n## Abstract\n\n{{abstract}}', 'Title with abstract section');
+			
+			// More complex examples
+			this.createListItem(list, '# {{title}}\n\n## Metadata\n- **Authors**: {{authors}}\n- **Year**: {{year}}\n- **Journal**: {{container-title}}\n\n## Notes\n\n## Key points\n\n## References\n{{#DOI}}DOI: {{DOI}}{{/DOI}}', 'Comprehensive note structure with metadata section');
+			this.createListItem(list, '# {{title}}\n\n## Summary\n\n## Quotes\n\n## Thoughts\n\n## References\n{{#pdflink}}📄 [[{{pdflink}}]]{{/pdflink}}\n{{#URL}}🔗 [Source]({{URL}}){{/URL}}', 'Research note with quotes and thoughts sections');
+			this.createListItem(list, '# {{citekey}}: {{title}}\n\n![[{{citekey}}.excalidraw]]\n\n## Notes\n\n## References\n{{#attachments}}{{.}}\n{{/attachments}}', 'Note with drawing canvas and attachment references');
 		});
 	}
 
