@@ -36,10 +36,10 @@ export class BibliographySettingTab extends PluginSettingTab {
 		});
 		
 		// Create title
-		exampleContainer.createEl('h4', {
-			text: title,
-			cls: 'template-example-title'
-		});
+		new Setting(exampleContainer)
+			.setName(title)
+			.setHeading()
+			.setClass('template-example-title');
 		
 		// Create description
 		if (description) {
@@ -642,10 +642,9 @@ export class BibliographySettingTab extends PluginSettingTab {
 			attr: { style: 'margin-top: 16px; margin-bottom: 24px;' }
 		});
 		
-		templateGuideContainer.createEl('h3', { 
-			text: 'Template System Guide',
-			cls: 'setting-item-name' 
-		});
+		new Setting(templateGuideContainer)
+			.setName('Template System Guide')
+			.setHeading();
 		
 		// Make the guide a collapsible details element (collapsed by default)
 		const detailsEl = templateGuideContainer.createEl('details');
@@ -654,7 +653,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 
 		guideDiv.createEl('p', { text: 'The template system supports variable replacement, formatting options, conditionals, and loops.' });
 
-		guideDiv.createEl('strong', { text: 'Basic variables', cls:'setting-guide-subtitle' });
+		new Setting(guideDiv).setName('Basic variables').setHeading();
 		const basicVarsUl = guideDiv.createEl('ul');
 		this.createListItem(basicVarsUl, '{{title}}', 'Title of the work');
 		this.createListItem(basicVarsUl, '{{citekey}}', 'Citation key');
@@ -668,7 +667,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 		this.createListItem(basicVarsUl, '{{DOI}}, {{URL}}', 'Digital identifiers');
 		this.createListItem(basicVarsUl, '{{currentDate}}', "Today's date (YYYY-MM-DD)");
 
-		guideDiv.createEl('strong', { text: 'Special array variables', cls:'setting-guide-subtitle' });
+		new Setting(guideDiv).setName('Special array variables').setHeading();
 		guideDiv.createEl('p', { text: 'These variables are arrays that can be used with loop syntax:' });
 		const arrayVarsUl = guideDiv.createEl('ul');
 		this.createListItem(arrayVarsUl, '{{authors}}, {{authors_family}}, {{authors_given}}', 'Author information arrays');
@@ -676,7 +675,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 		this.createListItem(arrayVarsUl, '{{pdflink}}, {{attachments}}', 'Attachment path and link arrays');
 		this.createListItem(arrayVarsUl, '{{links}}', 'Array of links to related notes');
 		
-		guideDiv.createEl('strong', { text: 'Creating arrays in frontmatter', cls:'setting-guide-subtitle' });
+		new Setting(guideDiv).setName('Creating arrays in frontmatter').setHeading();
 		guideDiv.createEl('p', { text: 'To create YAML arrays in frontmatter templates, use JSON array syntax with square brackets:' });
 		const arrayExamplesUl = guideDiv.createEl('ul');
 		this.createListItem(arrayExamplesUl, '[{{#authors}}"[[Author/{{.}}]]",{{/authors}}]', 'Creates array like ["[[Author/John Smith]]", "[[Author/Maria Jones]]"]');
@@ -697,7 +696,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 			text: 'Use the Template Playground in YAML mode to test your array templates.'
 		});
 		
-		guideDiv.createEl('strong', { text: 'Formatting options', cls:'setting-guide-subtitle' });
+		new Setting(guideDiv).setName('Formatting options').setHeading();
 		guideDiv.createEl('p', { text: 'You can format any variable using pipe syntax:' });
 		const formatOptsUl = guideDiv.createEl('ul');
 		this.createListItem(formatOptsUl, '{{variable|uppercase}}', 'ALL UPPERCASE');
@@ -705,14 +704,14 @@ export class BibliographySettingTab extends PluginSettingTab {
 		this.createListItem(formatOptsUl, '{{variable|capitalize}}', 'Capitalize First Letter Of Each Word');
 		this.createListItem(formatOptsUl, '{{title|titleword}}', 'Extract first significant word from title');
 
-		guideDiv.createEl('strong', { text: 'Conditionals and loops', cls:'setting-guide-subtitle' });
+		new Setting(guideDiv).setName('Conditionals and loops').setHeading();
 		const conditionalsUl = guideDiv.createEl('ul');
 		this.createListItem(conditionalsUl, '{{#variable}}Content shown if variable exists{{/variable}}', 'Positive conditional');
 		this.createListItem(conditionalsUl, '{{^variable}}Content shown if variable is empty{{/variable}}', 'Negative conditional');
 		this.createListItem(conditionalsUl, '{{#array}}{{.}} is the current item{{/array}}', 'Loop through arrays ({{.}} refers to current item)');
 		this.createListItem(conditionalsUl, '{{#array}}{{^@first}}, {{/@first}}{{.}}{{/array}}', 'Using array position metadata (@first, @last, etc.)');
 		
-		guideDiv.createEl('strong', { text: 'Loop position metadata', cls:'setting-guide-subtitle' });
+		new Setting(guideDiv).setName('Loop position metadata').setHeading();
 		guideDiv.createEl('p', { text: 'When iterating through arrays, you can use these special variables to control formatting:' });
 		const loopMetadataUl = guideDiv.createEl('ul');
 		this.createListItem(loopMetadataUl, '{{@index}}', 'Zero-based index (0, 1, 2, ...)');
@@ -731,7 +730,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 		});
 		guideDiv.createEl('p', { text: 'Would produce: "1. John Smith, 2. Maria Rodriguez, 3. Wei Zhang."' });
 
-		guideDiv.createEl('strong', { text: 'Accessing nested data', cls:'setting-guide-subtitle' });
+		new Setting(guideDiv).setName('Accessing nested data').setHeading();
 		guideDiv.createEl('p', { text: 'Use dot notation to access nested properties and array items:' });
 		const nestedUl = guideDiv.createEl('ul');
 		this.createListItem(nestedUl, '{{authors_family.0}}', 'First author family name');
@@ -750,10 +749,9 @@ export class BibliographySettingTab extends PluginSettingTab {
 		// Now add the template playground AFTER the guide
 		const playgroundContainer = containerEl.createDiv({ cls: 'template-playground-wrapper' });
 		
-		playgroundContainer.createEl('h3', { 
-			text: 'Template Playground',
-			cls: 'setting-item-name'
-		});
+		new Setting(playgroundContainer)
+			.setName('Template Playground')
+			.setHeading();
 		
 		playgroundContainer.createEl('p', {
 			text: 'Try out different templates and see the results instantly with sample data.',
@@ -766,10 +764,9 @@ export class BibliographySettingTab extends PluginSettingTab {
 		// Note Templates Section
 		const templateSettingsContainer = containerEl.createDiv({ cls: 'template-settings-container' });
 		
-		templateSettingsContainer.createEl('h3', { 
-			text: 'Note templates',
-			cls: 'setting-item-name' 
-		});
+		new Setting(templateSettingsContainer)
+			.setName('Note templates')
+			.setHeading();
 		
 		templateSettingsContainer.createEl('p', {
 			text: 'Configure templates used to generate literature notes.',
@@ -930,7 +927,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 
 		// Instructions for using the Zotero Connector
 		const instructionsEl = containerEl.createEl('div', { cls: 'setting-item-description' });
-		instructionsEl.createEl('strong', { text: 'How to use the Zotero Connector', cls:'setting-guide-subtitle' });
+		new Setting(instructionsEl).setName('How to use the Zotero Connector').setHeading();
 		const ol = instructionsEl.createEl('ol');
 		ol.createEl('li', {}, (li) => {
 			li.appendText('Make sure Zotero desktop application is ');
