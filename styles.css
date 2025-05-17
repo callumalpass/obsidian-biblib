@@ -115,14 +115,34 @@
 
 /* Textarea in custom frontmatter (refined style) */
 .custom-frontmatter-field textarea {
-  min-height: 60px; /* Overrides default */
+  width: 100%;
+  min-height: 100px;
   font-family: var(--font-monospace);
-  font-size: var(--font-ui-smaller);
+  font-size: 14px;
+  padding: 10px;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  box-sizing: border-box;
+  resize: vertical;
+  margin-top: 8px;
 }
 
-/* Specific class for textareas in custom frontmatter fields */
-.custom-frontmatter-textarea {
-  min-height: 60px;
+/* Template field container */
+.custom-frontmatter-template-container {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* Field name input styling */
+.custom-frontmatter-field-name {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 14px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background-color: var(--background-primary);
+  margin-top: 8px;
 }
 
 /* Interaction States */
@@ -140,9 +160,12 @@
   box-shadow: 0 0 0 2px var(--background-modifier-border); /* Consider var(--interactive-accent-border) if exists */
 }
 
-.custom-frontmatter-field textarea:focus { /* Specific focus for custom field textarea */
-   background-color: var(--background-primary); /* Already default, but explicit */
-   box-shadow: 0 0 0 2px var(--interactive-accent-hover); /* Use hover color for shadow */
+.custom-frontmatter-field textarea:focus,
+.custom-frontmatter-field-name:focus { 
+   background-color: var(--background-primary);
+   border-color: var(--interactive-accent);
+   box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+   outline: none;
 }
 
 .bibliography-modal input:disabled,
@@ -568,11 +591,49 @@
 
 .custom-frontmatter-field {
   border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-l); /* Use var */
-  padding: var(--size-4-3); /* Use var */
-  margin-bottom: var(--size-4-4); /* Use var */
+  border-radius: var(--radius-l);
+  padding: var(--size-4-4);
+  margin-bottom: var(--size-4-4);
   background-color: var(--background-secondary);
-  /* Removed transition/shadow from original for cleaner look (per second section) */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Header for custom frontmatter field */
+.custom-frontmatter-field-header {
+  margin-bottom: 16px; 
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Labels for field name and template */
+.custom-frontmatter-field label.setting-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-accent);
+}
+
+/* Template textarea */
+.custom-frontmatter-field-textarea {
+  width: 100%;
+  min-height: 120px;
+  font-family: var(--font-monospace);
+  font-size: 14px;
+  padding: 10px;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  box-sizing: border-box;
+  resize: vertical;
+  margin-top: 8px;
+}
+
+.custom-frontmatter-field-textarea:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+  outline: none;
 }
 
 /* Custom field warning message */
@@ -1226,51 +1287,86 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
   color: var(--text-normal);
 }
 
+/* Note content template textarea styling */
+.template-textarea-container textarea {
+  width: 100%;
+  height: 200px;
+  font-family: var(--font-monospace);
+  font-size: 14px;
+  padding: 10px;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.template-textarea-container textarea:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+  outline: none;
+}
+
 /* ==========================================================================
    Template Playground Styles 
    ========================================================================== */
 
 .template-playground-container {
-  margin: 16px 0;
-  padding: 16px;
+  margin: 20px 0;
+  padding: 20px;
   background-color: var(--background-secondary);
-  border-radius: 4px;
+  border-radius: 8px;
   border: 1px solid var(--background-modifier-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .template-playground-description {
   margin-top: 0;
-  margin-bottom: 12px;
-  color: var(--text-muted);
-  font-size: 0.9em;
+  margin-bottom: 16px;
+  color: var(--text-normal);
+  font-size: 0.95em;
+  line-height: 1.5;
 }
 
 .template-playground-input-container {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .template-playground-label {
   display: block;
   font-weight: 600;
-  margin-bottom: 4px;
-  color: var(--text-normal);
+  margin-bottom: 8px;
+  color: var(--text-accent);
+  font-size: 14px;
 }
 
 .template-playground-textarea {
   width: 100%;
-  min-height: 120px !important;
+  min-height: 180px !important;
   font-family: var(--font-monospace);
+  font-size: 14px;
+  padding: 10px;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  box-sizing: border-box;
   resize: vertical;
+}
+
+.template-playground-textarea:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+  outline: none;
 }
 
 .template-playground-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 16px;
-  padding: 8px;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 12px;
   background-color: var(--background-primary);
-  border-radius: 4px;
+  border-radius: 6px;
   border: 1px solid var(--background-modifier-border);
   justify-content: space-between;
   align-items: center;
@@ -1288,101 +1384,142 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
 .template-playground-examples {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .template-playground-toggle-label,
 .template-playground-examples-label {
-  font-weight: 500;
-  font-size: 0.85em;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-accent);
 }
 
 /* Dropdown styling */
 .dropdown-section-header {
   font-weight: bold;
   color: var(--text-accent);
+  background-color: var(--background-secondary-alt);
+}
+
+.template-playground-mode-select,
+.template-playground-examples-dropdown {
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 14px;
+  color: var(--text-normal);
+  cursor: pointer;
+  min-width: 180px;
+}
+
+.template-playground-mode-select:focus,
+.template-playground-examples-dropdown:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+  outline: none;
+}
+
+.template-playground-mode-select:hover,
+.template-playground-examples-dropdown:hover {
+  border-color: var(--interactive-accent);
 }
 
 .template-playground-preview-container {
   background-color: var(--background-primary);
-  border-radius: 4px;
-  padding: 12px;
+  border-radius: 8px;
+  padding: 16px;
   border: 1px solid var(--background-modifier-border);
-  margin-top: 16px;
+  margin-top: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .template-playground-preview-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .template-playground-preview-label {
   font-weight: 600;
   color: var(--text-accent);
-  font-size: 1.05em;
+  font-size: 16px;
 }
 
 .template-playground-sample-data {
-  font-size: 0.8em;
+  font-size: 0.9em;
   color: var(--text-muted);
-  background-color: var(--background-secondary-alt);
-  padding: 6px 10px;
-  border-radius: 4px;
+  background-color: var(--background-secondary);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--background-modifier-border);
 }
 
 .template-playground-sample-data details summary {
   cursor: pointer;
-  padding: 4px;
-  font-weight: 500;
+  padding: 6px 2px;
+  font-weight: 600;
   user-select: none;
+  color: var(--text-accent);
+  transition: color 0.2s ease;
+}
+
+.template-playground-sample-data details summary:hover {
+  color: var(--text-accent-hover);
 }
 
 /* Data container styling */
 .template-playground-data-container {
-  margin-top: 8px;
-  padding: 8px;
+  margin-top: 12px;
+  padding: 12px;
   background-color: var(--background-secondary-alt);
-  border-radius: 4px;
+  border-radius: 6px;
+  border: 1px solid var(--background-modifier-border);
 }
 
 /* Tabs styling */
 .template-playground-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
-  margin-bottom: 8px;
+  gap: 4px;
+  margin-bottom: 12px;
 }
 
 .tab-button {
-  padding: 4px 8px;
-  border-radius: 4px;
-  background-color: var(--background-secondary);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--background-modifier-border);
+  background-color: var(--background-primary);
   cursor: pointer;
-  font-size: 0.8em;
+  font-size: 0.9em;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .tab-button:hover {
   background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
 }
 
 .tab-button.active {
   background-color: var(--interactive-accent);
   color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
 }
 
 .template-playground-tab-content {
-  font-size: 0.85em;
+  font-size: 0.9em;
 }
 
 .tab-pane {
   display: none;
   background-color: var(--background-primary);
-  border-radius: 4px;
-  padding: 8px;
+  border-radius: 6px;
+  padding: 12px;
+  border: 1px solid var(--background-modifier-border);
 }
 
 .tab-pane.active {
@@ -1394,70 +1531,109 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
   white-space: pre-wrap;
   word-break: break-word;
   font-family: var(--font-monospace);
-  padding: 6px;
+  padding: 10px;
   border-radius: 4px;
-  line-height: 1.4;
+  line-height: 1.5;
+  background-color: var(--background-secondary-alt);
+  font-size: 14px;
 }
 
 .template-playground-preview-content {
-  padding: 12px;
+  padding: 16px;
   background-color: var(--background-secondary);
-  border-radius: 4px;
-  min-height: 80px;
+  border-radius: 6px;
+  min-height: 100px;
   border: 1px solid var(--background-modifier-border);
-  margin-top: 8px;
+  margin-top: 12px;
   overflow: auto;
-  max-height: 300px;
+  max-height: 400px;
+  font-size: 14px;
 }
 
 .template-playground-rendered {
   white-space: pre-wrap;
   font-family: var(--font-text);
-  line-height: 1.4;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.template-playground-rendered.citekey-rendering {
+  font-family: var(--font-monospace);
+  padding: 10px;
+  background-color: var(--background-primary);
+  border-radius: 4px;
+  border: 1px dashed var(--interactive-accent);
+  color: var(--text-accent);
 }
 
 .template-playground-error {
   color: var(--text-error);
-  padding: 6px 10px;
-  border-left: 3px solid var(--text-error);
+  padding: 12px 16px;
+  border-left: 4px solid var(--text-error);
   background-color: rgba(var(--color-red-rgb), 0.05);
-  border-radius: 0 4px 4px 0;
-  margin: 8px 0;
+  border-radius: 0 6px 6px 0;
+  margin: 12px 0;
+  font-weight: 500;
 }
 
 /* Button styling for playground */
 .template-playground-toggle button {
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 0.8em;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
   cursor: pointer;
   border: 1px solid var(--background-modifier-border);
   background-color: var(--background-primary);
+  transition: all 0.2s ease;
 }
 
 .template-playground-toggle button:hover {
   background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
 }
 
 .template-playground-toggle button.is-active {
   background-color: var(--interactive-accent);
   color: var(--text-on-accent);
-}
-
-/* Mode select dropdown styling */
-.template-playground-mode-select {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.85em;
-  background-color: var(--background-primary);
-  color: var(--text-normal);
-  border: 1px solid var(--background-modifier-border);
-  cursor: pointer;
-}
-
-.template-playground-mode-select:focus {
-  outline: none;
   border-color: var(--interactive-accent);
+}
+
+/* YAML preview specific styling */
+.yaml-preview-container {
+  padding: 16px;
+  background-color: var(--background-primary);
+  border-radius: 6px;
+  border: 1px solid var(--background-modifier-border);
+  margin-top: 16px;
+  max-height: 400px;
+  overflow: auto;
+}
+
+.yaml-preview-heading {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-accent);
+}
+
+.yaml-preview-explanation {
+  font-size: 14px;
+  line-height: 1.6;
+  margin-top: 8px;
+  color: var(--text-normal);
+}
+
+.yaml-preview-biblib-note {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.yaml-preview-biblib-note h4 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: var(--text-accent);
 }
 
 /* Frontmatter Preview Styling */
