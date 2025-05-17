@@ -198,7 +198,33 @@ export class BibliographyBuilder {
             return;
         }
         try {
-            const dataArray = literatureNotes.map(note => note.frontmatter);
+            // Process the frontmatter data to handle empty date arrays
+            const dataArray = literatureNotes.map(note => {
+                const processedData = { ...note.frontmatter };
+                
+                // Fix for empty date-parts arrays in date fields
+                const dateFields = ['issued', 'accessed', 'container', 'event-date', 'original-date', 'submitted'];
+                for (const field of dateFields) {
+                    if (processedData[field] && 
+                        typeof processedData[field] === 'object' && 
+                        processedData[field]['date-parts'] && 
+                        Array.isArray(processedData[field]['date-parts'])) {
+                        
+                        // Check if date-parts contains empty arrays or has no valid date information
+                        const dateParts = processedData[field]['date-parts'];
+                        
+                        if (dateParts.length === 0 || 
+                            (dateParts.length === 1 && 
+                             (dateParts[0].length === 0 || !dateParts[0].some((part: any) => part !== null && part !== undefined)))) {
+                            // Remove this date field entirely to avoid the error
+                            delete processedData[field];
+                        }
+                    }
+                }
+                
+                return processedData;
+            });
+            
             const bib = new Cite(dataArray).get({ style: 'bibtex', type: 'string' });
             // Use the configured BibTeX file path directly
             let bibtexPath = this.settings.bibtexFilePath;
