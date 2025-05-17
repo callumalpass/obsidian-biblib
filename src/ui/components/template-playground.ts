@@ -133,12 +133,16 @@ export class TemplatePlaygroundComponent {
             { label: 'Basic header', value: '# {{title}}' },
             { label: 'Header with year', value: '# {{title}} ({{year}})' },
             { label: 'Header with linked PDF', value: '# {{#pdflink}}[[{{pdflink}}|{{title}}]]{{/pdflink}}{{^pdflink}}{{title}}{{/pdflink}}' },
+            { label: 'Header with emoji prefix', value: '# 📝 {{title}} ({{year}})' },
+            { label: 'Header with type icon', value: '# {{#type}}{{#==="article-journal"}}📰{{/==="article-journal"}}{{#==="book"}}📚{{/==="book"}}{{#==="chapter"}}📑{{/==="chapter"}}{{#==="webpage"}}🌐{{/==="webpage"}}{{/type}} {{title}}' },
             
             // Citations
             { label: '-- Citations --', value: '' },
             { label: 'APA-style citation', value: '{{authors}} ({{year}}). {{title}}. {{#container-title}}{{container-title}}, {{/container-title}}{{#volume}}{{volume}}{{#number}}({{number}}){{/number}}{{/volume}}{{#page}}, {{page}}{{/page}}.' },
             { label: 'MLA-style citation', value: '{{authors_family.0}}, {{authors_given.0}}. "{{title}}." {{container-title}}, vol. {{volume}}, no. {{issue}}, {{year}}, pp. {{page}}.' },
             { label: 'Chicago-style citation', value: '{{authors_family.0}}, {{authors_given.0}}. "{{title}}." {{container-title}} {{volume}}, no. {{issue}} ({{year}}): {{page}}. {{#DOI}}https://doi.org/{{DOI}}{{/DOI}}' },
+            { label: 'Harvard-style citation', value: '{{authors_family.0}}, {{authors_given.0|abbr1}}. {{#authors_family.1}}and {{authors_family.1}}, {{authors_given.1|abbr1}}. {{/authors_family.1}}({{year}}) "{{title}}", {{container-title}}, {{volume}}({{issue}}), pp. {{page}}.' },
+            { label: 'Vancouver-style citation', value: '{{authors_family.0}} {{authors_given.0|abbr1}}{{#authors_family.1}}, {{authors_family.1}} {{authors_given.1|abbr1}}{{/authors_family.1}}{{#authors_family.2}}, et al.{{/authors_family.2}} {{title}}. {{container-title}}. {{year}};{{volume}}({{issue}}):{{page}}.' },
             
             // Links and References
             { label: '-- Links and References --', value: '' },
@@ -146,18 +150,34 @@ export class TemplatePlaygroundComponent {
             { label: 'HTML Link', value: '[[{{htmllink}}|{{title}} (HTML)]]' },
             { label: 'All Attachments', value: '{{#attachments}}- {{.}}\n{{/attachments}}' },
             { label: 'Author List as Wiki Links', value: '{{#authors_family}}[[Author/{{.}}]]{{^@last}}, {{/@last}}{{/authors_family}}' },
+            { label: 'Numbered References List', value: '{{#attachments}}{{@number}}. {{.}}\n{{/attachments}}' },
+            { label: 'DOI with Hover Link', value: '[{{DOI}}](https://doi.org/{{DOI}} "Click to open DOI")' },
+            { label: 'Publisher Info Link', value: '{{#publisher}}🏢 [{{publisher}}](https://www.google.com/search?q={{publisher|lowercase}}){{/publisher}}' },
             
             // Conditionals
             { label: '-- Conditionals --', value: '' },
             { label: 'Conditional Abstract', value: '{{#abstract}}**Abstract**: {{abstract}}{{/abstract}}{{^abstract}}No abstract available{{/abstract}}' },
             { label: 'Conditional Volume/Issue', value: '{{#volume}}Volume {{volume}}{{#issue}}, Issue {{issue}}{{/issue}}{{/volume}}{{^volume}}No volume information{{/volume}}' },
             { label: 'Smart Attachment Link', value: '{{#pdflink}}📄 [[{{pdflink}}|PDF]]{{/pdflink}} {{#htmllink}}🌐 [[{{htmllink}}|HTML]]{{/htmllink}}{{^pdflink}}{{^htmllink}}No attachments available{{/htmllink}}{{/pdflink}}' },
+            { label: 'Publication Type Badge', value: '{{#type}}{{#==="article-journal"}}*Article*{{/==="article-journal"}}{{#==="book"}}*Book*{{/==="book"}}{{#==="chapter"}}*Book Chapter*{{/==="chapter"}}{{#==="webpage"}}*Web Page*{{/==="webpage"}}{{/type}}' },
+            { label: 'Different by Author Count', value: '{{#authors_family.2}}Multiple authors ({{authors}}){{/authors_family.2}}{{^authors_family.2}}{{#authors_family.1}}Two authors ({{authors}}){{/authors_family.1}}{{^authors_family.1}}Single author ({{authors}}){{/authors_family.1}}{{/authors_family.2}}' },
+            
+            // Text Formatting
+            { label: '-- Text Formatting --', value: '' },
+            { label: 'Title with Capitalization', value: '{{title|capitalize}}' },
+            { label: 'Abstract Truncated', value: '{{abstract|truncate:150}}...' },
+            { label: 'First Letter Only', value: '{{authors_given.0|abbr1}}. {{authors_family.0}}' },
+            { label: 'Multiple Formats Combined', value: '{{title|uppercase|truncate:20}}' },
+            { label: 'Name Initials', value: '{{#authors_given}}{{.|abbr1}}.{{/authors_given}}' },
             
             // Citekeys
             { label: '-- Citekey Formats --', value: '' },
             { label: 'Author + Year', value: '{{authors_family.0|lowercase}}{{year}}' },
             { label: 'Author + Coauthor Initial + Year', value: '{{authors_family.0|lowercase}}{{#authors_family.1}}{{authors_family.1|abbr1}}{{/authors_family.1}}{{year}}' },
             { label: 'Author + Year + Title Word', value: '{{authors_family.0|lowercase}}{{year}}{{title|titleword}}' },
+            { label: 'First 3 Letters + Year', value: '{{authors_family.0|abbr3}}{{year}}' },
+            { label: 'All Initials + Year', value: '{{#authors_family}}{{.|abbr1}}{{/authors_family}}{{year}}' },
+            { label: 'Author Underscore Year', value: '{{authors_family.0|lowercase}}_{{year}}' },
             
             // Frontmatter-specific examples
             { label: '-- Frontmatter & Arrays --', value: '' },
@@ -166,12 +186,26 @@ export class TemplatePlaygroundComponent {
             { label: 'Fixed values array', value: '["{{title}}", "{{authors}} ({{year}})", "{{citekey}}"]' },
             { label: 'Common mistake: No commas', value: '[{{#authors_family}}"{{.}}"{{/authors_family}}]' },
             { label: 'Not an array: Dashed list', value: '{{#authors}}- [[Author/{{.}}]]\n{{/authors}}' },
+            { label: 'Keywords as tags', value: '[{{#keywords}}{{^@first}},{{/@first}}"#{{.|lowercase}}"{{/keywords}}]' },
+            { label: 'Related concepts', value: '[{{#title|titleword}}"[[Concept/{{.|capitalize}}]]",{{/title|titleword}}{{#keywords}}{{^@first}},{{/@first}}"[[Concept/{{.|capitalize}}]]"{{/keywords}}]' },
+            
+            // Callouts and Admonitions
+            { label: '-- Callouts and Admonitions --', value: '' },
+            { label: 'Abstract Callout', value: '> [!abstract] Abstract\n> {{abstract}}' },
+            { label: 'Quote Callout', value: '> [!quote] Quote\n> {{title}} ({{authors}}, {{year}})' },
+            { label: 'Info Callout', value: '> [!info] Metadata\n> **Authors**: {{authors}}\n> **Year**: {{year}}\n> **Source**: {{container-title}}' },
+            { label: 'Warning Callout', value: '> [!warning] Important\n> This citation has {{#DOI}}a DOI but {{/DOI}}{{^DOI}}no DOI, {{/DOI}}verify details before use.' },
+            { label: 'Multi-section Callouts', value: '> [!note] Publication\n> {{container-title}} ({{year}})\n\n> [!example] Citation\n> {{authors_family.0}} et al. ({{year}}). {{title}}.\n\n> [!tip] Related Topics\n> - Topic 1\n> - Topic 2' },
             
             // Complete Templates
             { label: '-- Complete Templates --', value: '' },
             { label: 'Academic Note', value: '# {{title}}\n\n**Authors**: {{authors}}\n**Year**: {{year}}\n**Journal**: {{container-title}}\n**DOI**: {{#DOI}}{{DOI}}{{/DOI}}{{^DOI}}N/A{{/DOI}}\n\n{{#abstract}}## Abstract\n\n{{abstract}}{{/abstract}}\n\n## Attachments\n{{#attachments}}- {{.}}\n{{/attachments}}{{^attachments}}- No attachments available{{/attachments}}\n\n## Key Points\n\n- \n\n## Notes\n\n' },
             { label: 'Book Note', value: '# {{title}}\n\n**Author**: {{authors}}\n**Year**: {{year}}\n**Publisher**: {{publisher}}{{#publisher-place}}, {{publisher-place}}{{/publisher-place}}\n**ISBN**: {{ISBN}}\n\n{{#abstract}}## Summary\n\n{{abstract}}{{/abstract}}\n\n## Key Ideas\n\n- \n\n## Quotes\n\n> \n\n## Personal Reflections\n\n' },
-            { label: 'Compact Reference', value: '---\nauthors: {{authors}}\nyear: {{year}}\ntitle: {{title}}\nsource: {{container-title}}\ndoi: {{DOI}}\ntags: [literature, {{type}}]\n---\n\n# {{title}}\n\n*{{authors}} ({{year}})*\n\n{{#abstract}}{{abstract}}{{/abstract}}\n\n## Highlights\n\n- ' }
+            { label: 'Compact Reference', value: '---\nauthors: {{authors}}\nyear: {{year}}\ntitle: {{title}}\nsource: {{container-title}}\ndoi: {{DOI}}\ntags: [literature, {{type}}]\n---\n\n# {{title}}\n\n*{{authors}} ({{year}})*\n\n{{#abstract}}{{abstract}}{{/abstract}}\n\n## Highlights\n\n- ' },
+            { label: 'Zettelkasten Note', value: '# {{citekey}}: {{title|capitalize}}\n\n## Summary\n\n{{#abstract}}{{abstract}}{{/abstract}}{{^abstract}}*No abstract available*{{/abstract}}\n\n## Concepts\n\n## Notes\n\n- \n\n## Connections and Links\n{{#DOI}}- DOI: [{{DOI}}](https://doi.org/{{DOI}})\n{{/DOI}}{{#URL}}- URL: [Link]({{URL}})\n{{/URL}}{{#attachments}}- {{.}}\n{{/attachments}}\n\n**Citation**: {{authors}} ({{year}}). {{title}}. {{container-title}}.' },
+            { label: 'Literature Review Entry', value: '# {{title}}\n\n> [!info] Metadata\n> - **Authors**: {{authors}}\n> - **Year**: {{year}}\n> - **Journal**: {{container-title}}\n> - **DOI**: {{#DOI}}[{{DOI}}](https://doi.org/{{DOI}}){{/DOI}}{{^DOI}}N/A{{/DOI}}\n\n> [!abstract] Abstract\n> {{abstract}}\n\n## Research Question\n\n## Methodology\n\n## Key Findings\n\n## Limitations\n\n## Application to My Research\n\n## References\n{{#attachments}}- {{.}}\n{{/attachments}}' },
+            { label: 'Cornell Notes Style', value: '# {{title}} ({{year}})\n\n> [!info] Metadata\n> **Authors**: {{authors}}\n> **Publication**: {{container-title}}\n\n## Cues/Questions\n- \n- \n- \n\n## Notes\n\n\n\n## Summary\n\n' },
+            { label: 'Scientific Paper Analysis', value: '# {{title}}\n\n**Citation**: {{authors}} ({{year}}). {{title}}. *{{container-title}}*. {{#DOI}}https://doi.org/{{DOI}}{{/DOI}}\n\n## IMRAD Structure\n\n### Introduction\n*What problem is being addressed?*\n\n\n### Methods\n*How did they study the problem?*\n\n\n### Results\n*What did they find?*\n\n\n### Discussion\n*What do the results mean?*\n\n\n## Evaluation\n\n### Strengths\n- \n\n### Limitations\n- \n\n### Future Research\n- \n\n## Personal Notes\n\n'}
         ];
         
         examples.forEach(example => {

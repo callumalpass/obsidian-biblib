@@ -868,6 +868,38 @@ export class BibliographySettingTab extends PluginSettingTab {
 				"# {{citekey}}: {{title}}\n\n![[{{citekey}}.excalidraw]]\n\n## Notes\n\n## References\n{{#attachments}}{{.}}\n{{/attachments}}",
 				"Includes an excalidraw canvas for visual note-taking, named after the citekey."
 			);
+			
+			// Zettelkasten style
+			this.createTemplateExample(
+				examplesContainer,
+				"Zettelkasten-style note",
+				"# {{citekey}} - {{title|capitalize}}\n\n## Summary\n\n## Concepts\n\n## Fleeting Notes\n\n## Permanent Notes\n- \n\n## Links\n- Related: \n{{#keywords}}{{#.}}- #{{.}}\n{{/.}}{{/keywords}}\n\n## References\n{{#DOI}}DOI: {{DOI}}{{/DOI}}\n{{#URL}}URL: {{URL}}{{/URL}}\n{{#authors}}{{#@first}}{{.}} {{year}}{{/@first}}{{/authors}}",
+				"Structured for Zettelkasten method with sections for fleeting and permanent notes, and concept linking."
+			);
+			
+			// Literature review style
+			this.createTemplateExample(
+				examplesContainer,
+				"Literature review format",
+				"# {{title}}\n\n**Authors:** {{authors}}\n**Year:** {{year}}\n**Journal:** {{container-title}}\n**Keywords:** {{#keywords}}{{.}}{{^@last}}, {{/@last}}{{/keywords}}\n\n## Problem Statement\n\n## Methodology\n\n## Key Findings\n\n## Limitations\n\n## Future Research\n\n## Relevance to My Research\n\n## Citation\n```\n{{authors_family.0}} et al. ({{year}}). {{title}}. {{container-title}}. {{#DOI}}https://doi.org/{{DOI}}{{/DOI}}\n```",
+				"Comprehensive template for academic literature reviews with structured analysis sections."
+			);
+			
+			// Cornell notes style
+			this.createTemplateExample(
+				examplesContainer,
+				"Cornell notes method",
+				"# {{title}} ({{year}})\n\n> [!cue] Cues\n> - Key concepts\n> - Main questions\n> - Terminology\n\n## Notes\n\n\n\n> [!summary] Summary\n> \n\n## Metadata\n- **Authors**: {{authors}}\n- **Publication**: {{container-title}}\n- **Link**: {{#DOI}}https://doi.org/{{DOI}}{{/DOI}}{{^DOI}}{{#URL}}{{URL}}{{/URL}}{{/DOI}}",
+				"Based on the Cornell note-taking method with cues on the left and summary at the bottom."
+			);
+			
+			// Callout-based template
+			this.createTemplateExample(
+				examplesContainer,
+				"Callout-based template",
+				"# {{title}}\n\n> [!info] Metadata\n> - **Authors**: {{authors}}\n> - **Year**: {{year}}\n> - **Journal**: {{container-title}}\n> - **DOI**: {{#DOI}}{{DOI}}{{/DOI}}\n\n> [!abstract] Abstract\n> {{abstract}}\n\n> [!quote] Key Quotes\n> \n\n> [!note] Notes\n> \n\n> [!example] Examples\n> \n\n> [!success] Strengths\n> \n\n> [!failure] Weaknesses\n> \n\n> [!question] Questions\n> \n\n> [!tip] Applications\n> ",
+				"Uses Obsidian callouts to organize different aspects of literature notes with visual distinction."
+			);
 		});
 	}
 
