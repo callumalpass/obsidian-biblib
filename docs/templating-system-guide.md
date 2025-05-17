@@ -29,9 +29,10 @@ BibLib uses templates in four major areas:
     *   Example: `{{title}}` inserts the reference's title.
     *   Nested Data: Use dot notation for nested CSL fields: `{{issued.date-parts.0.0}}` (for year).
 *   **Formatters (Pipes):** Modify the output of a variable.
-    *   Syntax: `{{variableName|formatterName}}`
+    *   Syntax: `{{variableName|formatterName}}` or `{{variableName|formatter:parameter}}`
     *   Example: `{{title|lowercase}}` inserts the title in all lowercase.
-    *   Multiple formatters can be chained (though rarely needed): `{{author|lowercase|abbr3}}`.
+    *   Example with parameter: `{{abstract|truncate:150}}` truncates the abstract to 150 characters.
+    *   Multiple formatters can be chained: `{{title|lowercase|truncate:20}}`.
 *   **Conditionals:** Show content based on whether a variable exists (is "truthy" - not null, undefined, false, empty string, or empty array).
     *   **Positive:** `{{#variableName}}Content to show if variableName exists{{/variableName}}`
     *   **Negative:** `{{^variableName}}Content to show if variableName is missing or falsy{{/variableName}}`
@@ -85,20 +86,69 @@ When rendering a template, BibLib makes the following data available:
 
 Apply these after a variable name to modify its output:
 
-*   `|upper` or `|uppercase`: Convert text to ALL UPPERCASE.
-*   `|lower` or `|lowercase`: Convert text to all lowercase.
-*   `|capitalize`: Convert text to Title Case (Capitalize First Letter Of Each Word).
-*   `|sentence`: Capitalize only the first letter of the string.
-*   `|json`: Format the variable's value as a JSON string (useful for complex objects/arrays in templates).
-*   `|count`: If the variable is an array, output the number of items. Outputs `0` otherwise.
-*   `|date`: Attempt to format the value as a localized date string (e.g., "10/15/2023"). Works best with standard date strings or numbers.
-*   `|randN` or `|rand(N)`: Generate a random alphanumeric string of length N (e.g., `|rand5` gives 5 random characters). Default length is 5 if N is omitted. *Note: This formatter doesn't actually use the variable it's attached to; you can use it like `{{anyVariable|rand5}}` or even just `{{rand|5}}` in some contexts.*
+### Text Case Formatters
 
-**Citekey-Specific Formatters:** These are particularly useful within the "Citekey template" setting:
+* `|upper` or `|uppercase`: Convert text to ALL UPPERCASE.
+* `|lower` or `|lowercase`: Convert text to all lowercase.
+* `|capitalize`: Convert text to Title Case (Capitalize First Letter Of Each Word).
+* `|sentence`: Capitalize only the first letter of the string.
+* `|title`: Properly Format Text As A Title (same as capitalize).
 
-*   `|abbrN`: Abbreviate the string to its first N characters (e.g., `{{author|abbr3}}` -> "Smi").
-*   `|titleword`: Extract the first "significant" word from a title (removes common stop words like "a", "the", "in", lowercases, and sanitizes).
-*   `|shorttitle`: Extract the first 3 "significant" words from a title (concatenated, lowercased, sanitized).
+### Length-Based Formatters
+
+* `|truncate:N`: Trim text to N characters (e.g., `|truncate:30`).
+* `|truncateN`: Legacy format for truncation (e.g., `|truncate30`).
+* `|ellipsis:N`: Trim text to N characters and add "..." (e.g., `|ellipsis:30`).
+
+### Text Manipulation Formatters
+
+* `|trim`: Remove whitespace from the beginning and end.
+* `|prefix:TEXT`: Add TEXT before the value (e.g., `|prefix:NOTE: `).
+* `|suffix:TEXT`: Add TEXT after the value (e.g., `|suffix: (citation needed)`).
+* `|replace:find:replace`: Replace all occurrences of "find" with "replace".
+* `|pad:length:char`: Pad the string to the specified length (e.g., `|pad:5:0`).
+* `|slice:start:end`: Extract part of a string (e.g., `|slice:0:5`).
+
+### Number Formatters
+
+* `|number`: Format value as a number.
+* `|number:N`: Format as a number with N decimal places (e.g., `|number:2`).
+
+### Date Formatters
+
+* `|date`: Format as a locale date string.
+* `|date:iso`: Format in ISO date format.
+* `|date:short`: Format in short locale date format.
+* `|date:long`: Format in long locale date format (with day of week).
+* `|date:year`: Extract just the year.
+* `|date:month`: Extract just the month.
+* `|date:day`: Extract just the day.
+
+### Abbreviation Formatters
+
+* `|abbr` or `|abbr1`: First letter only.
+* `|abbr2`: First 2 letters.
+* `|abbr3`: First 3 letters.
+* `|abbr4`: First 4 letters.
+* `|abbrN`: First N letters (replace N with a number).
+
+### Collection Formatters
+
+* `|count`: Count items in an array.
+* `|join:delimiter`: Join array elements with the specified delimiter.
+* `|split:delimiter`: Split a string by the specified delimiter.
+* `|json`: Format as a JSON string.
+
+### URL Formatters
+
+* `|urlencode`: URL encode a string.
+* `|urldecode`: Decode a URL-encoded string.
+
+### Special Formatters
+
+* `|titleword`: Extract first significant word from a title.
+* `|shorttitle`: Extract first 3 significant words from a title.
+* `|rand:N` or `|randN`: Generate a random string of length N (e.g., `|rand5` gives 5 random characters).
 
 ## Conditionals (`{{#var}}`, `{{^var}}`)
 
@@ -185,3 +235,22 @@ Keywords: {{#keyword}}{{.}}{{^@last}}, {{/@last}}{{/keyword}}
 *   `References/{{citekey}}{{#DOI}}_doi{{/DOI}}` -> `References/smith2023_doi.md` (Only adds "_doi" if a DOI exists)
 *   `Library/{{#container-title}}{{container-title|lowercase}}/{{/container-title}}{{citekey}}` -> `Library/journal of physics/smith2023.md` (Organizes by journal)
 *   `Papers/{{year}}/{{authors_family.0|lowercase}}/{{citekey}}` -> `Papers/2023/smith/smith2023.md` (Creates year/author hierarchies)
+
+**Advanced Formatter Examples:**
+
+*   **Date Formatting:**
+    *   `Published: {{issued|date:long}}` -> "Published: Wednesday, March 15, 2024"
+    *   `Data collected: {{month|pad:2:0}}/{{day|pad:2:0}}/{{year}}` -> "Data collected: 03/15/2024"
+
+*   **Text Manipulation:**
+    *   `{{abstract|ellipsis:100}}` -> "This study presents a novel neural network framework for improving climate model accuracy and computational..."
+    *   `{{abstract|replace:neural:machine learning}}` -> Replaces all occurrences of "neural" with "machine learning"
+    *   `{{#DOI}}{{DOI|prefix:https://doi.org/}}{{/DOI}}` -> "https://doi.org/10.1234/jtp.2023.5678"
+
+*   **URL Processing:**
+    *   `https://example.com/search?q={{title|urlencode}}` -> "https://example.com/search?q=Neural%20Networks%20for%20Climate%20Prediction"
+    *   `{{URL|urldecode}}` -> Decodes a URL-encoded URL
+
+*   **Collection Operations:**
+    *   `{{authors_family|join: and }}` -> "Smith and Rodriguez and Zhang"
+    *   `{{page|split:-}}` -> Splits "123-145" into ["123", "145"]
