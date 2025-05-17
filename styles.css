@@ -427,7 +427,7 @@
   margin-left: var(--size-6-2); /* Was 25px, use var */
 }
 
-/* Template Example Inline Code */
+/* Template Example Styling */
 .template-example,
 .setting-item-description code.template-example { /* Combine selectors */
   display: inline-block;
@@ -439,6 +439,120 @@
   font-size: 0.9em;
   border: 1px dashed var(--text-accent);
   color: var(--text-accent); /* Ensure color consistency */
+}
+
+/* Template examples container */
+.note-template-examples-container {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Template example item */
+.template-example-item {
+  background-color: var(--background-primary);
+  border-radius: 8px;
+  border: 1px solid var(--background-modifier-border);
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease;
+}
+
+.template-example-item:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* Template example title */
+.template-example-title {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-accent);
+}
+
+/* Template example description */
+.template-example-description {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 4px 0 12px 0;
+  line-height: 1.5;
+}
+
+/* Template example code block */
+.template-example-code {
+  background-color: var(--background-secondary);
+  border-radius: 6px;
+  margin: 0 0 12px 0;
+  padding: 0;
+  overflow: auto;
+  max-height: 300px;
+}
+
+.template-example-code code {
+  display: block;
+  padding: 12px;
+  font-family: var(--font-monospace);
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: normal;
+  color: var(--text-normal);
+  overflow-wrap: break-word;
+}
+
+/* Template example actions */
+.template-example-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Template example copy button */
+.template-example-copy-button {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.template-example-copy-button:hover {
+  background-color: var(--interactive-accent-hover);
+}
+
+/* Template examples details element */
+.template-examples-details {
+  background-color: var(--background-secondary-alt);
+  border-radius: 6px;
+  padding: 0;
+  margin-top: 16px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.template-examples-details summary {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-normal);
+  user-select: none;
+  display: block;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.template-examples-details summary:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-accent);
+}
+
+.template-examples-details[open] summary {
+  border-bottom: 1px solid var(--background-modifier-border);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 /* Text and toggle inputs */

@@ -28,6 +28,57 @@ export class BibliographySettingTab extends PluginSettingTab {
 			}
 		});
 	}
+	
+	// Helper function to create template examples with code blocks
+	private createTemplateExample(parent: HTMLElement, title: string, template: string, description: string) {
+		const exampleContainer = parent.createDiv({
+			cls: 'template-example-item'
+		});
+		
+		// Create title
+		exampleContainer.createEl('h4', {
+			text: title,
+			cls: 'template-example-title'
+		});
+		
+		// Create description
+		if (description) {
+			exampleContainer.createEl('p', {
+				text: description,
+				cls: 'template-example-description'
+			});
+		}
+		
+		// Create code block
+		const codeBlock = exampleContainer.createEl('pre', {
+			cls: 'template-example-code'
+		});
+		
+		codeBlock.createEl('code', {
+			text: template
+		});
+		
+		// Add copy button
+		const copyButtonContainer = exampleContainer.createDiv({
+			cls: 'template-example-actions'
+		});
+		
+		const copyButton = copyButtonContainer.createEl('button', {
+			cls: 'template-example-copy-button',
+			text: 'Use this template'
+		});
+		
+		// Add click handler to copy template to the main textarea
+		copyButton.addEventListener('click', () => {
+			// Find the template field (assuming it's the headerTemplateField)
+			if (this.plugin.settings) {
+				this.plugin.settings.headerTemplate = template;
+				this.plugin.saveSettings();
+				this.display(); // Refresh to show updated template
+				new Notice('Template applied successfully!', 2000);
+			}
+		});
+	}
 
 	// Helper function to create table rows
 	private createTableRow(parent: HTMLElement, cells: string[], isHeader: boolean = false) {
@@ -765,19 +816,61 @@ export class BibliographySettingTab extends PluginSettingTab {
 			cls: 'template-examples-container'
 		});
 
-		headerExamplesContainer.createEl('details', {}, details => {
+		headerExamplesContainer.createEl('details', {
+			cls: 'template-examples-details'
+		}, details => {
 			details.createEl('summary', { text: 'Note template examples' });
-			const list = details.createEl('ul');
+			const examplesContainer = details.createDiv({
+				cls: 'note-template-examples-container'
+			});
 			
-			// Basic examples
-			this.createListItem(list, '# {{title}}', 'Simple title only');
-			this.createListItem(list, '# {{title}} ({{year}})\n\n*{{authors}}*', 'Title with year and authors');
-			this.createListItem(list, '# {{title}}\n\n## Abstract\n\n{{abstract}}', 'Title with abstract section');
+			// Basic title only
+			this.createTemplateExample(
+				examplesContainer,
+				"Simple title only",
+				"# {{title}}",
+				"A minimal example that just displays the work's title as a top-level heading."
+			);
 			
-			// More complex examples
-			this.createListItem(list, '# {{title}}\n\n## Metadata\n- **Authors**: {{authors}}\n- **Year**: {{year}}\n- **Journal**: {{container-title}}\n\n## Notes\n\n## Key points\n\n## References\n{{#DOI}}DOI: {{DOI}}{{/DOI}}', 'Comprehensive note structure with metadata section');
-			this.createListItem(list, '# {{title}}\n\n## Summary\n\n## Quotes\n\n## Thoughts\n\n## References\n{{#pdflink}}📄 [[{{pdflink}}]]{{/pdflink}}\n{{#URL}}🔗 [Source]({{URL}}){{/URL}}', 'Research note with quotes and thoughts sections');
-			this.createListItem(list, '# {{citekey}}: {{title}}\n\n![[{{citekey}}.excalidraw]]\n\n## Notes\n\n## References\n{{#attachments}}{{.}}\n{{/attachments}}', 'Note with drawing canvas and attachment references');
+			// Title with year and authors
+			this.createTemplateExample(
+				examplesContainer,
+				"Title with year and authors",
+				"# {{title}} ({{year}})\n\n*{{authors}}*",
+				"Adds the publication year in parentheses and the authors in italics below the title."
+			);
+			
+			// Title with abstract
+			this.createTemplateExample(
+				examplesContainer,
+				"Title with abstract section",
+				"# {{title}}\n\n## Abstract\n\n{{abstract}}",
+				"Includes the abstract in its own section for academic references."
+			);
+			
+			// Comprehensive note
+			this.createTemplateExample(
+				examplesContainer,
+				"Comprehensive note structure",
+				"# {{title}}\n\n## Metadata\n- **Authors**: {{authors}}\n- **Year**: {{year}}\n- **Journal**: {{container-title}}\n\n## Notes\n\n## Key points\n\n## References\n{{#DOI}}DOI: {{DOI}}{{/DOI}}",
+				"A full note structure with metadata section and placeholder headings for notes and key points."
+			);
+			
+			// Research note
+			this.createTemplateExample(
+				examplesContainer,
+				"Research note with quotes section",
+				"# {{title}}\n\n## Summary\n\n## Quotes\n\n## Thoughts\n\n## References\n{{#pdflink}}📄 [[{{pdflink}}]]{{/pdflink}}\n{{#URL}}🔗 [Source]({{URL}}){{/URL}}",
+				"Organized for research with sections for quotes, personal thoughts, and reference links."
+			);
+			
+			// Note with drawing
+			this.createTemplateExample(
+				examplesContainer,
+				"Note with drawing canvas",
+				"# {{citekey}}: {{title}}\n\n![[{{citekey}}.excalidraw]]\n\n## Notes\n\n## References\n{{#attachments}}{{.}}\n{{/attachments}}",
+				"Includes an Excalidraw canvas for visual note-taking, named after the citekey."
+			);
 		});
 	}
 
