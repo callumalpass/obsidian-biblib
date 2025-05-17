@@ -77,7 +77,7 @@ export class TemplatePlaygroundComponent {
         });
         
         modesContainer.createEl('span', {
-            text: 'Template Mode:',
+            text: 'Template mode:',
             cls: 'template-playground-toggle-label'
         });
         

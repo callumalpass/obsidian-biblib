@@ -430,7 +430,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 		// Create container for field name
 		const nameContainer = fieldEl.createDiv();
 		nameContainer.createEl('label', { 
-			text: 'Field Name',
+			text: 'Field name',
 			cls: 'setting-item-name' 
 		});
 		
@@ -767,7 +767,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 		const templateSettingsContainer = containerEl.createDiv({ cls: 'template-settings-container' });
 		
 		templateSettingsContainer.createEl('h3', { 
-			text: 'Note Templates',
+			text: 'Note templates',
 			cls: 'setting-item-name' 
 		});
 		
@@ -869,7 +869,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 				examplesContainer,
 				"Note with drawing canvas",
 				"# {{citekey}}: {{title}}\n\n![[{{citekey}}.excalidraw]]\n\n## Notes\n\n## References\n{{#attachments}}{{.}}\n{{/attachments}}",
-				"Includes an Excalidraw canvas for visual note-taking, named after the citekey."
+				"Includes an excalidraw canvas for visual note-taking, named after the citekey."
 			);
 		});
 	}
@@ -940,9 +940,9 @@ export class BibliographySettingTab extends PluginSettingTab {
 		ol.createEl('li', { text: 'Enable the Zotero Connector option above' });
 		ol.createEl('li', { text: 'Use the Zotero Connector browser extension as normal' });
 		ol.createEl('li', { text: 'When saving an item, the Zotero Connector will send the data to Obsidian instead of Zotero' });
-		ol.createEl('li', { text: 'The Bibliography Modal will open with the data pre-filled' });
+		ol.createEl('li', { text: 'The bibliography modal will open with the data pre-filled' });
 		ol.createEl('li', { text: 'Any PDF attachments will be downloaded and automatically linked' });
-		instructionsEl.createEl('p', { text: 'Note: You can toggle this feature with the "Toggle Zotero Connector Server" command.' });
+		instructionsEl.createEl('p', { text: 'Note: You can toggle this feature with the "Toggle Zotero Connector server" command.' });
 	}
 
 	/**
