@@ -332,7 +332,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 		// Create an element for field warnings
 		const warningEl = fieldEl.createDiv({ 
 			cls: 'custom-field-warning',
-			attr: { style: 'display: none; margin-top: 8px; color: var(--text-error); font-size: 0.85em;' }
+			attr: { style: 'display: none;' }
 		});
 		
 		// Function to update the warning message
@@ -345,7 +345,11 @@ export class BibliographySettingTab extends PluginSettingTab {
 			}
 		};
 		
-		const fieldSettingEl = new Setting(fieldEl)
+		// Create header with toggle and delete button
+		const headerEl = fieldEl.createDiv({ cls: 'custom-frontmatter-field-header' });
+		
+		// Add toggle to header
+		const toggleSetting = new Setting(headerEl)
 			.addToggle(toggle => toggle
 				.setValue(field.enabled)
 				.onChange(async (value) => {
@@ -353,71 +357,104 @@ export class BibliographySettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				})
 			)
-			.addText(text => {
-				text
-					.setPlaceholder('Field name')
-					.setValue(field.name)
-					.onChange(async (value) => {
-						// Check if the field name is a CSL standard field
-						if (validateCslField(value)) {
-							// Add error class to input
-							nameInputEl.addClass('is-invalid');
-							nameInputEl.parentElement?.addClass('has-error');
-							
-							// Show warning notice
-							new Notice(`"${value}" is a CSL standard field. Using it may produce invalid bibliography files.`, 5000);
-							
-							// Update warning message
-							updateWarningMessage(value);
-						} else {
-							// Remove error class if exists
-							nameInputEl.removeClass('is-invalid');
-							nameInputEl.parentElement?.removeClass('has-error');
-							
-							// Hide warning message
-							warningEl.style.display = 'none';
-						}
-						
-						field.name = value;
-						await this.plugin.saveSettings();
-					});
-					
-				// Store reference to the input element
-				nameInputEl = text.inputEl;
-				
-				// Apply initial validation if needed
-				if (field.name && validateCslField(field.name)) {
-					nameInputEl.addClass('is-invalid');
-					nameInputEl.parentElement?.addClass('has-error');
-					
-					// Show warning message for initial state
-					updateWarningMessage(field.name);
-				}
-				
-				return text;
+			.setName('Enabled')
+			.setDesc('Include this field in new literature notes');
+		
+		// Add delete button to header
+		toggleSetting.addExtraButton(button => button
+			.setIcon('trash')
+			.setTooltip('Delete field')
+			.onClick(async () => {
+				// Remove the field from settings
+				this.plugin.settings.customFrontmatterFields =
+					this.plugin.settings.customFrontmatterFields.filter(f =>
+						f !== field
+					);
+				await this.plugin.saveSettings();
+				// Remove the UI element
+				fieldEl.remove();
 			})
-			.addTextArea(text => text
-				.setPlaceholder('Template (e.g. {{authors|capitalize}})')
-				.setValue(field.template)
-				.onChange(async (value) => {
-					field.template = value;
-					await this.plugin.saveSettings();
-				})
-			)
-			.addExtraButton(button => button
-				.setIcon('trash')
-				.setTooltip('Delete field')
-				.onClick(async () => {
-					// Remove the field from settings
-					this.plugin.settings.customFrontmatterFields =
-						this.plugin.settings.customFrontmatterFields.filter(f =>
-							f !== field
-						);
-					await this.plugin.saveSettings();
-					// Remove the UI element
-					fieldEl.remove();
-				})
-			);
+		);
+		
+		// Create container for field name
+		const nameContainer = fieldEl.createDiv();
+		nameContainer.createEl('label', { 
+			text: 'Field Name',
+			cls: 'setting-item-name' 
+		});
+		
+		// Create input for field name
+		nameInputEl = nameContainer.createEl('input', {
+			type: 'text',
+			cls: 'custom-frontmatter-field-name',
+			attr: {
+				placeholder: 'Field name (e.g., tags, keywords)',
+				value: field.name
+			}
+		});
+		
+		nameInputEl.addEventListener('change', async (event) => {
+			const value = (event.target as HTMLInputElement).value;
+			
+			// Check if the field name is a CSL standard field
+			if (validateCslField(value)) {
+				// Add error class to input
+				nameInputEl.addClass('is-invalid');
+				
+				// Show warning notice
+				new Notice(`"${value}" is a CSL standard field. Using it may produce invalid bibliography files.`, 5000);
+				
+				// Update warning message
+				updateWarningMessage(value);
+			} else {
+				// Remove error class if exists
+				nameInputEl.removeClass('is-invalid');
+				
+				// Hide warning message
+				warningEl.style.display = 'none';
+			}
+			
+			field.name = value;
+			await this.plugin.saveSettings();
+		});
+		
+		// Apply initial validation if needed
+		if (field.name && validateCslField(field.name)) {
+			nameInputEl.addClass('is-invalid');
+			
+			// Show warning message for initial state
+			updateWarningMessage(field.name);
+		}
+		
+		// Add warning container after the name input
+		nameContainer.appendChild(warningEl);
+		
+		// Create container for template
+		const templateContainer = fieldEl.createDiv({ cls: 'custom-frontmatter-template-container' });
+		templateContainer.createEl('label', { 
+			text: 'Template',
+			cls: 'setting-item-name' 
+		});
+		templateContainer.createEl('div', { 
+			text: 'Define the template for this frontmatter field.',
+			cls: 'setting-item-description' 
+		});
+		
+		// Create textarea for template
+		const templateTextarea = templateContainer.createEl('textarea', {
+			cls: 'custom-frontmatter-field-textarea',
+			attr: {
+				placeholder: 'Template (e.g., {{authors|capitalize}})',
+				rows: 6
+			}
+		});
+		templateTextarea.value = field.template;
+		
+		templateTextarea.addEventListener('change', async (event) => {
+			const value = (event.target as HTMLTextAreaElement).value;
+			field.template = value;
+			await this.plugin.saveSettings();
+		});
 
 		return fieldEl;
 	}
@@ -692,29 +729,36 @@ export class BibliographySettingTab extends PluginSettingTab {
 		const headerTemplateContainer = templateSettingsContainer.createDiv();
 		let headerTemplateField: TextAreaComponent | null = null;
 
-		// Create setting with textarea
-		new Setting(headerTemplateContainer)
+		// Create setting with title and description
+		const templateSetting = new Setting(headerTemplateContainer)
 			.setName('Note content template')
-			.setDesc('Template for the entire note body content. Define the complete structure of your literature notes here including headings, sections, and references. Frontmatter is configured separately.')
-			.addTextArea(text => {
-				headerTemplateField = text
-					.setPlaceholder('# {{title}}\n\n## Summary\n\n## Key points\n\n## References\n{{#pdflink}}[[{{pdflink}}]]{{/pdflink}}')
-					.setValue(this.plugin.settings.headerTemplate)
-					.onChange(async (value) => {
-						this.plugin.settings.headerTemplate = value;
-						await this.plugin.saveSettings();
-					});
-				return headerTemplateField;
+			.setDesc('Template for the entire note body content. Define the complete structure of your literature notes here including headings, sections, and references. Frontmatter is configured separately.');
+			
+		// Add reset button to the setting
+		templateSetting.addExtraButton(button => button
+			.setIcon('reset')
+			.setTooltip('Reset to default')
+			.onClick(async () => {
+				this.plugin.settings.headerTemplate = '# {{#title}}{{title}}{{/title}}{{^title}}{{citekey}}{{/title}}';
+				await this.plugin.saveSettings();
+				this.display(); // Refresh the settings page
 			})
-			.addExtraButton(button => button
-				.setIcon('reset')
-				.setTooltip('Reset to default')
-				.onClick(async () => {
-					this.plugin.settings.headerTemplate = '# {{#title}}{{title}}{{/title}}{{^title}}{{citekey}}{{/title}}';
-					await this.plugin.saveSettings();
-					this.display(); // Refresh the settings page
-				})
-			);
+		);
+		
+		// Create div for the full-width textarea below the setting
+		const textareaContainer = headerTemplateContainer.createDiv({
+			cls: 'template-textarea-container'
+		});
+		
+		// Create the textarea manually
+		headerTemplateField = new TextAreaComponent(textareaContainer);
+		headerTemplateField
+			.setPlaceholder('# {{title}}\n\n## Summary\n\n## Key points\n\n## References\n{{#pdflink}}[[{{pdflink}}]]{{/pdflink}}')
+			.setValue(this.plugin.settings.headerTemplate)
+			.onChange(async (value) => {
+				this.plugin.settings.headerTemplate = value;
+				await this.plugin.saveSettings();
+			});
 
 		// Add examples section
 		const headerExamplesContainer = headerTemplateContainer.createDiv({
