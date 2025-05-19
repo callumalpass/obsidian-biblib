@@ -166,18 +166,34 @@ const ZOTERO_TYPES_TO_CSL: { [key: string]: string } = {
 
 const mapZoteroCreatorToCsl = (creator: any): { literal: string } | { family: string, given?: string } | undefined => {
     if (!creator) return undefined;
+    
     // Handle institutional authors or single-field names
     if (creator.name) return { literal: creator.name };
+    
     // Handle individual authors with first/last names
     if (creator.lastName || creator.firstName) {
         const cslCreator: { family: string, given?: string } = {
-            family: creator.lastName,
+            family: creator.lastName || "",
         };
         if (creator.firstName) {
             cslCreator.given = creator.firstName;
         }
         return cslCreator;
     }
+    
+    // Handle web-specific author formats
+    if (creator.fullName) return { literal: creator.fullName };
+    if (creator.displayName) return { literal: creator.displayName };
+    if (creator.text) return { literal: creator.text };
+    
+    // Try to extract any name-like fields
+    for (const field of ['fullName', 'displayName', 'name', 'author', 'text', 'byline']) {
+        if (creator[field]) return { literal: creator[field] };
+    }
+    
+    // Last resort: if creator is just a string
+    if (typeof creator === 'string') return { literal: creator };
+    
     return undefined; // Invalid creator structure
 };
 
@@ -538,6 +554,29 @@ export class CitationService {
             new Notice('Cannot process invalid Zotero item data.');
             throw new Error('Invalid Zotero item provided.');
         }
+        
+        // Special check for creators
+        if (!zoteroItem.creators || !Array.isArray(zoteroItem.creators) || zoteroItem.creators.length === 0) {
+            // For web pages and news articles, try to infer creators from other fields
+            if (zoteroItem.itemType === 'webpage' || zoteroItem.itemType === 'newspaperArticle') {
+                // Look for byline, author, or other possible fields
+                if (zoteroItem.byline) {
+                    zoteroItem.creators = [{ 
+                        creatorType: 'author', 
+                        name: zoteroItem.byline 
+                    }];
+                } else if (zoteroItem.extra && zoteroItem.extra.includes('Author:')) {
+                    // Try to extract author from extra field
+                    const match = /Author:\s*([^\n]+)/i.exec(zoteroItem.extra);
+                    if (match && match[1]) {
+                        zoteroItem.creators = [{ 
+                            creatorType: 'author', 
+                            name: match[1].trim() 
+                        }];
+                    }
+                }
+            }
+        }
 
         try {
             // Use the robust direct mapping
@@ -699,6 +738,33 @@ export class CitationService {
                 }
             });
         }
+        // Add special handling for news articles / web pages
+        if (item.itemType === 'newspaperArticle' || item.itemType === 'webpage') {
+            // Try to extract authors from other fields for news sources
+            if ((!creatorsBySourceField.author || creatorsBySourceField.author.length === 0) && 
+                (!creatorsBySourceField.reporter || creatorsBySourceField.reporter.length === 0)) {
+                
+                // If we have byline or bylineHtml fields (common in news sites)
+                if (item.byline) {
+                    creatorsBySourceField.author = [{ 
+                        creatorType: 'author', 
+                        name: item.byline 
+                    }];
+                }
+                // Check for creator array in original form
+                else if (item.creators && Array.isArray(item.creators) && item.creators.length) {
+                    // Process creators array differently than the default approach
+                    for (const creator of item.creators) {
+                        const field = creator.creatorType || 'author';
+                        if (!creatorsBySourceField[field]) {
+                            creatorsBySourceField[field] = [];
+                        }
+                        creatorsBySourceField[field].push(creator);
+                    }
+                }
+            }
+        }
+        
         // Add the grouped creators back to sourceData, overwriting the original array
         Object.assign(sourceData, creatorsBySourceField);
         delete sourceData.creators; // Clean up original array key

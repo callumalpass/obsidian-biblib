@@ -320,6 +320,10 @@ export class ConnectorServer {
             accessDate: new Date().toISOString(),
             attachments: [],
             tags: [],
+            // Add creators array if available in the data or from URL metadata
+            creators: data.creators || 
+                     (data.author ? [{ creatorType: 'author', name: data.author }] : 
+                     (data.byline ? [{ creatorType: 'author', name: data.byline }] : [])),
             id: data.id || `webpage-${crypto.createHash('sha1').update(uri).digest('hex').substring(0, 10)}`
         };
 

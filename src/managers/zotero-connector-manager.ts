@@ -263,6 +263,16 @@ export class ZoteroConnectorManager {
         }
 
         try {
+            // For webpage/news items, try to extract author from extra fields
+            if ((!item.creators || !Array.isArray(item.creators) || item.creators.length === 0) &&
+                (item.itemType === 'webpage' || item.itemType === 'newspaperArticle')) {
+                // Look for potential author info in other fields
+                if (item.byline) {
+                    if (!item.creators) item.creators = [];
+                    item.creators.push({ creatorType: 'author', name: item.byline });
+                }
+            }
+            
             // Parse the Zotero item using the dedicated service method
             const cslData = this.citationService.parseZoteroItem(item);
 
