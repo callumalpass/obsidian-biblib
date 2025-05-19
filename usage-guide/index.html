@@ -1,0 +1,982 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Manage references and literature notes from within Obsidian">
+      
+      
+        <meta name="author" content="Callum Alpass# Your name/handle">
+      
+      
+        <link rel="canonical" href="https://callumalpass.github.io/obsidian-biblib/usage-guide/">
+      
+      
+        <link rel="prev" href="../key-features/">
+      
+      
+        <link rel="next" href="../settings/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
+    
+    
+      
+        <title>Usage Guide - BibLib</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.342714a4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Crimson+Text:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Crimson Text";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#usage-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="BibLib" class="md-header__button md-logo" aria-label="BibLib" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            BibLib
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Usage Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/callumalpass/obsidian-biblib" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    callumalpass/obsidian-biblib
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="BibLib" class="md-nav__button md-logo" aria-label="BibLib" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    BibLib
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/callumalpass/obsidian-biblib" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    callumalpass/obsidian-biblib
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Introduction
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Core Concepts
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../key-features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Key Features
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Usage Guide
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Usage Guide
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#creating-a-literature-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating a Literature Note
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-metadata-lookup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Metadata Lookup
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-a-book-chapter-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating a Book Chapter Note
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-multiple-attachments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Multiple Attachments
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-the-zotero-connector-desktop" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using the Zotero Connector (Desktop)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bulk-importing-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bulk Importing References
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linking-to-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      Linking to References
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generating-bibliography-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generating Bibliography Files
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#editing-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      Editing References
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Settings
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../templating-system-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Templating
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting-faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Troubleshooting & FAQ
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#creating-a-literature-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating a Literature Note
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-metadata-lookup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Metadata Lookup
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-a-book-chapter-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating a Book Chapter Note
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-multiple-attachments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Multiple Attachments
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-the-zotero-connector-desktop" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using the Zotero Connector (Desktop)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bulk-importing-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bulk Importing References
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linking-to-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      Linking to References
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generating-bibliography-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generating Bibliography Files
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#editing-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      Editing References
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="usage-guide">Usage Guide</h1>
+<p>This guide provides step-by-step instructions for common BibLib workflows.</p>
+<h2 id="creating-a-literature-note">Creating a Literature Note</h2>
+<p>This is the primary way to add a new reference manually.</p>
+<ol>
+<li><strong>Open the Command Palette:</strong> Press <code>Ctrl/Cmd + P</code>.</li>
+<li><strong>Run the Command:</strong> Type "BibLib" and select <strong>"BibLib: Create Literature Note"</strong>.</li>
+<li><strong>The Bibliography Modal Appears:</strong><ul>
+<li><strong>(Optional) Auto-fill:</strong><ul>
+<li><strong>Identifier Lookup:</strong> Enter a DOI, ISBN, PubMed ID, arXiv ID, or URL into the "Auto-lookup" field and click <strong>Lookup</strong>. BibLib will attempt to fetch metadata and fill the form.</li>
+<li><strong>Paste BibTeX:</strong> Paste a full BibTeX entry into the text area under "Auto-fill from BibTeX" and click <strong>Parse BibTeX</strong>.</li>
+</ul>
+</li>
+<li><strong>Select Type:</strong> Choose the correct reference type (e.g., Journal Article, Book, Web Page) from the "Type" dropdown. This influences which fields are most relevant.</li>
+<li><strong>Fill Core Fields:</strong> Enter the <code>Title</code>, <code>Year</code>, <code>Container title</code> (Journal/Book name), etc.</li>
+<li><strong>Add Contributors:</strong><ul>
+<li>Click the "Role" dropdown (defaults to 'author') to select the type (author, editor, translator, etc.).</li>
+<li>Enter the <code>Given Name</code> and <code>Family Name</code>. For institutions or single-field names, use the <code>Family Name</code> field and leave <code>Given Name</code> blank (or use the <code>literal</code> field if adding via code/import).</li>
+<li>Click <strong>"Add contributor"</strong> to add more authors, editors, etc.</li>
+<li>Click <strong>"Remove"</strong> next to a contributor to delete them.</li>
+</ul>
+</li>
+<li><strong>Add Additional Fields:</strong><ul>
+<li>If you need fields not shown by default (e.g., <code>language</code>, <code>archive</code>, <code>call-number</code>, or custom fields), click <strong>"Add field"</strong>.</li>
+<li>Select the field <code>Type</code> (Standard, Number, Date).</li>
+<li>Choose the <code>Field name</code> from the dropdown (includes standard CSL fields) or type a custom name. <em>A warning appears for non-standard CSL names.</em></li>
+<li>Enter the <code>Value</code>.</li>
+</ul>
+</li>
+<li><strong>Add Attachments (Optional):</strong><ul>
+<li>Under the "Attachments" section:<ul>
+<li>Click <strong>"Add Attachment"</strong> to add one or more files</li>
+<li>Choose from the dropdown:<ul>
+<li><code>Import file</code>: Select a file from your computer (PDF, EPUB, or any other file type). BibLib will copy it into your vault.</li>
+<li><code>Link to existing file</code>: Select a file already inside your Obsidian vault.</li>
+</ul>
+</li>
+<li>You can add multiple attachments of different types to a single note</li>
+<li>Each attachment will be displayed in a list below with a remove button if needed</li>
+<li>All attachments will be available in templates as <code>{{attachments}}</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Link Related Notes (Optional):</strong><ul>
+<li>Click <strong>"Add Related Note"</strong>.</li>
+<li>Search for and select existing notes in your vault that relate to this reference.</li>
+<li>Selected notes will be listed; click <strong>"Remove"</strong> to unselect. These links can be used in templates (e.g., <code>{{links}}</code>).</li>
+</ul>
+</li>
+<li><strong>Review Citekey:</strong> Check the auto-generated <code>Citekey</code> at the bottom. You can edit it manually or click the <strong>Regenerate</strong> icon (🔄) to update it based on current form data (requires Title and Author).</li>
+</ul>
+</li>
+<li><strong>Create the Note:</strong> Click the <strong>"Create Note"</strong> button.</li>
+</ol>
+<p>BibLib will create a new <code>.md</code> file (e.g., <code>@Smith2023.md</code>) in the location specified in your settings, populate its YAML frontmatter with the CSL-JSON data, add content based on your header/body templates, and potentially open the note if configured.</p>
+<h2 id="using-metadata-lookup">Using Metadata Lookup</h2>
+<p>Quickly populate the "Create Literature Note" modal:</p>
+<ol>
+<li>Open the modal (<strong>BibLib: Create Literature Note</strong>).</li>
+<li>In the <strong>"Auto-fill"</strong> section at the top:<ul>
+<li><strong>By Identifier:</strong> Paste a DOI (e.g., <code>10.1038/nrn3241</code>), ISBN, arXiv ID (<code>arXiv:1910.13461</code>), or a URL into the "Auto-lookup by identifier" field. Click <strong>Lookup</strong>.</li>
+<li><strong>By BibTeX:</strong> Copy a complete BibTeX entry (e.g., from Google Scholar or a reference manager) and paste it into the larger text area. Click <strong>Parse BibTeX</strong>.</li>
+</ul>
+</li>
+<li>BibLib will fetch/parse the data and fill the relevant fields in the modal below (Title, Authors, Year, Type, etc.).</li>
+<li>Review the populated fields, make any necessary corrections or additions (like adding an attachment).</li>
+<li>Check the generated <code>Citekey</code>.</li>
+<li>Click <strong>"Create Note"</strong>.</li>
+</ol>
+<h2 id="creating-a-book-chapter-note">Creating a Book Chapter Note</h2>
+<p>To add a chapter that belongs to a book already present as a literature note:</p>
+<ol>
+<li><strong>Ensure the Book Note Exists:</strong> You must first have a literature note for the parent book (Type: <code>book</code> or <code>collection</code>).</li>
+<li><strong>Open the Command Palette:</strong> Press <code>Ctrl/Cmd + P</code>.</li>
+<li><strong>Run the Command:</strong> Select <strong>"BibLib: Create book chapter entry"</strong>.<ul>
+<li><strong>Alternatively:</strong> If you have the <em>book's</em> note open and active, run <strong>"BibLib: Create chapter from current book"</strong>. This pre-selects the book.</li>
+</ul>
+</li>
+<li><strong>The Chapter Modal Appears:</strong><ul>
+<li><strong>Select Book:</strong> Use the "Book" dropdown to choose the parent book note from your vault. The book's path will be displayed below. <em>If you used the "Create chapter from current book" command, this will be pre-filled.</em></li>
+<li><strong>Fill Chapter Details:</strong> Enter the specific <code>Chapter title</code>, <code>Short title</code> (optional), and <code>Pages</code> for the chapter.</li>
+<li><strong>Chapter Citekey:</strong> A default citekey (e.g., <code>BookCitekey.ch1</code>) might be suggested. Adjust as needed.</li>
+<li><strong>Chapter Contributors:</strong> Add the <em>chapter's</em> authors using the "Add contributor" button. The <em>book's</em> editors or authors will be automatically included with the correct CSL roles (<code>editor</code>, <code>container-author</code>) in the final note's frontmatter – you usually don't need to re-add them here unless they are <em>also</em> chapter authors.</li>
+<li><strong>Other Fields:</strong> Fill in chapter-specific DOI, abstract, or override the publication year/month/day if it differs from the book. Fields like Publisher will typically be inherited from the selected book.</li>
+<li><strong>Attachment/Related Notes:</strong> Add attachments or link related notes specific to this chapter.</li>
+</ul>
+</li>
+<li><strong>Create the Chapter Note:</strong> Click <strong>"Create Chapter Note"</strong>.</li>
+</ol>
+<p>BibLib creates a new note (Type: <code>chapter</code>) with the chapter's details and links it conceptually to the parent book via fields like <code>container-title</code> and potentially <code>container-author</code> in the frontmatter.</p>
+<h2 id="using-multiple-attachments">Using Multiple Attachments</h2>
+<p>BibLib supports adding multiple attachments to a single literature note. Here's how to use this feature:</p>
+<ol>
+<li>When creating a literature note, in the "Attachments" section:</li>
+<li>Use the dropdown to select either "Import file" or "Link to existing file"</li>
+<li>Click "Add Attachment" to add the selected attachment type</li>
+<li>Repeat to add multiple attachments of different types</li>
+<li>
+<p>Each attachment appears in a list with a "Remove" button if needed</p>
+</li>
+<li>
+<p>In your templates, you can access multiple attachments using these variables:</p>
+</li>
+<li><code>{{attachments}}</code>: Array of formatted attachment links with file type indicators (e.g., <code>[[path/to/file.pdf|PDF]]</code>)</li>
+<li><code>{{pdflink}}</code>: Array of raw attachment paths</li>
+<li><code>{{quoted_attachments}}</code>: Array of formatted attachments with quotes around them</li>
+<li>
+<p>For backward compatibility, <code>{{attachment}}</code> and <code>{{raw_pdflink}}</code> provide access to the first attachment</p>
+</li>
+<li>
+<p>To use multiple attachments in templates:
+   ```
+   {{#attachments}}</p>
+</li>
+<li>
+<p>{{.}}
+   {{/attachments}}
+   ```</p>
+</li>
+<li>
+<p>During bulk import, attachments are also managed as a list, and multiple attachments can be imported or linked per reference.</p>
+</li>
+</ol>
+<h2 id="using-the-zotero-connector-desktop">Using the Zotero Connector (Desktop)</h2>
+<p>Import references directly from your browser:</p>
+<ol>
+<li><strong>Setup:</strong><ul>
+<li>Go to BibLib Settings (<code>Settings</code> -&gt; <code>Community Plugins</code> -&gt; <code>BibLib</code>).</li>
+<li>Under "Zotero Connector", ensure <strong>"Enable Zotero Connector"</strong> is toggled <strong>ON</strong>. Note the <code>Connector port</code> (default 23119).</li>
+<li><strong>Crucially: Close the Zotero Desktop application.</strong> BibLib needs to use the same port Zotero normally uses to listen for the connector. They cannot run simultaneously for this feature.</li>
+</ul>
+</li>
+<li><strong>Importing:</strong><ul>
+<li>Browse the web. When you find a journal article, book page, etc., that you want to save, click the Zotero Connector icon in your browser's toolbar (it might look like a 'Z' or a document).</li>
+<li>The Zotero Connector will send the citation data (and attempt to find/send a PDF if available) to the BibLib server running inside Obsidian.</li>
+<li>Obsidian should come to the foreground, and the <strong>Bibliography Modal</strong> will automatically open, pre-filled with the data received from the connector. The "Auto-fill" section will be collapsed with a notice.</li>
+<li>If a PDF was successfully downloaded, the "Attachment" section will show it as an "Import file" ready to be saved to your vault.</li>
+</ul>
+</li>
+<li><strong>Review and Save:</strong><ul>
+<li>Check the pre-filled information. Make any necessary adjustments.</li>
+<li>Verify the <code>Citekey</code>.</li>
+<li>Click <strong>"Create Note"</strong>.</li>
+</ul>
+</li>
+</ol>
+<p>The literature note is created, and the PDF (if any) is imported into your attachment folder.</p>
+<blockquote>
+<p><strong>To Stop:</strong> Either disable the toggle in settings or run the command <strong>"BibLib: Toggle Zotero Connector server"</strong>. Remember to re-open Zotero Desktop if you need it.</p>
+</blockquote>
+<h2 id="bulk-importing-references">Bulk Importing References</h2>
+<p>Import multiple references from a BibTeX (<code>.bib</code>) or CSL-JSON (<code>.json</code>) file:</p>
+<ol>
+<li><strong>Prepare Import File:</strong><ul>
+<li>Export references from your reference manager (Zotero, Mendeley, etc.) into either BibTeX (<code>.bib</code>) or CSL-JSON (<code>.json</code>) format.</li>
+<li><strong>For Zotero with Attachments:</strong> When exporting from Zotero as BibTeX, make sure to check the <strong>"Export Files"</strong> option. This creates the <code>.bib</code> file <em>and</em> a <code>files</code> subfolder containing the PDFs. <strong>Crucially, move both the <code>.bib</code> file AND the entire <code>files</code> folder into your Obsidian vault</strong> before starting the import. BibLib needs them co-located to find the attachments referenced in the BibTeX.</li>
+</ul>
+</li>
+<li><strong>Run the Command:</strong> Open the Command Palette (<code>Ctrl/Cmd + P</code>) and select <strong>"BibLib: Bulk import references"</strong>.</li>
+<li><strong>Configure Import:</strong><ul>
+<li><strong>Choose File:</strong> Click <strong>"Choose File"</strong> and select the <code>.bib</code> or <code>.json</code> file <em>from within your vault</em>. The selected filename will appear.</li>
+<li><strong>Attachment handling:</strong><ul>
+<li><code>Ignore attachments</code>: BibLib won't look for or import any files referenced in the import data.</li>
+<li><code>Import attachments to vault</code>: BibLib will try to find files referenced in the <code>file</code> field of the import data. For BibTeX/Zotero exports, it looks for the standard <code>files/ID/filename.pdf</code> structure relative to the <code>.bib</code> file's location. It will copy found attachments into your configured BibLib attachment folder.</li>
+</ul>
+</li>
+<li><strong>Include annotations:</strong> If checked, content from the BibTeX <code>annote</code> field will be added to the body of the created literature notes (useful for Zotero notes).</li>
+<li><strong>Citekey preference:</strong><ul>
+<li><code>Use imported citekeys</code>: Uses the keys present in the <code>.bib</code> or <code>.json</code> file as the <code>id</code> and filename base.</li>
+<li><code>Generate new citekeys</code>: Ignores imported keys and generates new ones based on your BibLib citekey settings.</li>
+</ul>
+</li>
+<li><strong>Conflict resolution:</strong><ul>
+<li><code>Skip existing notes</code>: If a note with the same target citekey already exists, the imported entry is skipped.</li>
+<li><code>Overwrite existing notes</code>: If a note with the same target citekey exists, its content will be replaced with the data from the imported entry. <strong>Use with caution!</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Start Import:</strong> Click <strong>"Start Import"</strong>. A confirmation prompt will appear.</li>
+<li><strong>Confirm:</strong> Click "OK" to proceed.</li>
+</ol>
+<p>BibLib will process the file, creating literature notes based on your settings. Progress notices will appear. A final notice summarizes the number of notes created, skipped, and any errors encountered.</p>
+<h2 id="linking-to-references">Linking to References</h2>
+<p>Once literature notes exist, link to them like any other note:</p>
+<ul>
+<li><strong>Standard Wikilink:</strong> Type <code>[[</code> and start typing the citekey (including any prefix like <code>@</code>). Select the note from the suggestions. Example: <code>[[@Smith2023]]</code>.</li>
+<li><strong>Pandoc Citation Syntax:</strong> For academic writing intended for processing with Pandoc, use the standard Pandoc citation syntax: <code>[@Smith2023]</code>. This won't create an Obsidian link but will be correctly interpreted by Pandoc when using the <code>bibliography.json</code> or <code>.bib</code> file generated by BibLib. You can combine this with wikilinks if desired: <code>See [[@Smith2023|[@Smith2023]]] for details.</code></li>
+</ul>
+<h2 id="generating-bibliography-files">Generating Bibliography Files</h2>
+<p>Create compiled bibliography files for use with external tools or for backup:</p>
+<ol>
+<li><strong>Open the Command Palette:</strong> <code>Ctrl/Cmd + P</code>.</li>
+<li><strong>Run Commands:</strong><ul>
+<li><strong><code>BibLib: Build bibliography</code>:</strong> This command scans all literature notes and generates/updates:<ul>
+<li><code>bibliography.json</code>: A CSL-JSON file containing the metadata for all notes. Path configured in settings. Essential for Pandoc.</li>
+<li><code>citekeylist.md</code>: A simple Markdown list of all <code>@citekey</code>s. Path configured in settings.</li>
+</ul>
+</li>
+<li><strong><code>BibLib: Export bibliography as BibTeX</code>:</strong> This command generates/updates:<ul>
+<li><code>bibliography.bib</code>: A BibTeX file containing data for all notes. Path configured in settings.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<p>Run these commands periodically or before writing/exporting documents that need a bibliography.</p>
+<h2 id="editing-references">Editing References</h2>
+<p>Modify bibliographic data directly in the note's frontmatter:</p>
+<ol>
+<li>Open the literature note (<code>.md</code> file).</li>
+<li>Switch to <strong>Source Mode</strong>.</li>
+<li>
+<p>Edit the values within the YAML block (<code>--- ... ---</code>). For example, change the <code>year</code>, add a <code>URL</code>, or correct an author's name in the <code>author</code> array.</p>
+<p><code>yaml
+author:
+  - family: Smith
+given: Alice # Corrected spelling
+  - family: Jones
+given: Bob
+year: 2024 # Updated year
+URL: https://new-link.example.com # Added URL</code></p>
+</li>
+<li>
+<p>Switch back to Reading or Live Preview mode.</p>
+</li>
+</ol>
+<div class="admonition info">
+<p class="admonition-title">Remember</p>
+<p>Obsidian's Properties view might show warnings for nested CSL fields. Rely on Source Mode for accurate editing of complex fields like <code>author</code> or <code>issued</code>.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["search.suggest"], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      
+    
+  </body>
+</html>
