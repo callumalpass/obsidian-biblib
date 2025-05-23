@@ -16,19 +16,17 @@ import {
     AttachmentManagerService,
     ReferenceParserService
 } from '../../services';
-
-// Keep this import for compatibility until we fully remove it
-// import { FileManager } from '../../services/file-manager';
+import { 
+    ERROR_MESSAGES, 
+    SUCCESS_MESSAGES, 
+    UI_TEXT,
+    NOTICE_DURATION_SHORT 
+} from '../../constants';
 
 export class BibliographyModal extends Modal {
     // Services
     private citoidService: CitoidService;
     private citationService: CitationService;
-    
-    // Legacy service - will be replaced
-    // private fileManager: FileManager;
-    
-    // New services
     private noteCreationService: NoteCreationService;
     
     // Data state
@@ -88,8 +86,6 @@ export class BibliographyModal extends Modal {
         // Pass the citekey options to ensure generated citekeys respect user settings
         this.citationService = new CitationService(this.settings.citekeyOptions);
         
-        // Initialize legacy service (to be removed)
-        // this.fileManager = new FileManager(app, settings);
         
         // Set up new service layer
         const templateVariableBuilder = new TemplateVariableBuilderService();
@@ -267,7 +263,7 @@ export class BibliographyModal extends Modal {
         
         // Add lookup button
         const lookupButton = new ButtonComponent(citoidIdSetting.controlEl)
-            .setButtonText('Lookup')
+            .setButtonText(UI_TEXT.LOOKUP)
             .setCta()
             .onClick(async () => {
                 const identifier = citoidIdInput.value.trim();
@@ -278,7 +274,7 @@ export class BibliographyModal extends Modal {
                 
                 // Disable button and show loading state
                 lookupButton.setDisabled(true);
-                lookupButton.setButtonText('Fetching...');
+                lookupButton.setButtonText(UI_TEXT.LOADING);
                 
                 try {
                     // Call Citoid service to get BibTeX
@@ -317,28 +313,28 @@ export class BibliographyModal extends Modal {
         bibtexButton.onclick = () => {
             const bibtexText = bibtexInput.value.trim();
             if (!bibtexText) {
-                new Notice('Please paste a BibTeX entry');
+                new Notice(ERROR_MESSAGES.EMPTY_BIBTEX);
                 return;
             }
             
-            new Notice('Parsing BibTeX data...');
+            new Notice(UI_TEXT.PARSING_BIBTEX);
             bibtexButton.setAttr('disabled', 'true');
-            bibtexButton.textContent = 'Parsing...';
+            bibtexButton.textContent = UI_TEXT.PARSING;
             
             try {
                 const normalizedData = this.citationService.parseBibTeX(bibtexText);
                 if (!normalizedData) {
-                    new Notice('No valid citation data found in the BibTeX entry');
+                    new Notice(ERROR_MESSAGES.NO_BIBTEX_DATA);
                     return;
                 }
                 this.populateFormFromCitoid(normalizedData);
-                new Notice('BibTeX data successfully parsed and filled');
+                new Notice(SUCCESS_MESSAGES.BIBTEX_PARSED);
             } catch (error) {
                 console.error('Error parsing BibTeX data:', error);
-                new Notice('Error parsing BibTeX data. Please check the format and try again.');
+                new Notice(ERROR_MESSAGES.BIBTEX_PARSE_FAILED);
             } finally {
                 bibtexButton.removeAttribute('disabled');
-                bibtexButton.textContent = 'Parse BibTeX';
+                bibtexButton.textContent = UI_TEXT.PARSE_BIBTEX;
             }
         };
     }
@@ -895,14 +891,6 @@ export class BibliographyModal extends Modal {
                 if (cslData[role] && Array.isArray(cslData[role])) {
                     hasContributors = true;
                     cslData[role].forEach((person: any) => {
-                        // Add to internal state
-                        // this.contributors.push({
-                        //     role: role,
-                        //     family: person.family || '',
-                        //     given: person.given || '',
-                        //     literal: person.literal || ''
-                        // });
-                        
                         // Create field in UI
                         this.addContributorField(role, person.family, person.given, person.literal);
                     });

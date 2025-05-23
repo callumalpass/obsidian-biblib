@@ -390,9 +390,11 @@ export class BibliographySettingTab extends PluginSettingTab {
 		const updateWarningMessage = (fieldName: string) => {
 			if (validateCslField(fieldName)) {
 				warningEl.setText(`Warning: "${fieldName}" is a CSL standard field. Using it may produce invalid bibliography files. It is recommended to use a different name.`);
-				warningEl.style.display = 'block';
+				warningEl.removeClass('warning-hidden');
+				warningEl.addClass('warning-visible');
 			} else {
-				warningEl.style.display = 'none';
+				warningEl.removeClass('warning-visible');
+				warningEl.addClass('warning-hidden');
 			}
 		};
 		
@@ -462,7 +464,8 @@ export class BibliographySettingTab extends PluginSettingTab {
 				nameInputEl.removeClass('is-invalid');
 				
 				// Hide warning message
-				warningEl.style.display = 'none';
+				warningEl.removeClass('warning-visible');
+				warningEl.addClass('warning-hidden');
 			}
 			
 			field.name = value;

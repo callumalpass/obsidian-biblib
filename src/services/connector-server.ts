@@ -9,6 +9,15 @@ import * as crypto from 'crypto';
 import * as os from 'os';
 import { promisify } from 'util';
 import { BibliographyPluginSettings } from '../types/settings';
+import { 
+    DEFAULT_ZOTERO_PORT, 
+    LOCALHOST,
+    NOTICE_DURATION_SHORT,
+    HTTP_STATUS,
+    CONTENT_TYPE,
+    ERROR_MESSAGES,
+    SUCCESS_MESSAGES
+} from '../constants';
 
 const pipeline = promisify(stream.pipeline);
 
@@ -16,8 +25,8 @@ const pipeline = promisify(stream.pipeline);
 const CONNECTOR_SERVER_VERSION = '1.0.7';
 const ZOTERO_APP_NAME = 'Obsidian BibLib';
 const CONNECTOR_API_VERSION_SUPPORTED = 3;
-const SESSION_CLEANUP_INTERVAL = 10 * 60 * 1000; // 10 minutes
-const SESSION_MAX_AGE = 30 * 60 * 1000; // 30 minutes (extended for slow attachments)
+const SESSION_CLEANUP_INTERVAL = 600000; // 10 minutes
+const SESSION_MAX_AGE = 1800000; // 30 minutes (extended for slow attachments)
 
 // --- Interfaces ---
 interface AttachmentStatus {
@@ -77,13 +86,13 @@ export class ConnectorServer {
             return;
         }
 
-        const port = this.settings.zoteroConnectorPort || 23119;
+        const port = this.settings.zoteroConnectorPort || DEFAULT_ZOTERO_PORT;
 
         this.server = http.createServer(this.handleRequest.bind(this));
 
         return new Promise((resolve, reject) => {
-            this.server?.listen(port, '127.0.0.1', () => {
-                new Notice(`Zotero Connector server listening on port ${port}`);
+            this.server?.listen(port, LOCALHOST, () => {
+                new Notice(`${SUCCESS_MESSAGES.ZOTERO_SERVER_STARTED} ${port}`);
                 this.cleanupIntervalId = setInterval(() => this.cleanupOldSessions(), SESSION_CLEANUP_INTERVAL);
                 resolve();
             });
@@ -92,9 +101,9 @@ export class ConnectorServer {
                 console.error('Failed to start Zotero Connector server:', err);
                 let message = `Failed to start Zotero Connector server: ${err.message}`;
                 if (err.code === 'EADDRINUSE') {
-                    message = `Failed to start Zotero Connector server: Port ${port} is already in use. Is Zotero or another application running?`;
+                    message = `Failed to start Zotero Connector server: Port ${port} ${ERROR_MESSAGES.ZOTERO_PORT_IN_USE}`;
                 } else if (err.code === 'EACCES') {
-                     message = `Failed to start Zotero Connector server: Permission denied for port ${port}. Try a port number above 1024.`;
+                     message = `Failed to start Zotero Connector server: ${ERROR_MESSAGES.ZOTERO_PORT_ACCESS_DENIED.replace('port', `port ${port}`)}`;
                 }
                 new Notice(message);
                 this.server = null;
@@ -111,7 +120,7 @@ export class ConnectorServer {
             }
             if (this.server) {
                 this.server.close(() => {
-                    new Notice('Zotero Connector server stopped');
+                    new Notice('Zotero Connector server stopped', NOTICE_DURATION_SHORT);
                     this.server = null;
                     this.sessions.clear();
                     resolve();

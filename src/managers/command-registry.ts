@@ -5,6 +5,7 @@ import { BulkImportModal } from '../ui/modals/bulk-import-modal';
 import { BibliographyPluginSettings } from '../types/settings';
 import { BibliographyBuilder } from '../services/bibliography-builder';
 import { NoteCreationService } from '../services/note-creation-service';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants';
 
 /**
  * Manages command registration for the Bibliography plugin
@@ -95,12 +96,12 @@ export class CommandRegistry {
             name: 'Build bibliography',
             callback: async () => {
                 try {
-                    new Notice('Building bibliography files...');
+                    new Notice(SUCCESS_MESSAGES.BIBLIOGRAPHY_BUILDING);
                     const builder = new BibliographyBuilder(this.app, this.settings);
                     await builder.buildBibliography();
                 } catch (error) {
                     console.error('Error building bibliography:', error);
-                    new Notice('Error building bibliography files. Check console for details.');
+                    new Notice(ERROR_MESSAGES.BIBLIOGRAPHY_BUILD_FAILED);
                 }
             },
         });
@@ -111,7 +112,7 @@ export class CommandRegistry {
             name: 'Export bibliography as BibTeX',
             callback: async () => {
                 try {
-                    new Notice('Exporting BibTeX file...');
+                    new Notice(SUCCESS_MESSAGES.BIBTEX_EXPORTING);
                     const builder = new BibliographyBuilder(this.app, this.settings);
                     await builder.exportBibTeX();
                 } catch (_error) {

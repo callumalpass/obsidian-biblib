@@ -15,18 +15,11 @@ import {
     CitationService
 } from '../../services';
 
-// Legacy import for compatibility
-// import { FileManager } from '../../services/file-manager';
-
 // Define type for book entries used in this modal
-// Ensures consistency with FileManager return types
 type BookEntry = { id: string; title: string; path: string; frontmatter: any };
 
 export class ChapterModal extends Modal {
-    // Legacy service
-    // private fileManager: FileManager;
-    
-    // New services
+    // Services
     private noteCreationService: NoteCreationService;
     private citationService: CitationService;
     
@@ -66,9 +59,6 @@ export class ChapterModal extends Modal {
 
     constructor(app: App, private settings: BibliographyPluginSettings, initialBookPath?: string) {
         super(app);
-        
-        // Initialize legacy service for backwards compatibility
-        // this.fileManager = new FileManager(app, settings);
         
         // Initialize citation service for citekey generation
         this.citationService = new CitationService(this.settings.citekeyOptions);
