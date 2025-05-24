@@ -213,9 +213,27 @@ export class BibliographyBuilder {
                         // Check if date-parts contains empty arrays or has no valid date information
                         const dateParts = processedData[field]['date-parts'];
                         
-                        if (dateParts.length === 0 || 
-                            (dateParts.length === 1 && 
-                             (dateParts[0].length === 0 || !dateParts[0].some((part: any) => part !== null && part !== undefined)))) {
+                        // More robust checking for valid date-parts structure
+                        let isValid = false;
+                        if (dateParts.length > 0) {
+                            for (const part of dateParts) {
+                                // Check if this part is an array and has valid date components
+                                if (Array.isArray(part) && part.length > 0) {
+                                    // Check if at least one component is a valid number
+                                    const hasValidComponent = part.some((component: any) => 
+                                        component !== null && 
+                                        component !== undefined && 
+                                        !isNaN(Number(component))
+                                    );
+                                    if (hasValidComponent) {
+                                        isValid = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!isValid) {
                             // Remove this date field entirely to avoid the error
                             delete processedData[field];
                         }
