@@ -760,6 +760,15 @@
   margin-top: 8px !important;
 }
 
+/* Custom field warning visibility classes */
+.custom-field-warning.warning-hidden {
+  display: none;
+}
+
+.custom-field-warning.warning-visible {
+  display: block;
+}
+
 .custom-frontmatter-field .setting-item-control {
   display: flex;
   flex-wrap: wrap;
