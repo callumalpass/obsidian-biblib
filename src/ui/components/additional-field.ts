@@ -173,7 +173,6 @@ export class AdditionalFieldComponent {
             // Convert date string to CSL date format when saving
             const updateDateValue = () => {
                 const inputValue = (valueInput as HTMLInputElement).value.trim();
-                console.log('Date field updated:', this.field.name, 'Input value:', inputValue);
                 if (inputValue) {
                     const dateMatch = inputValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
                     if (dateMatch) {
@@ -184,15 +183,12 @@ export class AdditionalFieldComponent {
                                 parseInt(dateMatch[3], 10)
                             ]]
                         };
-                        console.log('Converted to CSL format:', this.field.value);
                     } else {
                         // Fallback for invalid dates
                         this.field.value = { 'raw': inputValue };
-                        console.log('Stored as raw date:', this.field.value);
                     }
                 } else {
                     this.field.value = '';
-                    console.log('Cleared date field');
                 }
             };
             

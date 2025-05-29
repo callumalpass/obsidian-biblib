@@ -1099,7 +1099,6 @@ export class BibliographyModal extends Modal {
         
         // Always add to additionalFields array - we'll filter out empty ones when saving
         this.additionalFields.push(additionalField);
-        console.log('Added additional field to array:', additionalField, 'Array now:', this.additionalFields);
     }
 
     /**

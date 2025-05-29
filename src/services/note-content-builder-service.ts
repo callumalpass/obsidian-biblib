@@ -43,7 +43,6 @@ export class NoteContentBuilderService {
       } = data;
       
       // Generate frontmatter
-      console.log('NoteContentBuilder - Input additional fields:', additionalFields);
       const frontmatter = await this.frontmatterBuilder.buildYamlFrontmatter({
         citation,
         contributors,
@@ -52,7 +51,6 @@ export class NoteContentBuilderService {
         pluginSettings,
         relatedNotePaths
       });
-      console.log('NoteContentBuilder - Generated frontmatter YAML:', frontmatter);
       
       // Build template variables for header template
       const templateVariables = this.templateVariableBuilder.buildVariables(
@@ -80,7 +78,6 @@ export class NoteContentBuilderService {
       
       // Start building the complete note content
       let noteContent = `---\n${frontmatter}---\n\n${headerContent}\n\n`;
-      console.log('NoteContentBuilder - Final note content:', noteContent);
       
       // Add annotation content to the body if it's not already included in the header
       if (annotationContent && !headerTemplate.includes('{{annote_content}}')) {

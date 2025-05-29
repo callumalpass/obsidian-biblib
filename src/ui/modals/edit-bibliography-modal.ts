@@ -310,13 +310,9 @@ export class EditBibliographyModal extends BibliographyModal {
             });
             
             // Merge additional fields
-            console.log('Edit modal - additional fields to process:', updatedModalData.additionalFields);
             updatedModalData.additionalFields.forEach(field => {
-                console.log('Edit modal - processing field:', field.name, 'Type:', field.type, 'Value:', field.value);
-                
                 // Filter out fields without names
                 if (!field.name || field.name.trim() === '') {
-                    console.log('Edit modal - skipping field with no name');
                     return;
                 }
                 
@@ -325,14 +321,12 @@ export class EditBibliographyModal extends BibliographyModal {
                     if (field.value == null || 
                         (typeof field.value === 'string' && field.value.trim() === '') ||
                         (typeof field.value === 'object' && (!field.value['date-parts'] || field.value['date-parts'].length === 0))) {
-                        console.log('Edit modal - skipping empty date field');
                         return;
                     }
                     
                     if (typeof field.value === 'object' && field.value !== null) {
                         // Valid CSL date object
                         finalFrontmatterOutput[field.name] = field.value;
-                        console.log('Edit modal - added CSL date field:', field.name, '=', field.value);
                     } else if (typeof field.value === 'string' && field.value !== '') {
                         // Date string that wasn't converted to CSL format
                         // Try to convert it
@@ -346,21 +340,16 @@ export class EditBibliographyModal extends BibliographyModal {
                                 ]]
                             };
                             finalFrontmatterOutput[field.name] = cslDate;
-                            console.log('Edit modal - converted and added date field:', field.name, '=', cslDate);
                         } else {
                             // Store as raw date string if parsing fails
                             const rawDate = { 'raw': field.value };
                             finalFrontmatterOutput[field.name] = rawDate;
-                            console.log('Edit modal - added raw date field:', field.name, '=', rawDate);
                         }
                     }
                 } else {
                     // For non-date fields, check standard empty conditions
                     if (field.value != null && field.value !== '') {
                         finalFrontmatterOutput[field.name] = field.value;
-                        console.log('Edit modal - added field:', field.name, '=', field.value);
-                    } else {
-                        console.log('Edit modal - skipping empty field');
                     }
                 }
             });

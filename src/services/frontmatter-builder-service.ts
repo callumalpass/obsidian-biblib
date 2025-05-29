@@ -92,10 +92,7 @@ export class FrontmatterBuilderService {
       );
       
       // Generate formatted YAML
-      console.log('Final frontmatter object before YAML conversion:', frontmatter);
-      const yamlResult = stringifyYaml(frontmatter);
-      console.log('YAML result:', yamlResult);
-      return yamlResult;
+      return stringifyYaml(frontmatter);
     } catch (error) {
       console.error('Error creating frontmatter:', error);
       throw error;
@@ -133,12 +130,9 @@ export class FrontmatterBuilderService {
     frontmatter: Record<string, any>, 
     additionalFields: AdditionalField[]
   ): void {
-    console.log('Processing additional fields for frontmatter:', additionalFields);
     additionalFields.forEach((field) => {
-      console.log('Processing field:', field.name, 'Type:', field.type, 'Value:', field.value, 'Value type:', typeof field.value);
       // Filter out fields without names or values
       if (!field.name || field.name.trim() === '') {
-        console.log('Skipping field with no name');
         return;
       }
       
@@ -147,13 +141,11 @@ export class FrontmatterBuilderService {
         if (field.value == null || 
             (typeof field.value === 'string' && field.value.trim() === '') ||
             (typeof field.value === 'object' && (!field.value['date-parts'] || field.value['date-parts'].length === 0))) {
-          console.log('Skipping empty date field');
           return;
         }
       } else {
         // For non-date fields, check standard empty conditions
         if (field.value == null || field.value === '') {
-          console.log('Skipping empty field');
           return;
         }
       }
@@ -162,7 +154,6 @@ export class FrontmatterBuilderService {
       
       // Format value based on field type
       if (field.type === 'date') {
-        console.log('Processing date field:', field.name);
         // For date type fields, ensure they have the proper CSL date-parts structure
         if (typeof field.value === 'object' && field.value['date-parts']) {
           // It's already in CSL format
@@ -190,8 +181,6 @@ export class FrontmatterBuilderService {
       
       // Add the potentially modified value to frontmatter
       frontmatter[field.name] = valueToAdd;
-      console.log('Added to frontmatter:', field.name, '=', valueToAdd);
-      console.log('Frontmatter now contains:', Object.keys(frontmatter));
     });
   }
   
@@ -222,7 +211,6 @@ export class FrontmatterBuilderService {
       attachmentPaths,
       relatedNotePaths
     );
-    console.log('Template variables for custom frontmatter:', templateVariables);
     
     // Filter to enabled custom fields
     const enabledFields = pluginSettings.customFrontmatterFields.filter(field => field.enabled);
