@@ -78,7 +78,7 @@ export class EditBibliographyModal extends BibliographyModal {
      */
     private addRegenerationOptions(): void {
         // Find the button container (it's the last element before closing)
-        const buttonContainers = this.contentEl.querySelectorAll('.modal-button-container');
+        const buttonContainers = this.contentEl.querySelectorAll('.bibliography-form-buttons');
         const buttonContainer = buttonContainers[buttonContainers.length - 1];
         
         if (!buttonContainer || !buttonContainer.parentElement) return;
@@ -312,8 +312,14 @@ export class EditBibliographyModal extends BibliographyModal {
             
             // Merge additional fields
             updatedModalData.additionalFields.forEach(field => {
-                if (field.name && field.value !== undefined && field.value !== '') {
-                    finalFrontmatterOutput[field.name] = field.value;
+                if (field.name && field.value !== undefined) {
+                    // For date fields, check if the value is a valid CSL date object
+                    if (field.type === 'date' && typeof field.value === 'object' && field.value !== null) {
+                        finalFrontmatterOutput[field.name] = field.value;
+                    } else if (field.value !== '') {
+                        // For non-date fields, only add non-empty values
+                        finalFrontmatterOutput[field.name] = field.value;
+                    }
                 }
             });
             
