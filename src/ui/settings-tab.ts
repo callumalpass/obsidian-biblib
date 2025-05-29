@@ -399,12 +399,36 @@ export class BibliographySettingTab extends PluginSettingTab {
 		// Function to update the warning message
 		const updateWarningMessage = (fieldName: string) => {
 			if (validateCslField(fieldName)) {
-				warningEl.setText(`Warning: "${fieldName}" is a CSL standard field. Using it may produce invalid bibliography files. It is recommended to use a different name.`);
+				warningEl.empty();
+				
+				const callout = warningEl.createDiv({ cls: 'callout callout-error' });
+				callout.createDiv({ cls: 'callout-title', text: '❌ CSL Field Conflict' });
+				
+				const content = callout.createDiv({ cls: 'callout-content' });
+				content.createEl('p').createEl('strong', { text: `"${fieldName}"` }).parentElement?.appendText(' is a standard CSL field and should not be used for custom frontmatter templates.');
+				
+				content.createEl('p', { text: 'Using CSL fields in custom templates may cause:' });
+				const list = content.createEl('ul');
+				list.createEl('li', { text: 'Conflicts with bibliography export tools' });
+				list.createEl('li', { text: 'Invalid CSL-JSON output' });
+				list.createEl('li', { text: 'Unexpected template behavior' });
+				
+				content.createEl('p', { text: `Please choose a different field name (e.g., "custom-${fieldName}", "${fieldName}-note", etc.)` });
+				
+				const linkP = content.createEl('p');
+				linkP.createEl('a', { 
+					text: 'View CSL specification →',
+					href: 'https://docs.citationstyles.org/en/stable/specification.html#appendix-iv-variables',
+					attr: { target: '_blank' }
+				});
+				
 				warningEl.removeClass('warning-hidden');
 				warningEl.addClass('warning-visible');
+				warningEl.style.display = 'block';
 			} else {
 				warningEl.removeClass('warning-visible');
 				warningEl.addClass('warning-hidden');
+				warningEl.style.display = 'none';
 			}
 		};
 		
@@ -1148,17 +1172,59 @@ export class BibliographySettingTab extends PluginSettingTab {
 	private addDefaultModalFieldRow(field: ModalFieldConfig, index: number, container: HTMLElement): void {
 		const fieldEl = container.createDiv({ cls: 'default-modal-field' });
 
-		// Field name (CSL key)
-		new Setting(fieldEl)
+		// Field name (CSL key) with validation
+		const fieldNameSetting = new Setting(fieldEl)
 			.setName('CSL field name')
-			.setDesc('The CSL field key (e.g., "archive", "URL")')
-			.addText(text => text
-				.setPlaceholder('e.g., archive')
-				.setValue(field.name)
-				.onChange(async (value) => {
-					this.plugin.settings.defaultModalFields[index].name = value.trim();
-					await this.plugin.saveSettings();
-				}));
+			.setDesc('The CSL field key (e.g., "archive", "URL")');
+
+		let fieldNameInput: HTMLInputElement | null = null;
+		let warningEl: HTMLElement | null = null;
+
+		fieldNameSetting
+			.addText(text => {
+				fieldNameInput = text.inputEl;
+				text.setPlaceholder('e.g., archive')
+					.setValue(field.name)
+					.onChange(async (value) => {
+						this.plugin.settings.defaultModalFields[index].name = value.trim();
+						await this.plugin.saveSettings();
+						if (fieldNameInput && warningEl) {
+							this.updateFieldNameValidation(value.trim(), fieldNameInput, warningEl);
+						}
+					});
+				return text;
+			})
+			.addDropdown(dropdown => {
+				dropdown.addOption('', 'Choose from CSL fields...');
+				
+				// Add all CSL fields sorted alphabetically
+				const sortedCSLFields = Array.from(CSL_ALL_CSL_FIELDS).sort();
+				sortedCSLFields.forEach(cslField => {
+					dropdown.addOption(cslField, cslField);
+				});
+				
+				dropdown.onChange(async (value) => {
+					if (value && value !== '' && fieldNameInput && warningEl) {
+						fieldNameInput.value = value;
+						this.plugin.settings.defaultModalFields[index].name = value;
+						await this.plugin.saveSettings();
+						this.updateFieldNameValidation(value, fieldNameInput, warningEl);
+					}
+				});
+				
+				return dropdown;
+			});
+
+		// Warning element for non-CSL fields
+		warningEl = fieldEl.createDiv({ 
+			cls: 'modal-field-warning',
+			attr: { style: 'display: none;' }
+		});
+		
+		// Initial validation
+		if (fieldNameInput && warningEl) {
+			this.updateFieldNameValidation(field.name, fieldNameInput, warningEl);
+		}
 
 		// Field label
 		new Setting(fieldEl)
@@ -1348,5 +1414,45 @@ export class BibliographySettingTab extends PluginSettingTab {
 					this.plugin.settings.bibtexFilePath = normalizePath(value.trim());
 					await this.plugin.saveSettings();
 				}));
+	}
+
+	/**
+	 * Update field name validation for default modal fields
+	 */
+	private updateFieldNameValidation(fieldName: string, inputEl: HTMLInputElement, warningEl: HTMLElement): void {
+		if (!fieldName || fieldName.trim() === '') {
+			// Empty field name
+			inputEl.removeClass('field-valid', 'field-invalid');
+			warningEl.style.display = 'none';
+			return;
+		}
+
+		const isCSLCompliant = CSL_ALL_CSL_FIELDS.has(fieldName);
+
+		if (isCSLCompliant) {
+			// Valid CSL field
+			inputEl.removeClass('field-invalid');
+			inputEl.addClass('field-valid');
+			warningEl.style.display = 'none';
+		} else {
+			// Invalid/non-CSL field
+			inputEl.removeClass('field-valid');
+			inputEl.addClass('field-invalid');
+			
+			warningEl.empty();
+			const callout = warningEl.createDiv({ cls: 'callout callout-warning' });
+			callout.createDiv({ cls: 'callout-title', text: '⚠️ Non-CSL Field' });
+			
+			const content = callout.createDiv({ cls: 'callout-content' });
+			content.createEl('p').appendText(`"${fieldName}" is not a standard CSL field. Default modal fields should be CSL-compliant to ensure compatibility with bibliography tools. Please choose a field from the dropdown or check the `);
+			content.lastElementChild?.createEl('a', {
+				text: 'CSL specification',
+				href: 'https://docs.citationstyles.org/en/stable/specification.html#appendix-iv-variables',
+				attr: { target: '_blank' }
+			});
+			content.lastElementChild?.appendText('.');
+			
+			warningEl.style.display = 'block';
+		}
 	}
 }

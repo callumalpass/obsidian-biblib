@@ -91,10 +91,16 @@ export class EditBibliographyModal extends BibliographyModal {
         
         optionsContainer.createEl('h4', { text: 'Update options' });
         
+        // Create a description for the section
+        const optionsDesc = optionsContainer.createEl('p', {
+            cls: 'setting-item-description',
+            text: 'Choose which parts of the note should be updated when saving changes:'
+        });
+        
         // Citekey regeneration toggle
         new Setting(optionsContainer)
             .setName('Regenerate citekey')
-            .setDesc('Generate a new citekey if relevant data changes')
+            .setDesc('Generate a new citekey based on current data (may rename the file)')
             .addToggle(toggle => {
                 this.regenerateCitekeyToggle = toggle;
                 toggle.setValue(this.regenerateCitekeyOnSave)
@@ -105,8 +111,8 @@ export class EditBibliographyModal extends BibliographyModal {
 
         // Custom frontmatter update toggle
         new Setting(optionsContainer)
-            .setName('Update custom frontmatter fields')
-            .setDesc('Re-evaluate custom frontmatter field templates')
+            .setName('Update templated frontmatter')
+            .setDesc('Re-evaluate custom frontmatter field templates with current data')
             .addToggle(toggle => {
                 this.updateCustomFrontmatterToggle = toggle;
                 toggle.setValue(this.updateCustomFrontmatterOnSave)
@@ -115,17 +121,41 @@ export class EditBibliographyModal extends BibliographyModal {
                     });
             });
 
-        // Note body regeneration toggle
-        new Setting(optionsContainer)
+        // Note body regeneration toggle with warning
+        const bodyRegenerationSetting = new Setting(optionsContainer)
             .setName('Regenerate note body')
-            .setDesc('Replace the note body with the header template')
+            .setDesc('Replace the entire note body with the header template')
             .addToggle(toggle => {
                 this.regenerateBodyToggle = toggle;
                 toggle.setValue(this.regenerateBodyOnSave)
                     .onChange(value => {
                         this.regenerateBodyOnSave = value;
+                        this.updateBodyWarningVisibility(value, warningEl);
                     });
             });
+
+        // Warning for body regeneration
+        const warningEl = optionsContainer.createDiv({
+            cls: 'edit-body-warning',
+            attr: { style: this.regenerateBodyOnSave ? 'display: block;' : 'display: none;' }
+        });
+        
+        warningEl.createEl('div', {
+            cls: 'callout callout-warning',
+        }, (callout) => {
+            callout.createEl('div', { cls: 'callout-title', text: '⚠️ Warning' });
+            callout.createEl('div', { 
+                cls: 'callout-content', 
+                text: 'Regenerating the note body will replace all content you\'ve added to this note with the header template. This action cannot be undone.' 
+            });
+        });
+    }
+
+    /**
+     * Show/hide body regeneration warning
+     */
+    private updateBodyWarningVisibility(show: boolean, warningEl: HTMLElement): void {
+        warningEl.style.display = show ? 'block' : 'none';
     }
 
     /**
@@ -161,13 +191,17 @@ export class EditBibliographyModal extends BibliographyModal {
         if (frontmatter.attachment || frontmatter.pdflink) {
             const attachments = frontmatter.attachment || frontmatter.pdflink;
             if (Array.isArray(attachments)) {
-                attachments.forEach(path => {
+                // Filter to ensure only valid string paths are processed
+                const validPaths = attachments.filter(path => 
+                    typeof path === 'string' && path.trim().length > 0
+                );
+                validPaths.forEach(path => {
                     this.attachmentData.push({
                         type: AttachmentType.LINK,
                         path: path
                     });
                 });
-            } else if (typeof attachments === 'string') {
+            } else if (typeof attachments === 'string' && attachments.trim().length > 0) {
                 this.attachmentData.push({
                     type: AttachmentType.LINK,
                     path: attachments
@@ -179,8 +213,11 @@ export class EditBibliographyModal extends BibliographyModal {
         if (frontmatter.related || frontmatter.links) {
             const related = frontmatter.related || frontmatter.links;
             if (Array.isArray(related)) {
-                this.relatedNotePaths = related;
-            } else if (typeof related === 'string') {
+                // Filter to ensure only valid string paths are processed
+                this.relatedNotePaths = related.filter(path => 
+                    typeof path === 'string' && path.trim().length > 0
+                );
+            } else if (typeof related === 'string' && related.trim().length > 0) {
                 this.relatedNotePaths = [related];
             }
         }

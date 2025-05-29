@@ -956,6 +956,22 @@ export class BibliographyModal extends Modal {
                     
                     if (inputEl instanceof HTMLInputElement && inputEl.type === 'checkbox') {
                         inputEl.checked = !!value;
+                    } else if (inputEl instanceof HTMLInputElement && inputEl.type === 'date') {
+                        // Handle CSL date format
+                        let dateString = '';
+                        if (typeof value === 'string') {
+                            dateString = value;
+                        } else if (value && typeof value === 'object' && 'date-parts' in value && value['date-parts'][0]) {
+                            const parts = value['date-parts'][0];
+                            if (parts.length >= 3) {
+                                dateString = `${parts[0]}-${parts[1].toString().padStart(2, '0')}-${parts[2].toString().padStart(2, '0')}`;
+                            } else if (parts.length >= 2) {
+                                dateString = `${parts[0]}-${parts[1].toString().padStart(2, '0')}-01`;
+                            } else if (parts.length >= 1) {
+                                dateString = `${parts[0]}-01-01`;
+                            }
+                        }
+                        inputEl.value = dateString;
                     } else if (inputEl instanceof HTMLSelectElement || inputEl instanceof HTMLTextAreaElement || inputEl instanceof HTMLInputElement) {
                         inputEl.value = value.toString();
                     }
@@ -1139,7 +1155,27 @@ export class BibliographyModal extends Modal {
                     setting.addText(text => {
                         inputEl = text.inputEl;
                         text.inputEl.type = 'date';
-                        if (fieldConfig.defaultValue) text.setValue(fieldConfig.defaultValue.toString());
+                        
+                        // Handle CSL date format for default value
+                        if (fieldConfig.defaultValue) {
+                            let dateString = '';
+                            const defaultVal = fieldConfig.defaultValue;
+                            
+                            if (typeof defaultVal === 'string') {
+                                dateString = defaultVal;
+                            } else if (typeof defaultVal === 'object' && defaultVal && 'date-parts' in defaultVal) {
+                                const parts = (defaultVal as any)['date-parts'][0];
+                                if (parts && parts.length >= 3) {
+                                    dateString = `${parts[0]}-${parts[1].toString().padStart(2, '0')}-${parts[2].toString().padStart(2, '0')}`;
+                                } else if (parts && parts.length >= 2) {
+                                    dateString = `${parts[0]}-${parts[1].toString().padStart(2, '0')}-01`;
+                                } else if (parts && parts.length >= 1) {
+                                    dateString = `${parts[0]}-01-01`;
+                                }
+                            }
+                            
+                            text.setValue(dateString);
+                        }
                         return text;
                     });
                     break;
@@ -1248,12 +1284,30 @@ export class BibliographyModal extends Modal {
             
             if (inputEl instanceof HTMLInputElement && inputEl.type === 'checkbox') {
                 value = inputEl.checked;
+            } else if (inputEl instanceof HTMLInputElement && inputEl.type === 'date') {
+                // Handle date fields with CSL format conversion
+                const dateValue = inputEl.value;
+                if (dateValue) {
+                    const dateMatch = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                    if (dateMatch) {
+                        value = {
+                            'date-parts': [[
+                                parseInt(dateMatch[1], 10),
+                                parseInt(dateMatch[2], 10),
+                                parseInt(dateMatch[3], 10)
+                            ]]
+                        };
+                    } else {
+                        // Fallback for invalid dates
+                        value = { 'raw': dateValue };
+                    }
+                }
             } else if (inputEl instanceof HTMLSelectElement || inputEl instanceof HTMLTextAreaElement || inputEl instanceof HTMLInputElement) {
                 value = inputEl.value;
             }
             
-            // Only add non-empty values
-            if (value !== undefined && value !== '' && value !== false) {
+            // Only add non-empty values (but allow false for checkboxes)
+            if (value !== undefined && value !== '' && !(inputEl instanceof HTMLInputElement && inputEl.type === 'checkbox' && value === false)) {
                 citation[fieldName] = value;
             }
         });

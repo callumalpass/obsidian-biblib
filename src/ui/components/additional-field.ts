@@ -150,9 +150,54 @@ export class AdditionalFieldComponent {
             }
         }
 
-        valueInput.value = this.field.value != null ? String(this.field.value) : '';
-        valueInput.oninput = () => { this.field.value = valueInput.value.trim(); };
-        valueInput.onchange = () => { this.field.value = valueInput.value.trim(); };
+        // Handle value setting and change events differently for dates
+        if (this.field.type === 'date') {
+            // Convert CSL date object to date string for display
+            let dateString = '';
+            if (this.field.value) {
+                if (typeof this.field.value === 'string') {
+                    dateString = this.field.value;
+                } else if (this.field.value['date-parts'] && this.field.value['date-parts'][0]) {
+                    const parts = this.field.value['date-parts'][0];
+                    if (parts.length >= 3) {
+                        dateString = `${parts[0]}-${parts[1].toString().padStart(2, '0')}-${parts[2].toString().padStart(2, '0')}`;
+                    } else if (parts.length >= 2) {
+                        dateString = `${parts[0]}-${parts[1].toString().padStart(2, '0')}-01`;
+                    } else if (parts.length >= 1) {
+                        dateString = `${parts[0]}-01-01`;
+                    }
+                }
+            }
+            (valueInput as HTMLInputElement).value = dateString;
+            
+            // Convert date string to CSL date format when saving
+            valueInput.onchange = () => {
+                const inputValue = (valueInput as HTMLInputElement).value.trim();
+                if (inputValue) {
+                    const dateMatch = inputValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                    if (dateMatch) {
+                        this.field.value = {
+                            'date-parts': [[
+                                parseInt(dateMatch[1], 10),
+                                parseInt(dateMatch[2], 10),
+                                parseInt(dateMatch[3], 10)
+                            ]]
+                        };
+                    } else {
+                        // Fallback for invalid dates
+                        this.field.value = { 'raw': inputValue };
+                    }
+                } else {
+                    this.field.value = '';
+                }
+            };
+            valueInput.oninput = valueInput.onchange; // Use same logic for both events
+        } else {
+            // Standard handling for non-date fields
+            valueInput.value = this.field.value != null ? String(this.field.value) : '';
+            valueInput.oninput = () => { this.field.value = valueInput.value.trim(); };
+            valueInput.onchange = () => { this.field.value = valueInput.value.trim(); };
+        }
     }
 
 
