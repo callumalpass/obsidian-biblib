@@ -1,6 +1,6 @@
 import { App, Platform, PluginSettingTab, Setting, TextAreaComponent, TextComponent, normalizePath, setIcon, Notice } from 'obsidian';
 import BibliographyPlugin from '../../main';
-import { CSL_ALL_CSL_FIELDS } from '../utils/csl-variables';
+import { CSL_ALL_CSL_FIELDS, CSL_DATE_FIELDS, CSL_NUMBER_FIELDS } from '../utils/csl-variables';
 import { TemplatePlaygroundComponent } from './components/template-playground';
 import { FavoriteLanguage, ModalFieldConfig } from '../types/settings';
 
@@ -1167,6 +1167,29 @@ export class BibliographySettingTab extends PluginSettingTab {
 	}
 
 	/**
+	 * Detect the appropriate field type based on CSL field name
+	 */
+	private detectFieldType(fieldName: string): 'text' | 'textarea' | 'number' | 'date' | 'toggle' | 'dropdown' {
+		// Check if it's a date field
+		if (CSL_DATE_FIELDS.includes(fieldName)) {
+			return 'date';
+		}
+		
+		// Check if it's a number field
+		if (CSL_NUMBER_FIELDS.includes(fieldName)) {
+			return 'number';
+		}
+		
+		// Check if it's a field that typically needs more space
+		if (fieldName === 'abstract' || fieldName === 'note' || fieldName === 'annote') {
+			return 'textarea';
+		}
+		
+		// Default to text for everything else
+		return 'text';
+	}
+
+	/**
 	 * Adds a default modal field row to the settings
 	 */
 	private addDefaultModalFieldRow(field: ModalFieldConfig, index: number, container: HTMLElement): void {
@@ -1179,6 +1202,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 
 		let fieldNameInput: HTMLInputElement | null = null;
 		let warningEl: HTMLElement | null = null;
+		let typeDropdown: HTMLSelectElement | null = null;
 
 		fieldNameSetting
 			.addText(text => {
@@ -1186,10 +1210,26 @@ export class BibliographySettingTab extends PluginSettingTab {
 				text.setPlaceholder('e.g., archive')
 					.setValue(field.name)
 					.onChange(async (value) => {
-						this.plugin.settings.defaultModalFields[index].name = value.trim();
+						const trimmedValue = value.trim();
+						this.plugin.settings.defaultModalFields[index].name = trimmedValue;
+						
+						// Auto-detect and set field type for CSL fields
+						if (CSL_ALL_CSL_FIELDS.has(trimmedValue)) {
+							const detectedType = this.detectFieldType(trimmedValue);
+							this.plugin.settings.defaultModalFields[index].type = detectedType;
+							if (typeDropdown) {
+								typeDropdown.value = detectedType;
+								// Disable dropdown for CSL fields
+								typeDropdown.disabled = true;
+							}
+						} else if (typeDropdown) {
+							// Enable dropdown for non-CSL fields
+							typeDropdown.disabled = false;
+						}
+						
 						await this.plugin.saveSettings();
 						if (fieldNameInput && warningEl) {
-							this.updateFieldNameValidation(value.trim(), fieldNameInput, warningEl);
+							this.updateFieldNameValidation(trimmedValue, fieldNameInput, warningEl);
 						}
 					});
 				return text;
@@ -1207,6 +1247,21 @@ export class BibliographySettingTab extends PluginSettingTab {
 					if (value && value !== '' && fieldNameInput && warningEl) {
 						fieldNameInput.value = value;
 						this.plugin.settings.defaultModalFields[index].name = value;
+						
+						// Auto-detect and set field type for CSL fields
+						if (CSL_ALL_CSL_FIELDS.has(value)) {
+							const detectedType = this.detectFieldType(value);
+							this.plugin.settings.defaultModalFields[index].type = detectedType;
+							if (typeDropdown) {
+								typeDropdown.value = detectedType;
+								// Disable dropdown for CSL fields
+								typeDropdown.disabled = true;
+							}
+						} else if (typeDropdown) {
+							// Enable dropdown for non-CSL fields
+							typeDropdown.disabled = false;
+						}
+						
 						await this.plugin.saveSettings();
 						this.updateFieldNameValidation(value, fieldNameInput, warningEl);
 					}
@@ -1242,19 +1297,35 @@ export class BibliographySettingTab extends PluginSettingTab {
 		new Setting(fieldEl)
 			.setName('Field type')
 			.setDesc('The type of input control')
-			.addDropdown(dropdown => dropdown
-				.addOption('text', 'Text')
-				.addOption('textarea', 'Text Area')
-				.addOption('number', 'Number')
-				.addOption('date', 'Date')
-				.addOption('toggle', 'Toggle')
-				.addOption('dropdown', 'Dropdown')
-				.setValue(field.type)
-				.onChange(async (value: any) => {
-					this.plugin.settings.defaultModalFields[index].type = value;
-					await this.plugin.saveSettings();
-					this.display(); // Refresh to show/hide options field
-				}));
+			.addDropdown(dropdown => {
+				typeDropdown = dropdown.selectEl as HTMLSelectElement; // Store reference to the dropdown element
+				dropdown
+					.addOption('text', 'Text')
+					.addOption('textarea', 'Text Area')
+					.addOption('number', 'Number')
+					.addOption('date', 'Date')
+					.addOption('toggle', 'Toggle')
+					.addOption('dropdown', 'Dropdown')
+					.setValue(field.type)
+					.onChange(async (value: any) => {
+						this.plugin.settings.defaultModalFields[index].type = value;
+						await this.plugin.saveSettings();
+						this.display(); // Refresh to show/hide options field
+					});
+				return dropdown;
+			});
+		
+		// Initialize type dropdown state based on current field name
+		if (field.name && CSL_ALL_CSL_FIELDS.has(field.name) && typeDropdown) {
+			// For CSL fields, ensure type is correct and dropdown is disabled
+			const detectedType = this.detectFieldType(field.name);
+			if (field.type !== detectedType) {
+				this.plugin.settings.defaultModalFields[index].type = detectedType;
+				(typeDropdown as HTMLSelectElement).value = detectedType;
+				this.plugin.saveSettings();
+			}
+			(typeDropdown as HTMLSelectElement).disabled = true;
+		}
 
 		// Description (optional)
 		new Setting(fieldEl)

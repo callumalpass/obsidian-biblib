@@ -175,11 +175,10 @@ export class EditBibliographyModal extends BibliographyModal {
             // Check if it's a name field (author, editor, etc.)
             if (CSL_NAME_FIELDS.includes(key) && Array.isArray(value)) {
                 contributors[key] = value;
-            } else if (CSL_ALL_CSL_FIELDS.has(key)) {
-                // It's a standard CSL field
+            } else {
+                // Include all fields in cslData so they can be loaded as additional fields
                 cslData[key] = value;
             }
-            // Non-CSL fields are ignored (not loaded into the modal)
         }
         
         // Convert contributors to the format expected by populateFormFromCitoid
@@ -311,14 +310,57 @@ export class EditBibliographyModal extends BibliographyModal {
             });
             
             // Merge additional fields
+            console.log('Edit modal - additional fields to process:', updatedModalData.additionalFields);
             updatedModalData.additionalFields.forEach(field => {
-                if (field.name && field.value !== undefined) {
-                    // For date fields, check if the value is a valid CSL date object
-                    if (field.type === 'date' && typeof field.value === 'object' && field.value !== null) {
+                console.log('Edit modal - processing field:', field.name, 'Type:', field.type, 'Value:', field.value);
+                
+                // Filter out fields without names
+                if (!field.name || field.name.trim() === '') {
+                    console.log('Edit modal - skipping field with no name');
+                    return;
+                }
+                
+                // For date fields, check if value exists and is not empty
+                if (field.type === 'date') {
+                    if (field.value == null || 
+                        (typeof field.value === 'string' && field.value.trim() === '') ||
+                        (typeof field.value === 'object' && (!field.value['date-parts'] || field.value['date-parts'].length === 0))) {
+                        console.log('Edit modal - skipping empty date field');
+                        return;
+                    }
+                    
+                    if (typeof field.value === 'object' && field.value !== null) {
+                        // Valid CSL date object
                         finalFrontmatterOutput[field.name] = field.value;
-                    } else if (field.value !== '') {
-                        // For non-date fields, only add non-empty values
+                        console.log('Edit modal - added CSL date field:', field.name, '=', field.value);
+                    } else if (typeof field.value === 'string' && field.value !== '') {
+                        // Date string that wasn't converted to CSL format
+                        // Try to convert it
+                        const dateMatch = field.value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                        if (dateMatch) {
+                            const cslDate = {
+                                'date-parts': [[
+                                    parseInt(dateMatch[1], 10),
+                                    parseInt(dateMatch[2], 10),
+                                    parseInt(dateMatch[3], 10)
+                                ]]
+                            };
+                            finalFrontmatterOutput[field.name] = cslDate;
+                            console.log('Edit modal - converted and added date field:', field.name, '=', cslDate);
+                        } else {
+                            // Store as raw date string if parsing fails
+                            const rawDate = { 'raw': field.value };
+                            finalFrontmatterOutput[field.name] = rawDate;
+                            console.log('Edit modal - added raw date field:', field.name, '=', rawDate);
+                        }
+                    }
+                } else {
+                    // For non-date fields, check standard empty conditions
+                    if (field.value != null && field.value !== '') {
                         finalFrontmatterOutput[field.name] = field.value;
+                        console.log('Edit modal - added field:', field.name, '=', field.value);
+                    } else {
+                        console.log('Edit modal - skipping empty field');
                     }
                 }
             });

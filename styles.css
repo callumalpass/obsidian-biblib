@@ -1926,3 +1926,54 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
   margin-bottom: 5px;
   color: var(--text-accent);
 }
+
+/* ==========================================================================
+   Edit Modal Regeneration Options
+   ========================================================================== */
+
+.edit-options-container {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: var(--background-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.edit-options-container h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: var(--text-normal);
+  font-size: 1.1em;
+}
+
+.edit-options-container .setting-item-description {
+  margin-bottom: 15px;
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+.edit-body-warning {
+  margin-top: 10px;
+}
+
+.edit-body-warning .callout {
+  margin: 0;
+}
+
+.edit-body-warning .callout-warning {
+  background-color: var(--background-modifier-error-hover);
+  border-left: 4px solid var(--text-error);
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.edit-body-warning .callout-title {
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: var(--text-error);
+}
+
+.edit-body-warning .callout-content {
+  font-size: 0.9em;
+  color: var(--text-normal);
+}

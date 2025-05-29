@@ -92,7 +92,10 @@ export class FrontmatterBuilderService {
       );
       
       // Generate formatted YAML
-      return stringifyYaml(frontmatter);
+      console.log('Final frontmatter object before YAML conversion:', frontmatter);
+      const yamlResult = stringifyYaml(frontmatter);
+      console.log('YAML result:', yamlResult);
+      return yamlResult;
     } catch (error) {
       console.error('Error creating frontmatter:', error);
       throw error;
@@ -130,40 +133,65 @@ export class FrontmatterBuilderService {
     frontmatter: Record<string, any>, 
     additionalFields: AdditionalField[]
   ): void {
+    console.log('Processing additional fields for frontmatter:', additionalFields);
     additionalFields.forEach((field) => {
-      if (field.name && field.value != null && field.value !== '') {
-        let valueToAdd = field.value;
-        
-        // Format value based on field type
-        if (field.type === 'date') {
-          // For date type fields, ensure they have the proper CSL date-parts structure
-          if (typeof field.value === 'object' && field.value['date-parts']) {
-            // It's already in CSL format
-            valueToAdd = field.value;
-          } else if (typeof field.value === 'string') {
-            // Try parsing date string (YYYY-MM-DD or YYYY)
-            const dateParts = field.value.split('-')
-              .map(Number)
-              .filter((part: number) => !isNaN(part));
-            
-            if (dateParts.length > 0) {
-              valueToAdd = { 'date-parts': [dateParts] };
-            } else {
-              // If parsing fails, store as string
-              valueToAdd = field.value;
-            }
-          }
-        } else if (field.type === 'number') {
-          // Ensure numbers are stored as numbers, not strings
-          // Handle various possible value types for conversion to number
-          const stringValue = String(field.value);
-          const numValue = parseFloat(stringValue);
-          valueToAdd = isNaN(numValue) ? field.value : numValue;
-        }
-        
-        // Add the potentially modified value to frontmatter
-        frontmatter[field.name] = valueToAdd;
+      console.log('Processing field:', field.name, 'Type:', field.type, 'Value:', field.value, 'Value type:', typeof field.value);
+      // Filter out fields without names or values
+      if (!field.name || field.name.trim() === '') {
+        console.log('Skipping field with no name');
+        return;
       }
+      
+      // For date fields, check if value exists and is not empty
+      if (field.type === 'date') {
+        if (field.value == null || 
+            (typeof field.value === 'string' && field.value.trim() === '') ||
+            (typeof field.value === 'object' && (!field.value['date-parts'] || field.value['date-parts'].length === 0))) {
+          console.log('Skipping empty date field');
+          return;
+        }
+      } else {
+        // For non-date fields, check standard empty conditions
+        if (field.value == null || field.value === '') {
+          console.log('Skipping empty field');
+          return;
+        }
+      }
+      
+      let valueToAdd = field.value;
+      
+      // Format value based on field type
+      if (field.type === 'date') {
+        console.log('Processing date field:', field.name);
+        // For date type fields, ensure they have the proper CSL date-parts structure
+        if (typeof field.value === 'object' && field.value['date-parts']) {
+          // It's already in CSL format
+          valueToAdd = field.value;
+        } else if (typeof field.value === 'string') {
+          // Try parsing date string (YYYY-MM-DD or YYYY)
+          const dateParts = field.value.split('-')
+            .map(Number)
+            .filter((part: number) => !isNaN(part));
+          
+          if (dateParts.length > 0) {
+            valueToAdd = { 'date-parts': [dateParts] };
+          } else {
+            // If parsing fails, store as string
+            valueToAdd = field.value;
+          }
+        }
+      } else if (field.type === 'number') {
+        // Ensure numbers are stored as numbers, not strings
+        // Handle various possible value types for conversion to number
+        const stringValue = String(field.value);
+        const numValue = parseFloat(stringValue);
+        valueToAdd = isNaN(numValue) ? field.value : numValue;
+      }
+      
+      // Add the potentially modified value to frontmatter
+      frontmatter[field.name] = valueToAdd;
+      console.log('Added to frontmatter:', field.name, '=', valueToAdd);
+      console.log('Frontmatter now contains:', Object.keys(frontmatter));
     });
   }
   
@@ -194,6 +222,7 @@ export class FrontmatterBuilderService {
       attachmentPaths,
       relatedNotePaths
     );
+    console.log('Template variables for custom frontmatter:', templateVariables);
     
     // Filter to enabled custom fields
     const enabledFields = pluginSettings.customFrontmatterFields.filter(field => field.enabled);

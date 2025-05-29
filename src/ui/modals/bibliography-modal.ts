@@ -1011,14 +1011,7 @@ export class BibliographyModal extends Modal {
                         fieldType = 'date';
                     }
                     
-                    // Add to internal state
-                    this.additionalFields.push({
-                        name: key,
-                        value: value,
-                        type: fieldType
-                    });
-                    
-                    // Create field in UI
+                    // Create field in UI (this will also add to internal state)
                     this.addAdditionalField(key, value, fieldType);
                 }
             }
@@ -1104,10 +1097,9 @@ export class BibliographyModal extends Modal {
             }
         );
         
-        // Add to additionalFields array if name provided
-        if (name) {
-            this.additionalFields.push(additionalField);
-        }
+        // Always add to additionalFields array - we'll filter out empty ones when saving
+        this.additionalFields.push(additionalField);
+        console.log('Added additional field to array:', additionalField, 'Array now:', this.additionalFields);
     }
 
     /**
