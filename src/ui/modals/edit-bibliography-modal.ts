@@ -1,0 +1,395 @@
+import { App, Modal, Notice, Setting, TFile, ButtonComponent, ToggleComponent, stringifyYaml } from 'obsidian';
+import { BibliographyModal } from './bibliography-modal';
+import { BibliographyPluginSettings } from '../../types/settings';
+import { Citation, Contributor, AdditionalField, AttachmentData, AttachmentType } from '../../types/citation';
+import { ContributorField } from '../components/contributor-field';
+import { AdditionalFieldComponent } from '../components/additional-field';
+import { CitekeyGenerator } from '../../utils/citekey-generator';
+import { TemplateEngine } from '../../utils/template-engine';
+import { 
+    CSL_ALL_CSL_FIELDS, 
+    CSL_NAME_FIELDS, 
+    CSL_NUMBER_FIELDS, 
+    CSL_DATE_FIELDS 
+} from '../../utils/csl-variables';
+import { 
+    NoteCreationService,
+    TemplateVariableBuilderService,
+    FrontmatterBuilderService,
+    NoteContentBuilderService,
+    AttachmentManagerService,
+    ReferenceParserService,
+    CitationService
+} from '../../services';
+
+export class EditBibliographyModal extends BibliographyModal {
+    private fileToEdit: TFile;
+    private parsedFrontmatter: any;
+    
+    // Regeneration options
+    private regenerateCitekeyOnSave: boolean;
+    private updateCustomFrontmatterOnSave: boolean;
+    private regenerateBodyOnSave: boolean;
+    
+    // Toggle controls
+    private regenerateCitekeyToggle: ToggleComponent;
+    private updateCustomFrontmatterToggle: ToggleComponent;
+    private regenerateBodyToggle: ToggleComponent;
+
+    constructor(app: App, settings: BibliographyPluginSettings, fileToEdit: TFile) {
+        super(app, settings, false); // false = not opened via command
+        this.fileToEdit = fileToEdit;
+        
+        // Initialize with settings defaults
+        this.regenerateCitekeyOnSave = settings.editRegenerateCitekeyDefault;
+        this.updateCustomFrontmatterOnSave = settings.editUpdateCustomFrontmatterDefault;
+        this.regenerateBodyOnSave = settings.editRegenerateBodyDefault;
+    }
+
+    onOpen() {
+        // Get frontmatter
+        const cache = this.app.metadataCache.getCache(this.fileToEdit.path);
+        this.parsedFrontmatter = cache?.frontmatter;
+        
+        if (!this.parsedFrontmatter) {
+            new Notice('No frontmatter found in the selected file');
+            this.close();
+            return;
+        }
+
+        // Call parent onOpen to create the form
+        super.onOpen();
+        
+        // Change modal title
+        const titleEl = this.contentEl.querySelector('h2');
+        if (titleEl) {
+            titleEl.textContent = 'Edit literature note';
+        }
+        
+        // Add regeneration options before submit buttons
+        this.addRegenerationOptions();
+        
+        // Populate form with existing data
+        this.populateFormFromCSLFrontmatter(this.parsedFrontmatter);
+    }
+
+    /**
+     * Add regeneration option toggles to the modal
+     */
+    private addRegenerationOptions(): void {
+        // Find the button container (it's the last element before closing)
+        const buttonContainers = this.contentEl.querySelectorAll('.modal-button-container');
+        const buttonContainer = buttonContainers[buttonContainers.length - 1];
+        
+        if (!buttonContainer || !buttonContainer.parentElement) return;
+        
+        // Create options container before the buttons
+        const optionsContainer = buttonContainer.parentElement.createDiv({ 
+            cls: 'edit-options-container' 
+        });
+        buttonContainer.parentElement.insertBefore(optionsContainer, buttonContainer);
+        
+        optionsContainer.createEl('h4', { text: 'Update options' });
+        
+        // Citekey regeneration toggle
+        new Setting(optionsContainer)
+            .setName('Regenerate citekey')
+            .setDesc('Generate a new citekey if relevant data changes')
+            .addToggle(toggle => {
+                this.regenerateCitekeyToggle = toggle;
+                toggle.setValue(this.regenerateCitekeyOnSave)
+                    .onChange(value => {
+                        this.regenerateCitekeyOnSave = value;
+                    });
+            });
+
+        // Custom frontmatter update toggle
+        new Setting(optionsContainer)
+            .setName('Update custom frontmatter fields')
+            .setDesc('Re-evaluate custom frontmatter field templates')
+            .addToggle(toggle => {
+                this.updateCustomFrontmatterToggle = toggle;
+                toggle.setValue(this.updateCustomFrontmatterOnSave)
+                    .onChange(value => {
+                        this.updateCustomFrontmatterOnSave = value;
+                    });
+            });
+
+        // Note body regeneration toggle
+        new Setting(optionsContainer)
+            .setName('Regenerate note body')
+            .setDesc('Replace the note body with the header template')
+            .addToggle(toggle => {
+                this.regenerateBodyToggle = toggle;
+                toggle.setValue(this.regenerateBodyOnSave)
+                    .onChange(value => {
+                        this.regenerateBodyOnSave = value;
+                    });
+            });
+    }
+
+    /**
+     * Populate form from CSL frontmatter
+     */
+    private populateFormFromCSLFrontmatter(frontmatter: any): void {
+        const cslData: any = {};
+        const contributors: { [role: string]: any[] } = {};
+        
+        // Process each frontmatter field
+        for (const [key, value] of Object.entries(frontmatter)) {
+            // Skip non-CSL fields and internal Obsidian fields
+            if (key.startsWith('cssclass') || key === 'tags' || key === 'aliases') {
+                continue;
+            }
+            
+            // Check if it's a name field (author, editor, etc.)
+            if (CSL_NAME_FIELDS.includes(key) && Array.isArray(value)) {
+                contributors[key] = value;
+            } else if (CSL_ALL_CSL_FIELDS.has(key)) {
+                // It's a standard CSL field
+                cslData[key] = value;
+            }
+            // Non-CSL fields are ignored (not loaded into the modal)
+        }
+        
+        // Convert contributors to the format expected by populateFormFromCitoid
+        for (const [role, names] of Object.entries(contributors)) {
+            cslData[role] = names;
+        }
+        
+        // Populate attachments
+        if (frontmatter.attachment || frontmatter.pdflink) {
+            const attachments = frontmatter.attachment || frontmatter.pdflink;
+            if (Array.isArray(attachments)) {
+                attachments.forEach(path => {
+                    this.attachmentData.push({
+                        type: AttachmentType.LINK,
+                        path: path
+                    });
+                });
+            } else if (typeof attachments === 'string') {
+                this.attachmentData.push({
+                    type: AttachmentType.LINK,
+                    path: attachments
+                });
+            }
+        }
+        
+        // Populate related notes
+        if (frontmatter.related || frontmatter.links) {
+            const related = frontmatter.related || frontmatter.links;
+            if (Array.isArray(related)) {
+                this.relatedNotePaths = related;
+            } else if (typeof related === 'string') {
+                this.relatedNotePaths = [related];
+            }
+        }
+        
+        // Use the parent class method to populate the form
+        this.populateFormFromCitoid(cslData);
+        
+        // Update attachment display
+        if (this.attachmentsDisplayEl) {
+            this.updateAttachmentsDisplay();
+        }
+        
+        // Update related notes display
+        const relatedNotesDisplay = this.contentEl.querySelector('.bibliography-related-notes-display');
+        if (relatedNotesDisplay instanceof HTMLElement) {
+            this.updateRelatedNotesDisplay(relatedNotesDisplay);
+        }
+    }
+
+    /**
+     * Override handleSubmit to update the existing file
+     */
+    protected async handleSubmit(citation: Citation): Promise<void> {
+        try {
+            // Get updated modal data
+            const updatedModalData = {
+                citation: this.getFormValues(),
+                contributors: this.contributors,
+                additionalFields: this.additionalFields,
+                attachmentData: this.attachmentData,
+                relatedNotePaths: this.relatedNotePaths
+            };
+
+            // Read current file content
+            const originalFileContent = await this.app.vault.read(this.fileToEdit);
+            
+            // Get existing frontmatter
+            const existingFrontmatter = this.parsedFrontmatter || {};
+            
+            // Get current citekey
+            const currentCitekey = existingFrontmatter.id || existingFrontmatter.citekey;
+            let newCitekey = currentCitekey;
+            
+            // Generate new citekey if requested
+            if (this.regenerateCitekeyOnSave) {
+                newCitekey = CitekeyGenerator.generate(updatedModalData.citation, this.settings.citekeyOptions);
+                updatedModalData.citation.id = newCitekey;
+            }
+            
+            // Start with existing frontmatter to preserve non-CSL fields
+            const finalFrontmatterOutput: any = { ...existingFrontmatter };
+            
+            // Merge CSL data from modal
+            for (const [key, value] of Object.entries(updatedModalData.citation)) {
+                if (value !== undefined && value !== '') {
+                    finalFrontmatterOutput[key] = value;
+                }
+            }
+            
+            // Merge contributors
+            const contributorsByRole: { [role: string]: any[] } = {};
+            updatedModalData.contributors.forEach(contributor => {
+                if (!contributorsByRole[contributor.role]) {
+                    contributorsByRole[contributor.role] = [];
+                }
+                
+                const nameData: any = {};
+                if (contributor.family) nameData.family = contributor.family;
+                if (contributor.given) nameData.given = contributor.given;
+                if (contributor.literal) nameData.literal = contributor.literal;
+                
+                if (Object.keys(nameData).length > 0) {
+                    contributorsByRole[contributor.role].push(nameData);
+                }
+            });
+            
+            // Update frontmatter with contributors
+            for (const [role, names] of Object.entries(contributorsByRole)) {
+                if (names.length > 0) {
+                    finalFrontmatterOutput[role] = names;
+                } else {
+                    delete finalFrontmatterOutput[role];
+                }
+            }
+            
+            // Clear any old contributor fields that are now empty
+            CSL_NAME_FIELDS.forEach(field => {
+                if (!contributorsByRole[field] && finalFrontmatterOutput[field]) {
+                    delete finalFrontmatterOutput[field];
+                }
+            });
+            
+            // Merge additional fields
+            updatedModalData.additionalFields.forEach(field => {
+                if (field.name && field.value !== undefined && field.value !== '') {
+                    finalFrontmatterOutput[field.name] = field.value;
+                }
+            });
+            
+            // Update attachment links
+            if (updatedModalData.attachmentData.length > 0) {
+                const attachmentPaths = updatedModalData.attachmentData.map(a => a.path);
+                finalFrontmatterOutput.attachment = attachmentPaths;
+            } else {
+                delete finalFrontmatterOutput.attachment;
+                delete finalFrontmatterOutput.pdflink;
+            }
+            
+            // Update related note links
+            if (updatedModalData.relatedNotePaths.length > 0) {
+                finalFrontmatterOutput.related = updatedModalData.relatedNotePaths;
+            } else {
+                delete finalFrontmatterOutput.related;
+                delete finalFrontmatterOutput.links;
+            }
+            
+            // Update custom frontmatter fields if requested
+            if (this.updateCustomFrontmatterOnSave) {
+                const templateVariableBuilder = new TemplateVariableBuilderService();
+                const templateVariables = templateVariableBuilder.buildVariables(
+                    finalFrontmatterOutput,
+                    updatedModalData.contributors,
+                    updatedModalData.attachmentData.map(a => a.path).filter((p): p is string => p !== undefined),
+                    updatedModalData.relatedNotePaths
+                );
+                
+                // Process each enabled custom field
+                for (const field of this.settings.customFrontmatterFields) {
+                    if (field.enabled) {
+                        try {
+                            const renderedValue = TemplateEngine.render(field.template, templateVariables);
+                            finalFrontmatterOutput[field.name] = renderedValue;
+                        } catch (error) {
+                            console.error(`Error rendering custom field ${field.name}:`, error);
+                        }
+                    }
+                }
+            }
+            
+            // Convert frontmatter to YAML string
+            const newFrontmatterString = stringifyYaml(finalFrontmatterOutput);
+            
+            // Determine note body
+            let newBody: string;
+            if (this.regenerateBodyOnSave) {
+                // Regenerate body from template
+                const templateVariableBuilder = new TemplateVariableBuilderService();
+                const templateVariables = templateVariableBuilder.buildVariables(
+                    finalFrontmatterOutput,
+                    updatedModalData.contributors,
+                    updatedModalData.attachmentData.map(a => a.path).filter((p): p is string => p !== undefined),
+                    updatedModalData.relatedNotePaths
+                );
+                newBody = TemplateEngine.render(this.settings.headerTemplate, templateVariables);
+            } else {
+                // Extract existing body
+                const frontmatterRegex = /^---\n[\s\S]*?\n---\n*/;
+                const match = originalFileContent.match(frontmatterRegex);
+                if (match) {
+                    newBody = originalFileContent.substring(match[0].length);
+                } else {
+                    newBody = originalFileContent;
+                }
+            }
+            
+            // Combine new frontmatter and body
+            const newFullContent = `---\n${newFrontmatterString.trim()}\n---\n\n${newBody.trim()}`;
+            
+            // Update the file
+            await this.app.vault.modify(this.fileToEdit, newFullContent);
+            
+            // Handle file renaming if citekey changed
+            if (newCitekey !== currentCitekey && this.settings.editRenameFileOnCitekeyChange) {
+                const newFileName = await this.generateFileName(finalFrontmatterOutput);
+                const newPath = this.fileToEdit.parent?.path 
+                    ? `${this.fileToEdit.parent.path}/${newFileName}.md`
+                    : `${newFileName}.md`;
+                
+                if (newPath !== this.fileToEdit.path) {
+                    await this.app.fileManager.renameFile(this.fileToEdit, newPath);
+                }
+            }
+            
+            new Notice('Literature note updated successfully');
+            this.close();
+            
+        } catch (error) {
+            console.error('Error updating literature note:', error);
+            new Notice(`Failed to update note: ${error.message}`);
+        }
+    }
+    
+    /**
+     * Generate filename from frontmatter data
+     */
+    private async generateFileName(frontmatter: any): Promise<string> {
+        const templateVariableBuilder = new TemplateVariableBuilderService();
+        const templateVariables = templateVariableBuilder.buildVariables(
+            frontmatter,
+            this.contributors,
+            this.attachmentData.map(a => a.path).filter((p): p is string => p !== undefined),
+            this.relatedNotePaths
+        );
+        
+        let filename = TemplateEngine.render(this.settings.filenameTemplate, templateVariables);
+        
+        // Sanitize filename
+        filename = filename.replace(/[\\/:*?"<>|]/g, '-');
+        
+        return filename;
+    }
+}

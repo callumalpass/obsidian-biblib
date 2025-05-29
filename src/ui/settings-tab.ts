@@ -2,6 +2,7 @@ import { App, Platform, PluginSettingTab, Setting, TextAreaComponent, TextCompon
 import BibliographyPlugin from '../../main';
 import { CSL_ALL_CSL_FIELDS } from '../utils/csl-variables';
 import { TemplatePlaygroundComponent } from './components/template-playground';
+import { FavoriteLanguage, ModalFieldConfig } from '../types/settings';
 
 export class BibliographySettingTab extends PluginSettingTab {
 	plugin: BibliographyPlugin;
@@ -162,6 +163,15 @@ export class BibliographySettingTab extends PluginSettingTab {
 
 		// ==================== Custom Frontmatter Fields Section ====================
 		this.renderCustomFrontmatterFieldsSection(mainSettingsContainer);
+
+		// ==================== Favorite Languages Section ====================
+		this.renderFavoriteLanguagesSection(mainSettingsContainer);
+
+		// ==================== Default Modal Fields Section ====================
+		this.renderDefaultModalFieldsSection(mainSettingsContainer);
+
+		// ==================== Edit Modal Settings Section ====================
+		this.renderEditModalSettingsSection(mainSettingsContainer);
 
 		// ==================== Zotero Connector Section ====================
 		if (!Platform.isMobile) {
@@ -975,6 +985,324 @@ export class BibliographySettingTab extends PluginSettingTab {
 		ol.createEl('li', { text: 'The bibliography modal will open with the data pre-filled' });
 		ol.createEl('li', { text: 'Any PDF attachments will be downloaded and automatically linked' });
 		instructionsEl.createEl('p', { text: 'Note: You can toggle this feature with the "Toggle Zotero Connector server" command.' });
+	}
+
+	/**
+	 * Renders favorite languages section
+	 */
+	private renderFavoriteLanguagesSection(containerEl: HTMLElement): void {
+		new Setting(containerEl).setName('Favorite languages').setHeading();
+		
+		containerEl.createEl('p', {
+			text: 'Configure frequently used languages to appear at the top of language dropdowns in modals.',
+			cls: 'setting-item-description'
+		});
+
+		// Container for favorite languages
+		const favLangsContainer = containerEl.createDiv({ cls: 'favorite-languages-container' });
+
+		// Add existing favorite languages
+		if (this.plugin.settings.favoriteLanguages) {
+			this.plugin.settings.favoriteLanguages.forEach((lang, index) => {
+				this.addFavoriteLanguageRow(lang, index, favLangsContainer);
+			});
+		}
+
+		// Add button to add a new favorite language
+		new Setting(containerEl)
+			.setName('Add favorite language')
+			.addButton(button => button
+				.setButtonText('Add language')
+				.onClick(async () => {
+					// Create a new language with default values
+					const newLang = {
+						code: '',
+						name: ''
+					};
+
+					// Add to settings
+					if (!this.plugin.settings.favoriteLanguages) {
+						this.plugin.settings.favoriteLanguages = [];
+					}
+					this.plugin.settings.favoriteLanguages.push(newLang);
+					await this.plugin.saveSettings();
+
+					// Add to UI
+					this.addFavoriteLanguageRow(newLang, this.plugin.settings.favoriteLanguages.length - 1, favLangsContainer);
+				})
+			);
+	}
+
+	/**
+	 * Adds a favorite language row to the settings
+	 */
+	private addFavoriteLanguageRow(lang: FavoriteLanguage, index: number, container: HTMLElement): void {
+		const langEl = container.createDiv({ cls: 'favorite-language-row' });
+
+		new Setting(langEl)
+			.setName('')
+			.addText(text => text
+				.setPlaceholder('Language code (e.g., en, nb, fi)')
+				.setValue(lang.code)
+				.onChange(async (value) => {
+					this.plugin.settings.favoriteLanguages[index].code = value.trim();
+					await this.plugin.saveSettings();
+				}))
+			.addText(text => text
+				.setPlaceholder('Language name (e.g., English, Norwegian)')
+				.setValue(lang.name)
+				.onChange(async (value) => {
+					this.plugin.settings.favoriteLanguages[index].name = value.trim();
+					await this.plugin.saveSettings();
+				}))
+			.addButton(button => button
+				.setIcon('up-chevron-glyph')
+				.setTooltip('Move up')
+				.setDisabled(index === 0)
+				.onClick(async () => {
+					if (index > 0) {
+						const langs = this.plugin.settings.favoriteLanguages;
+						[langs[index - 1], langs[index]] = [langs[index], langs[index - 1]];
+						await this.plugin.saveSettings();
+						this.display();
+					}
+				}))
+			.addButton(button => button
+				.setIcon('down-chevron-glyph')
+				.setTooltip('Move down')
+				.setDisabled(index === this.plugin.settings.favoriteLanguages.length - 1)
+				.onClick(async () => {
+					if (index < this.plugin.settings.favoriteLanguages.length - 1) {
+						const langs = this.plugin.settings.favoriteLanguages;
+						[langs[index], langs[index + 1]] = [langs[index + 1], langs[index]];
+						await this.plugin.saveSettings();
+						this.display();
+					}
+				}))
+			.addButton(button => button
+				.setIcon('trash')
+				.setTooltip('Remove')
+				.onClick(async () => {
+					this.plugin.settings.favoriteLanguages.splice(index, 1);
+					await this.plugin.saveSettings();
+					langEl.remove();
+				}));
+	}
+
+	/**
+	 * Renders default modal fields section
+	 */
+	private renderDefaultModalFieldsSection(containerEl: HTMLElement): void {
+		new Setting(containerEl).setName('Default modal fields').setHeading();
+		
+		const desc = containerEl.createEl('div', {
+			cls: 'setting-item-description'
+		});
+
+		desc.createEl('p', { text: 'Configure which CSL-compliant fields appear as primary inputs in the "Create literature note" modal.' });
+		desc.createEl('p', { text: 'This is useful for workflows that frequently use specific fields (e.g., archival research needing archive, archive-place, archive_location).' });
+
+		// Container for default modal fields
+		const fieldsContainer = containerEl.createDiv({ cls: 'default-modal-fields-container' });
+
+		// Add existing default modal fields
+		if (this.plugin.settings.defaultModalFields) {
+			this.plugin.settings.defaultModalFields.forEach((field, index) => {
+				this.addDefaultModalFieldRow(field, index, fieldsContainer);
+			});
+		}
+
+		// Add button to add a new default field
+		new Setting(containerEl)
+			.setName('Add default modal field')
+			.addButton(button => button
+				.setButtonText('Add field')
+				.onClick(async () => {
+					// Create a new field with default values
+					const newField = {
+						name: '',
+						label: '',
+						type: 'text' as const,
+						description: '',
+						placeholder: '',
+						required: false,
+						defaultValue: ''
+					};
+
+					// Add to settings
+					if (!this.plugin.settings.defaultModalFields) {
+						this.plugin.settings.defaultModalFields = [];
+					}
+					this.plugin.settings.defaultModalFields.push(newField);
+					await this.plugin.saveSettings();
+
+					// Add to UI
+					this.addDefaultModalFieldRow(newField, this.plugin.settings.defaultModalFields.length - 1, fieldsContainer);
+				})
+			);
+	}
+
+	/**
+	 * Adds a default modal field row to the settings
+	 */
+	private addDefaultModalFieldRow(field: ModalFieldConfig, index: number, container: HTMLElement): void {
+		const fieldEl = container.createDiv({ cls: 'default-modal-field' });
+
+		// Field name (CSL key)
+		new Setting(fieldEl)
+			.setName('CSL field name')
+			.setDesc('The CSL field key (e.g., "archive", "URL")')
+			.addText(text => text
+				.setPlaceholder('e.g., archive')
+				.setValue(field.name)
+				.onChange(async (value) => {
+					this.plugin.settings.defaultModalFields[index].name = value.trim();
+					await this.plugin.saveSettings();
+				}));
+
+		// Field label
+		new Setting(fieldEl)
+			.setName('Display label')
+			.setDesc('The label shown in the modal')
+			.addText(text => text
+				.setPlaceholder('e.g., Archive Name')
+				.setValue(field.label)
+				.onChange(async (value) => {
+					this.plugin.settings.defaultModalFields[index].label = value.trim();
+					await this.plugin.saveSettings();
+				}));
+
+		// Field type
+		new Setting(fieldEl)
+			.setName('Field type')
+			.setDesc('The type of input control')
+			.addDropdown(dropdown => dropdown
+				.addOption('text', 'Text')
+				.addOption('textarea', 'Text Area')
+				.addOption('number', 'Number')
+				.addOption('date', 'Date')
+				.addOption('toggle', 'Toggle')
+				.addOption('dropdown', 'Dropdown')
+				.setValue(field.type)
+				.onChange(async (value: any) => {
+					this.plugin.settings.defaultModalFields[index].type = value;
+					await this.plugin.saveSettings();
+					this.display(); // Refresh to show/hide options field
+				}));
+
+		// Description (optional)
+		new Setting(fieldEl)
+			.setName('Description')
+			.setDesc('Optional help text shown below the field')
+			.addText(text => text
+				.setPlaceholder('Optional description')
+				.setValue(field.description || '')
+				.onChange(async (value) => {
+					this.plugin.settings.defaultModalFields[index].description = value.trim();
+					await this.plugin.saveSettings();
+				}));
+
+		// Placeholder (optional)
+		new Setting(fieldEl)
+			.setName('Placeholder')
+			.setDesc('Optional placeholder text')
+			.addText(text => text
+				.setPlaceholder('Optional placeholder')
+				.setValue(field.placeholder || '')
+				.onChange(async (value) => {
+					this.plugin.settings.defaultModalFields[index].placeholder = value.trim();
+					await this.plugin.saveSettings();
+				}));
+
+		// Default value
+		new Setting(fieldEl)
+			.setName('Default value')
+			.setDesc('Default value for new notes')
+			.addText(text => text
+				.setPlaceholder('Optional default value')
+				.setValue(field.defaultValue?.toString() || '')
+				.onChange(async (value) => {
+					this.plugin.settings.defaultModalFields[index].defaultValue = value.trim();
+					await this.plugin.saveSettings();
+				}));
+
+		// Required field toggle
+		new Setting(fieldEl)
+			.setName('Required field')
+			.setDesc('Mark as required (for UI hint only)')
+			.addToggle(toggle => toggle
+				.setValue(field.required || false)
+				.onChange(async (value) => {
+					this.plugin.settings.defaultModalFields[index].required = value;
+					await this.plugin.saveSettings();
+				}));
+
+		// Remove button
+		new Setting(fieldEl)
+			.setName('')
+			.addButton(button => button
+				.setButtonText('Remove field')
+				.setWarning()
+				.onClick(async () => {
+					this.plugin.settings.defaultModalFields.splice(index, 1);
+					await this.plugin.saveSettings();
+					fieldEl.remove();
+				}));
+
+		// Add divider
+		fieldEl.createEl('hr');
+	}
+
+	/**
+	 * Renders edit modal settings section
+	 */
+	private renderEditModalSettingsSection(containerEl: HTMLElement): void {
+		new Setting(containerEl).setName('Edit literature note settings').setHeading();
+		
+		containerEl.createEl('p', {
+			text: 'Configure default behavior when editing existing literature notes.',
+			cls: 'setting-item-description'
+		});
+
+		new Setting(containerEl)
+			.setName('Regenerate citekey by default')
+			.setDesc('When editing a note, regenerate the citekey if relevant data changes')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.editRegenerateCitekeyDefault)
+				.onChange(async (value) => {
+					this.plugin.settings.editRegenerateCitekeyDefault = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Update custom frontmatter by default')
+			.setDesc('When editing a note, update custom frontmatter fields from templates')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.editUpdateCustomFrontmatterDefault)
+				.onChange(async (value) => {
+					this.plugin.settings.editUpdateCustomFrontmatterDefault = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Regenerate note body by default')
+			.setDesc('When editing a note, regenerate the note body from the header template')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.editRegenerateBodyDefault)
+				.onChange(async (value) => {
+					this.plugin.settings.editRegenerateBodyDefault = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Rename file on citekey change')
+			.setDesc('When the citekey changes during edit, rename the file to match')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.editRenameFileOnCitekeyChange)
+				.onChange(async (value) => {
+					this.plugin.settings.editRenameFileOnCitekeyChange = value;
+					await this.plugin.saveSettings();
+				}));
 	}
 
 	/**

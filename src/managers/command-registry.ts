@@ -2,6 +2,7 @@ import { App, Notice, Plugin, TFile } from 'obsidian';
 import { BibliographyModal } from '../ui/modals/bibliography-modal';
 import { ChapterModal } from '../ui/modals/chapter-modal';
 import { BulkImportModal } from '../ui/modals/bulk-import-modal';
+import { EditBibliographyModal } from '../ui/modals/edit-bibliography-modal';
 import { BibliographyPluginSettings } from '../types/settings';
 import { BibliographyBuilder } from '../services/bibliography-builder';
 import { NoteCreationService } from '../services/note-creation-service';
@@ -36,6 +37,30 @@ export class CommandRegistry {
             name: 'Create literature note',
             callback: () => {
                 new BibliographyModal(this.app, this.settings, true).open();
+            },
+        });
+
+        // Edit literature note command
+        this.plugin.addCommand({
+            id: 'edit-literature-note',
+            name: 'Edit literature note',
+            checkCallback: (checking) => {
+                const activeFile = this.app.workspace.getActiveFile();
+                if (!activeFile) return false;
+
+                const cache = this.app.metadataCache.getFileCache(activeFile);
+                if (!cache || !cache.frontmatter) return false;
+
+                const frontmatter = cache.frontmatter;
+                const tags = frontmatter.tags;
+                if (!tags || !Array.isArray(tags) || !tags.includes(this.settings.literatureNoteTag)) {
+                    return false;
+                }
+
+                if (checking) return true;
+
+                new EditBibliographyModal(this.app, this.settings, activeFile).open();
+                return true;
             },
         });
 

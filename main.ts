@@ -6,10 +6,6 @@ import { CommandRegistry } from './src/managers/command-registry';
 import { ZoteroConnectorManager } from './src/managers/zotero-connector-manager';
 import type { BibliographyPluginSettings } from './src/types/settings';
 
-// Suppress non-error console logging in production
-console.log = () => {};
-console.warn = () => {};
-
 export default class BibliographyPlugin extends Plugin {
     // Primary managers
     private settingsManager: SettingsManager;

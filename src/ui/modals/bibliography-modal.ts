@@ -26,13 +26,13 @@ import {
 export class BibliographyModal extends Modal {
     // Services
     private citoidService: CitoidService;
-    private citationService: CitationService;
+    protected citationService: CitationService;
     private noteCreationService: NoteCreationService;
     
     // Data state
-    private additionalFields: AdditionalField[] = [];
-    private contributors: Contributor[] = [];
-    private relatedNotePaths: string[] = [];
+    protected additionalFields: AdditionalField[] = [];
+    protected contributors: Contributor[] = [];
+    protected relatedNotePaths: string[] = [];
     
     // Form elements for reference and updating
     private idInput: HTMLInputElement;
@@ -62,10 +62,13 @@ export class BibliographyModal extends Modal {
     private linkSettingEl: HTMLElement;
     private importButtonComponent: ButtonComponent | null = null;
     private linkButtonComponent: ButtonComponent | null = null;
-    private attachmentsDisplayEl: HTMLElement;
+    protected attachmentsDisplayEl: HTMLElement;
     
     // Multiple attachments support
-    private attachmentData: AttachmentData[] = [];
+    protected attachmentData: AttachmentData[] = [];
+    
+    // Storage for user-defined default field inputs
+    private defaultFieldInputs: Map<string, HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> = new Map();
     
     // Flag for whether the modal is initialized
     private isInitialized: boolean = false;
@@ -75,7 +78,7 @@ export class BibliographyModal extends Modal {
     
     constructor(
         app: App, 
-        private settings: BibliographyPluginSettings, 
+        protected settings: BibliographyPluginSettings, 
         openedViaCommand: boolean = true
     ) {
         super(app);
@@ -173,7 +176,7 @@ export class BibliographyModal extends Modal {
     /**
      * Update the display of attachments
      */
-    private updateAttachmentsDisplay(): void {
+    protected updateAttachmentsDisplay(): void {
         if (!this.attachmentsDisplayEl) return;
         
         this.attachmentsDisplayEl.empty(); // Clear previous display
@@ -583,7 +586,11 @@ export class BibliographyModal extends Modal {
                        'July', 'August', 'September', 'October', 'November', 'December'];
         
         months.forEach((month, index) => {
-            this.monthDropdown.createEl('option', { value: (index + 1).toString(), text: month });
+            const monthNumber = (index + 1).toString();
+            this.monthDropdown.createEl('option', { 
+                value: monthNumber, 
+                text: monthNumber.padStart(2, '0') // Display "01", "02", etc.
+            });
         });
         
         // Day field
@@ -646,21 +653,51 @@ export class BibliographyModal extends Modal {
             .setName('Language')
             .setDesc('Primary language of the work')
             .addDropdown(dropdown => {
-                dropdown.addOption('', 'Select language');
-                dropdown.addOption('en', 'English');
-                dropdown.addOption('fr', 'French');
-                dropdown.addOption('de', 'German');
-                dropdown.addOption('es', 'Spanish');
-                dropdown.addOption('it', 'Italian');
-                dropdown.addOption('ja', 'Japanese');
-                dropdown.addOption('zh', 'Chinese');
-                dropdown.addOption('ru', 'Russian');
-                dropdown.addOption('pt', 'Portuguese');
-                dropdown.addOption('ar', 'Arabic');
-                dropdown.addOption('ko', 'Korean');
-                dropdown.addOption('la', 'Latin');
-                dropdown.addOption('el', 'Greek');
-                dropdown.addOption('other', 'Other');
+                dropdown.addOption('', 'Select language...');
+                
+                // Add favorite languages from settings
+                if (this.settings.favoriteLanguages && this.settings.favoriteLanguages.length > 0) {
+                    this.settings.favoriteLanguages.forEach(lang => {
+                        if (lang.code && lang.name) {
+                            dropdown.addOption(lang.code, lang.name);
+                        }
+                    });
+                    
+                    // Add a visual separator (disabled option)
+                    const separatorOption = dropdown.selectEl.createEl('option', {
+                        text: '──────────────',
+                        value: '_separator'
+                    });
+                    separatorOption.disabled = true;
+                }
+                
+                // Standard language list (excluding any that are already in favorites)
+                const standardLanguages = [
+                    { code: 'en', name: 'English' },
+                    { code: 'fr', name: 'French' },
+                    { code: 'de', name: 'German' },
+                    { code: 'es', name: 'Spanish' },
+                    { code: 'it', name: 'Italian' },
+                    { code: 'ja', name: 'Japanese' },
+                    { code: 'zh', name: 'Chinese' },
+                    { code: 'ru', name: 'Russian' },
+                    { code: 'pt', name: 'Portuguese' },
+                    { code: 'ar', name: 'Arabic' },
+                    { code: 'ko', name: 'Korean' },
+                    { code: 'la', name: 'Latin' },
+                    { code: 'el', name: 'Greek' },
+                    { code: 'other', name: 'Other' }
+                ];
+                
+                // Get favorite language codes for exclusion
+                const favoriteCodes = new Set(this.settings.favoriteLanguages?.map(lang => lang.code) || []);
+                
+                // Add standard languages that aren't in favorites
+                standardLanguages.forEach(lang => {
+                    if (!favoriteCodes.has(lang.code)) {
+                        dropdown.addOption(lang.code, lang.name);
+                    }
+                });
                 
                 this.languageDropdown = dropdown.selectEl;
                 return dropdown;
@@ -686,6 +723,12 @@ export class BibliographyModal extends Modal {
                 return textarea;
             });
         
+        // User-defined default fields section
+        if (this.settings.defaultModalFields && this.settings.defaultModalFields.length > 0) {
+            formContainer.createEl('h4', { text: 'Custom fields' });
+            const defaultFieldsContainer = formContainer.createDiv({ cls: 'bibliography-default-fields' });
+            this.createDefaultFields(defaultFieldsContainer);
+        }
         
         // Additional fields section
         formContainer.createEl('h4', { text: 'Additional fields' });
@@ -906,6 +949,19 @@ export class BibliographyModal extends Modal {
             this.additionalFields = [];
             this.additionalFieldsContainer.empty();
             
+            // Populate user-defined default fields if they exist in the CSL data
+            this.defaultFieldInputs.forEach((inputEl, fieldName) => {
+                if (cslData[fieldName] !== undefined && cslData[fieldName] !== null) {
+                    const value = cslData[fieldName];
+                    
+                    if (inputEl instanceof HTMLInputElement && inputEl.type === 'checkbox') {
+                        inputEl.checked = !!value;
+                    } else if (inputEl instanceof HTMLSelectElement || inputEl instanceof HTMLTextAreaElement || inputEl instanceof HTMLInputElement) {
+                        inputEl.value = value.toString();
+                    }
+                }
+            });
+            
             // Add any non-standard fields as additional fields
             // Exclude common fields that are already in the form
             const excludedFields = new Set([
@@ -918,6 +974,11 @@ export class BibliographyModal extends Modal {
                 // Skip non-CSL fields that shouldn't be in frontmatter
                 'annote', 'file', 'attachment'
             ]);
+            
+            // Also exclude user-defined default fields
+            this.defaultFieldInputs.forEach((_, fieldName) => {
+                excludedFields.add(fieldName);
+            });
             
             // Add remaining fields as additional fields
             let hasAdditionalFields = false;
@@ -1034,9 +1095,94 @@ export class BibliographyModal extends Modal {
     }
 
     /**
+     * Create user-defined default fields
+     */
+    private createDefaultFields(container: HTMLElement): void {
+        this.settings.defaultModalFields.forEach(fieldConfig => {
+            const setting = new Setting(container)
+                .setName(fieldConfig.label)
+                .setDesc(fieldConfig.description || '');
+
+            let inputEl: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+
+            switch (fieldConfig.type) {
+                case 'text':
+                    setting.addText(text => {
+                        inputEl = text.inputEl;
+                        if (fieldConfig.placeholder) text.setPlaceholder(fieldConfig.placeholder);
+                        if (fieldConfig.defaultValue) text.setValue(fieldConfig.defaultValue.toString());
+                        return text;
+                    });
+                    break;
+
+                case 'textarea':
+                    setting.addTextArea(textarea => {
+                        inputEl = textarea.inputEl;
+                        if (fieldConfig.placeholder) textarea.setPlaceholder(fieldConfig.placeholder);
+                        if (fieldConfig.defaultValue) textarea.setValue(fieldConfig.defaultValue.toString());
+                        textarea.inputEl.rows = 3;
+                        return textarea;
+                    });
+                    break;
+
+                case 'number':
+                    setting.addText(text => {
+                        inputEl = text.inputEl;
+                        text.inputEl.type = 'number';
+                        if (fieldConfig.placeholder) text.setPlaceholder(fieldConfig.placeholder);
+                        if (fieldConfig.defaultValue) text.setValue(fieldConfig.defaultValue.toString());
+                        return text;
+                    });
+                    break;
+
+                case 'date':
+                    setting.addText(text => {
+                        inputEl = text.inputEl;
+                        text.inputEl.type = 'date';
+                        if (fieldConfig.defaultValue) text.setValue(fieldConfig.defaultValue.toString());
+                        return text;
+                    });
+                    break;
+
+                case 'toggle':
+                    setting.addToggle(toggle => {
+                        // For toggle, we'll store the checkbox element
+                        inputEl = toggle.toggleEl as any;
+                        if (fieldConfig.defaultValue) toggle.setValue(fieldConfig.defaultValue as boolean);
+                        return toggle;
+                    });
+                    break;
+
+                case 'dropdown':
+                    setting.addDropdown(dropdown => {
+                        inputEl = dropdown.selectEl;
+                        if (fieldConfig.options) {
+                            fieldConfig.options.forEach(opt => {
+                                dropdown.addOption(opt.value, opt.text);
+                            });
+                        }
+                        if (fieldConfig.defaultValue) dropdown.setValue(fieldConfig.defaultValue.toString());
+                        return dropdown;
+                    });
+                    break;
+            }
+
+            // Store the input element for later retrieval
+            if (inputEl!) {
+                this.defaultFieldInputs.set(fieldConfig.name, inputEl);
+            }
+
+            // Add required indicator if needed
+            if (fieldConfig.required) {
+                setting.nameEl.createSpan({ text: ' *', cls: 'required-indicator' });
+            }
+        });
+    }
+
+    /**
      * Get all form values as a Citation object
      */
-    private getFormValues(): Citation {
+    protected getFormValues(): Citation {
         // Build citation object from form fields
         const citation: Citation = {
             id: this.idInput.value || CitekeyGenerator.generate({ 
@@ -1096,6 +1242,22 @@ export class BibliographyModal extends Modal {
             };
         }
         
+        // Add values from user-defined default fields
+        this.defaultFieldInputs.forEach((inputEl, fieldName) => {
+            let value: any;
+            
+            if (inputEl instanceof HTMLInputElement && inputEl.type === 'checkbox') {
+                value = inputEl.checked;
+            } else if (inputEl instanceof HTMLSelectElement || inputEl instanceof HTMLTextAreaElement || inputEl instanceof HTMLInputElement) {
+                value = inputEl.value;
+            }
+            
+            // Only add non-empty values
+            if (value !== undefined && value !== '' && value !== false) {
+                citation[fieldName] = value;
+            }
+        });
+        
         return citation;
     }
 
@@ -1103,7 +1265,7 @@ export class BibliographyModal extends Modal {
      * Update the display of related notes
      * @param displayEl The HTML element to update
      */
-    private updateRelatedNotesDisplay(displayEl: HTMLElement): void {
+    protected updateRelatedNotesDisplay(displayEl: HTMLElement): void {
         displayEl.empty(); // Clear previous display
 
         if (this.relatedNotePaths.length === 0) {
@@ -1169,7 +1331,7 @@ export class BibliographyModal extends Modal {
     /**
      * Handle form submission: create the literature note
      */
-    private async handleSubmit(citation: Citation): Promise<void> {
+    protected async handleSubmit(citation: Citation): Promise<void> {
         try {
             // Use the new service layer to create the note
             const result = await this.noteCreationService.createLiteratureNote({

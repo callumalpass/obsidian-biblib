@@ -37,6 +37,28 @@ export interface CustomFrontmatterField {
     enabled: boolean; // Whether this field is enabled
 }
 
+/**
+ * Interface for favorite languages configuration
+ */
+export interface FavoriteLanguage {
+    code: string;  // ISO 639-1 or 639-2 language code
+    name: string;  // Display name for the language
+}
+
+/**
+ * Interface for configurable modal field definitions
+ */
+export interface ModalFieldConfig {
+    name: string; // CSL field key (e.g., "archive", "URL")
+    label: string; // Display label (e.g., "Archive Name")
+    type: 'text' | 'textarea' | 'number' | 'date' | 'toggle' | 'dropdown'; // Input control type
+    description?: string;
+    placeholder?: string;
+    required?: boolean; // For UI hint/future validation
+    options?: Array<{ value: string; text: string }>; // For dropdown
+    defaultValue?: string | boolean | number; // For new notes
+}
+
 // --- Interface for Overall Plugin Settings ---
 
 export interface BibliographyPluginSettings {
@@ -65,6 +87,15 @@ export interface BibliographyPluginSettings {
         bulkImportAnnoteToBody: boolean;
         bulkImportCitekeyPreference: 'imported' | 'generate';
         bulkImportConflictResolution: 'skip' | 'overwrite';
+        // Favorite languages settings
+        favoriteLanguages: FavoriteLanguage[];
+        // Default modal fields configuration
+        defaultModalFields: ModalFieldConfig[];
+        // Edit modal settings
+        editRegenerateCitekeyDefault: boolean;
+        editUpdateCustomFrontmatterDefault: boolean;
+        editRegenerateBodyDefault: boolean;
+        editRenameFileOnCitekeyChange: boolean;
 }
 
 // --- Default Plugin Settings ---
@@ -132,6 +163,18 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         bulkImportAttachmentHandling: 'none',
         bulkImportAnnoteToBody: true,
         bulkImportCitekeyPreference: 'imported',
-        bulkImportConflictResolution: 'skip'
+        bulkImportConflictResolution: 'skip',
+        // Default favorite languages
+        favoriteLanguages: [
+                { code: 'en', name: 'English' },
+                { code: 'de', name: 'German' }
+        ],
+        // Default modal fields (empty by default, users can add archival fields etc.)
+        defaultModalFields: [],
+        // Default edit modal settings
+        editRegenerateCitekeyDefault: false,
+        editUpdateCustomFrontmatterDefault: true,
+        editRegenerateBodyDefault: false,
+        editRenameFileOnCitekeyChange: true
 };
 

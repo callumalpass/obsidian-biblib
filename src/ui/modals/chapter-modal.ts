@@ -269,7 +269,11 @@ export class ChapterModal extends Modal {
                        'July', 'August', 'September', 'October', 'November', 'December'];
         
         months.forEach((month, index) => {
-            this.monthDropdown.createEl('option', { value: (index + 1).toString(), text: month });
+            const monthNumber = (index + 1).toString();
+            this.monthDropdown.createEl('option', { 
+                value: monthNumber, 
+                text: monthNumber.padStart(2, '0') // Display "01", "02", etc.
+            });
         });
         
         // Day field (optional)
@@ -281,6 +285,60 @@ export class ChapterModal extends Modal {
         this.dayInput.placeholder = 'DD';
         this.dayInput.min = '1';
         this.dayInput.max = '31';
+
+        // Language field
+        new Setting(contentEl)
+            .setName('Language')
+            .setDesc('Primary language of the chapter')
+            .addDropdown(dropdown => {
+                dropdown.addOption('', 'Select language...');
+                
+                // Add favorite languages from settings
+                if (this.settings.favoriteLanguages && this.settings.favoriteLanguages.length > 0) {
+                    this.settings.favoriteLanguages.forEach(lang => {
+                        if (lang.code && lang.name) {
+                            dropdown.addOption(lang.code, lang.name);
+                        }
+                    });
+                    
+                    // Add a visual separator (disabled option)
+                    const separatorOption = dropdown.selectEl.createEl('option', {
+                        text: '──────────────',
+                        value: '_separator'
+                    });
+                    separatorOption.disabled = true;
+                }
+                
+                // Standard language list (excluding any that are already in favorites)
+                const standardLanguages = [
+                    { code: 'en', name: 'English' },
+                    { code: 'fr', name: 'French' },
+                    { code: 'de', name: 'German' },
+                    { code: 'es', name: 'Spanish' },
+                    { code: 'it', name: 'Italian' },
+                    { code: 'ja', name: 'Japanese' },
+                    { code: 'zh', name: 'Chinese' },
+                    { code: 'ru', name: 'Russian' },
+                    { code: 'pt', name: 'Portuguese' },
+                    { code: 'ar', name: 'Arabic' },
+                    { code: 'ko', name: 'Korean' },
+                    { code: 'la', name: 'Latin' },
+                    { code: 'el', name: 'Greek' },
+                    { code: 'other', name: 'Other' }
+                ];
+                
+                // Get favorite language codes for exclusion
+                const favoriteCodes = new Set(this.settings.favoriteLanguages?.map(lang => lang.code) || []);
+                
+                // Add standard languages that aren't in favorites
+                standardLanguages.forEach(lang => {
+                    if (!favoriteCodes.has(lang.code)) {
+                        dropdown.addOption(lang.code, lang.name);
+                    }
+                });
+                
+                return dropdown;
+            });
 
         // Abstract field
         new Setting(contentEl)
