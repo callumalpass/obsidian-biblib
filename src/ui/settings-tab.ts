@@ -6,6 +6,7 @@ import { FavoriteLanguage, ModalFieldConfig } from '../types/settings';
 
 export class BibliographySettingTab extends PluginSettingTab {
 	plugin: BibliographyPlugin;
+	private activeTab: string = 'general';
 
 	constructor(app: App, plugin: BibliographyPlugin) {
 		super(app, plugin);
@@ -144,42 +145,16 @@ export class BibliographySettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
+		// Create the tab navigation
+		this.createTabNavigation(containerEl);
+
 		// Create main settings container with improved styling
 		const mainSettingsContainer = containerEl.createDiv({
 			cls: 'biblib-settings-container'
 		});
 
-		// ==================== General Settings Section ====================
-		this.renderGeneralSettings(mainSettingsContainer);
-
-		// ==================== File Path Settings Section ====================
-		this.renderFilePathSettings(mainSettingsContainer);
-
-		// ==================== Template System Section ====================
-		this.renderTemplatesSection(mainSettingsContainer);
-
-		// ==================== Citekey Generation Section ====================
-		this.renderCitekeyGenerationSection(mainSettingsContainer);
-
-		// ==================== Custom Frontmatter Fields Section ====================
-		this.renderCustomFrontmatterFieldsSection(mainSettingsContainer);
-
-		// ==================== Favorite Languages Section ====================
-		this.renderFavoriteLanguagesSection(mainSettingsContainer);
-
-		// ==================== Default Modal Fields Section ====================
-		this.renderDefaultModalFieldsSection(mainSettingsContainer);
-
-		// ==================== Edit Modal Settings Section ====================
-		this.renderEditModalSettingsSection(mainSettingsContainer);
-
-		// ==================== Zotero Connector Section ====================
-		if (!Platform.isMobile) {
-			this.renderZoteroConnectorSection(mainSettingsContainer);
-		}
-
-		// ==================== Bibliography Builder Section ====================
-		this.renderBibliographyBuilderSection(mainSettingsContainer);
+		// Render the content for the active tab
+		this.renderActiveTab(mainSettingsContainer);
 		
 		// Apply enhancements with setTimeout to ensure DOM is ready
 		setTimeout(() => {
@@ -190,6 +165,82 @@ export class BibliographySettingTab extends PluginSettingTab {
 			}
 			this.enhanceBibliographySettings();
 		}, 50);
+	}
+
+	/**
+	 * Creates the tab navigation interface
+	 */
+	private createTabNavigation(containerEl: HTMLElement): void {
+		const tabNavContainer = containerEl.createDiv({
+			cls: 'biblib-tab-navigation'
+		});
+
+		const tabs = [
+			{ id: 'general', name: 'General' },
+			{ id: 'files', name: 'File Organization' },
+			{ id: 'templates', name: 'Templates' },
+			{ id: 'citekeys', name: 'Citation Keys' },
+			{ id: 'fields', name: 'Custom Fields' },
+			{ id: 'modal', name: 'Modal Configuration' },
+			{ id: 'zotero', name: 'Zotero Integration' },
+			{ id: 'export', name: 'Bibliography Export' }
+		];
+
+		// Filter out Zotero tab on mobile
+		const availableTabs = Platform.isMobile ? 
+			tabs.filter(tab => tab.id !== 'zotero') : 
+			tabs;
+
+		availableTabs.forEach(tab => {
+			const tabButton = tabNavContainer.createEl('button', {
+				cls: `biblib-tab-button ${this.activeTab === tab.id ? 'active' : ''}`,
+				text: tab.name
+			});
+
+			tabButton.addEventListener('click', () => {
+				this.activeTab = tab.id;
+				this.display();
+			});
+		});
+	}
+
+	/**
+	 * Renders the content for the currently active tab
+	 */
+	private renderActiveTab(containerEl: HTMLElement): void {
+		switch (this.activeTab) {
+			case 'general':
+				this.renderGeneralSettings(containerEl);
+				break;
+			case 'files':
+				this.renderFilePathSettings(containerEl);
+				break;
+			case 'templates':
+				this.renderTemplatesSection(containerEl);
+				break;
+			case 'citekeys':
+				this.renderCitekeyGenerationSection(containerEl);
+				break;
+			case 'fields':
+				this.renderCustomFrontmatterFieldsSection(containerEl);
+				this.renderFavoriteLanguagesSection(containerEl);
+				break;
+			case 'modal':
+				this.renderDefaultModalFieldsSection(containerEl);
+				this.renderEditModalSettingsSection(containerEl);
+				break;
+			case 'zotero':
+				if (!Platform.isMobile) {
+					this.renderZoteroConnectorSection(containerEl);
+				}
+				break;
+			case 'export':
+				this.renderBibliographyBuilderSection(containerEl);
+				break;
+			default:
+				this.renderGeneralSettings(containerEl);
+				break;
+		}
 	}
 
 	/**

@@ -1,4 +1,45 @@
 /* ==========================================================================
+   Settings Tab Navigation Styles
+   ========================================================================== */
+
+.biblib-tab-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 8px;
+}
+
+.biblib-tab-button {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 8px 16px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.biblib-tab-button:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.biblib-tab-button.active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+.biblib-settings-container {
+  margin-top: 16px;
+}
+
+/* ==========================================================================
    Base Modal Styles
    ========================================================================== */
 
