@@ -1,0 +1,939 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Manage references and literature notes from within Obsidian">
+      
+      
+        <meta name="author" content="Callum Alpass# Your name/handle">
+      
+      
+        <link rel="canonical" href="https://callumalpass.github.io/obsidian-biblib/settings/">
+      
+      
+        <link rel="prev" href="../usage-guide/">
+      
+      
+        <link rel="next" href="../templating-system-guide/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
+    
+    
+      
+        <title>Settings - BibLib</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.342714a4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Crimson+Text:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Crimson Text";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#settings" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="BibLib" class="md-header__button md-logo" aria-label="BibLib" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            BibLib
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Settings
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/callumalpass/obsidian-biblib" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    callumalpass/obsidian-biblib
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="BibLib" class="md-nav__button md-logo" aria-label="BibLib" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    BibLib
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/callumalpass/obsidian-biblib" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    callumalpass/obsidian-biblib
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Introduction
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Core Concepts
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../key-features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Key Features
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usage-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Usage Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Settings
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Settings
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#general-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      General Settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-path-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Path Settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zotero-connector-settings-desktop-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      Zotero Connector Settings (Desktop Only)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bibliography-builder-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bibliography Builder Settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#note-template-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Note Template Settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#citekey-generation-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Citekey Generation Settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bulk-import-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bulk Import Settings
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../templating-system-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Templating
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting-faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Troubleshooting & FAQ
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#general-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      General Settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-path-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Path Settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zotero-connector-settings-desktop-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      Zotero Connector Settings (Desktop Only)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bibliography-builder-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bibliography Builder Settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#note-template-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Note Template Settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#citekey-generation-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Citekey Generation Settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bulk-import-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bulk Import Settings
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="settings">Settings</h1>
+<p>BibLib's settings allow you to customize its behavior to fit your workflow. Access them via <code>Settings</code> -&gt; <code>Community Plugins</code> -&gt; <code>BibLib</code>.</p>
+<h2 id="general-settings">General Settings</h2>
+<ul>
+<li>
+<p><strong>Literature note tag:</strong></p>
+<ul>
+<li><strong>Description:</strong> The tag automatically added to the <code>tags</code> array in the frontmatter of every created literature note. BibLib uses this tag to identify which notes in your vault are part of your bibliography.</li>
+<li><strong>Default:</strong> <code>literature_note</code></li>
+<li><strong>Usage:</strong> Essential for commands like "Build Bibliography" to find the correct notes. Choose a tag unique to your reference notes.</li>
+</ul>
+</li>
+<li>
+<p><strong>Open note on create:</strong></p>
+<ul>
+<li><strong>Description:</strong> If enabled, Obsidian will automatically open the newly created literature note in a new tab or pane after you click "Create Note" in the modal.</li>
+<li><strong>Default:</strong> <code>true</code> (Enabled)</li>
+<li><strong>Usage:</strong> Convenient for immediately adding summaries or notes after creating the reference entry. Disable if you prefer to create notes in batches without switching context.</li>
+</ul>
+</li>
+</ul>
+<h2 id="file-path-settings">File Path Settings</h2>
+<p>These settings control where BibLib saves notes and attachments. Use forward slashes (<code>/</code>) for paths.</p>
+<ul>
+<li>
+<p><strong>Attachment folder path:</strong></p>
+<ul>
+<li><strong>Description:</strong> The primary folder within your vault where imported attachments (PDFs, EPUBs) will be stored. Subfolders may be created inside this path based on the next setting.</li>
+<li><strong>Default:</strong> <code>biblib</code></li>
+<li><strong>Usage:</strong> Choose a dedicated folder for your reference attachments (e.g., <code>attachments/references</code>, <code>resources/pdfs</code>).</li>
+</ul>
+</li>
+<li>
+<p><strong>Create subfolder for attachments:</strong></p>
+<ul>
+<li><strong>Description:</strong> If enabled, BibLib will create a subfolder named after the reference's <code>citekey</code> inside the main "Attachment folder path". The imported attachment will be placed inside this subfolder (e.g., <code>biblib/Smith2023/Smith2023.pdf</code>). If disabled, attachments are placed directly in the main attachment folder.</li>
+<li><strong>Default:</strong> <code>true</code> (Enabled)</li>
+<li><strong>Usage:</strong> Helps keep attachments organized, especially if you have many references. Disable for a flatter structure.</li>
+</ul>
+</li>
+<li>
+<p><strong>Literature note location:</strong></p>
+<ul>
+<li><strong>Description:</strong> The folder within your vault where new literature note (<code>.md</code>) files will be created. Use <code>/</code> for the vault root.</li>
+<li><strong>Default:</strong> <code>/</code> (Vault root)</li>
+<li><strong>Usage:</strong> Specify a folder like <code>References/</code> or <code>Sources/</code> to keep all literature notes together. Ensure the path ends with a <code>/</code> unless it's the root (<code>/</code>).</li>
+</ul>
+</li>
+<li>
+<p><strong>Filename template:</strong></p>
+<ul>
+<li><strong>Description:</strong> Template for generating literature note filenames. Uses the same template engine as headers and frontmatter, allowing for customized naming patterns that can include any available variables.</li>
+<li><strong>Default:</strong> <code>@{{citekey}}</code></li>
+<li><strong>Usage:</strong> Create custom naming schemes like <code>{{year}}-{{citekey}}</code> (for date-based organization), <code>{{type}}/{{citekey}}</code> (for type-based folders), or <code>{{citekey}} - {{title|capitalize}}</code> (for descriptive filenames). You can use any variables available in the template system.</li>
+<li><strong>Subfolder Creation:</strong> Forward slashes <code>/</code> in the template will create subfolders automatically. For example, <code>{{type}}/{{year}}/{{citekey}}</code> will organize notes in a hierarchy of folders by type and year. If a variable in a path segment resolves to an empty string (e.g., if <code>year</code> is missing), that segment will be skipped rather than creating empty folders.</li>
+<li><strong>Examples:</strong><ul>
+<li><code>@{{citekey}}</code> → <code>@smith2023.md</code></li>
+<li><code>{{year}}-{{citekey}}</code> → <code>2023-smith2023.md</code></li>
+<li><code>{{type}}/{{citekey}}</code> → <code>article/smith2023.md</code> (creates an "article" subfolder)</li>
+<li><code>{{type}}/{{year}}/{{citekey}}</code> → <code>article/2023/smith2023.md</code> (creates nested folders)</li>
+<li><code>References/{{authors_family.0|lowercase}}/{{year}}/{{citekey}}</code> → <code>References/smith/2023/smith2023.md</code> (creates author-based organization)</li>
+<li><code>{{authors_family.0|lowercase}}{{#year}}_{{year}}{{/year}}</code> → <code>smith_2023.md</code> (no subfolders)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="zotero-connector-settings-desktop-only">Zotero Connector Settings (Desktop Only)</h2>
+<p>Configure the integration with the Zotero browser connector. This feature requires Node.js and is only available on the desktop version of Obsidian.</p>
+<ul>
+<li>
+<p><strong>Enable Zotero Connector:</strong></p>
+<ul>
+<li><strong>Description:</strong> Starts or stops the local HTTP server inside Obsidian that listens for data from the Zotero browser extension. <strong>The Zotero Desktop application must be closed</strong> for this server to start successfully, as they use the same default port. Once BibLib's server has started, Zotero can be re-opened. </li>
+<li><strong>Default:</strong> <code>false</code> (Disabled)</li>
+<li><strong>Usage:</strong> Toggle ON to enable the integration. Toggle OFF to disable it (allowing Zotero Desktop to run normally). You can also toggle this using the command <strong>"BibLib: Toggle Zotero Connector server"</strong>.</li>
+</ul>
+</li>
+<li>
+<p><strong>Connector port:</strong></p>
+<ul>
+<li><strong>Description:</strong> The network port the local server listens on.</li>
+<li><strong>Default:</strong> <code>23119</code></li>
+<li><strong>Usage:</strong> Should only be changed if port 23119 is already in use by another application on your system (and you cannot close that application). The Zotero browser connector expects to connect on this port.</li>
+</ul>
+</li>
+<li>
+<p><strong>Temporary PDF folder:</strong></p>
+<ul>
+<li><strong>Description:</strong> Optional. Specify a custom <em>system</em> path where PDFs downloaded via the connector should be temporarily stored before being imported into the Obsidian vault. If left empty, the system's default temporary directory is used.</li>
+<li><strong>Default:</strong> (Empty - uses system temp)</li>
+<li><strong>Usage:</strong> Generally, leave this empty unless you have specific reasons or permissions issues with the default system temporary folder. This is <em>not</em> a path inside your vault.</li>
+</ul>
+</li>
+</ul>
+<h2 id="bibliography-builder-settings">Bibliography Builder Settings</h2>
+<p>Configure the output paths for files generated by the "Build Bibliography" and "Export BibTeX" commands. Paths are relative to the vault root.</p>
+<ul>
+<li>
+<p><strong>Bibliography JSON path:</strong></p>
+<ul>
+<li><strong>Description:</strong> The full path, including filename, where the compiled CSL-JSON bibliography file will be saved.</li>
+<li><strong>Default:</strong> <code>biblib/bibliography.json</code></li>
+<li><strong>Usage:</strong> This file is essential for use with tools like Pandoc.</li>
+</ul>
+</li>
+<li>
+<p><strong>Citekey list path:</strong></p>
+<ul>
+<li><strong>Description:</strong> The full path, including filename, where the Markdown list of all citekeys (prefixed, e.g., <code>@Smith2023</code>) will be saved.</li>
+<li><strong>Default:</strong> <code>citekeylist.md</code></li>
+<li><strong>Usage:</strong> Useful for quick reference or autocompletion setups.</li>
+</ul>
+</li>
+<li>
+<p><strong>BibTeX file path:</strong></p>
+<ul>
+<li><strong>Description:</strong> The full path, including filename, where the exported BibTeX (<code>.bib</code>) file will be saved.</li>
+<li><strong>Default:</strong> <code>biblib/bibliography.bib</code></li>
+<li><strong>Usage:</strong> For compatibility with LaTeX/BibTeX workflows or other tools that prefer <code>.bib</code> files.</li>
+</ul>
+</li>
+</ul>
+<h2 id="note-template-settings">Note Template Settings</h2>
+<p>Customize the structure and content of newly created literature notes using BibLib's templating system. See the <a href="../templating-system-guide/">Templating System Guide</a> for full syntax details.</p>
+<ul>
+<li>
+<p><strong>Template System Guide:</strong> An expandable section providing a comprehensive overview of the template syntax, available variables (like <code>{{title}}</code>, <code>{{authors}}</code>, <code>{{DOI}}</code>, <code>{{pdflink}}</code>), formatting options (<code>|lowercase</code>, <code>|abbr3</code>, <code>|date</code>), conditionals (<code>{{#variable}}...{{/variable}}</code>), and loops (<code>{{#array}}...{{/array}}</code>). Includes examples for headers, custom fields, and citekeys.</p>
+</li>
+<li>
+<p><strong>Header template:</strong></p>
+<ul>
+<li><strong>Description:</strong> Defines the Markdown content that appears at the very top of a new literature note, <em>above</em> the YAML frontmatter block. Uses the template engine.</li>
+<li><strong>Default:</strong> <code># [[{{pdflink}}]]{{^pdflink}}{{title}}{{/pdflink}}</code> (Creates a linked H1 heading using the PDF link if available, otherwise just the title).</li>
+<li><strong>Usage:</strong> Customize the main heading. You might add the year <code>{{year}}</code> or authors <code>{{authors}}</code>. A reset button restores the default.</li>
+</ul>
+</li>
+<li>
+<p><strong>Custom frontmatter fields:</strong></p>
+<ul>
+<li><strong>Description:</strong> Define additional fields to be included in the YAML frontmatter beyond the core CSL data automatically added by BibLib. Each field uses the template engine for its value.</li>
+<li><strong>Interface:</strong><ul>
+<li>A list of currently defined custom fields is shown.</li>
+<li>Each row has:<ul>
+<li><strong>Toggle:</strong> Enable/disable this field without deleting it.</li>
+<li><strong>Field name:</strong> The key that will appear in the YAML (e.g., <code>status</code>, <code>reading_notes</code>, <code>aliases</code>). Use simple, lowercase names.</li>
+<li><strong>Template:</strong> The template string whose rendered output will be the value for the field name (e.g., <code>to-read</code>, <code>[[Notes/{{citekey}}]]</code>, <code>["{{title|sentence}}", "{{citekey}}"]</code>).</li>
+<li><strong>Delete button (Trash icon):</strong> Permanently remove this custom field definition.</li>
+</ul>
+</li>
+<li><strong>"Add Field" button:</strong> Adds a new row to define another custom field.</li>
+</ul>
+</li>
+<li><strong>Defaults:</strong> Includes pre-defined examples for fields like <code>year</code>, <code>dateCreated</code>, <code>status</code>, <code>aliases</code>, <code>author-links</code>, <code>attachment</code>, <code>keyword</code>, <code>related</code>. You can modify or delete these.</li>
+<li><strong>YAML Arrays/Objects:</strong> If a template starts with <code>[</code> and ends with <code>]</code> (or <code>{</code> and <code>}</code>), BibLib attempts to parse the rendered output as JSON. This is crucial for creating proper YAML lists (e.g., for <code>aliases</code> or <code>tags</code>). Use syntax like <code>[{{#authors_family}}"[[Author/{{.}}]]"{{^@first}},{{/@first}}{{/authors_family}}]</code> to generate valid lists from loops.</li>
+<li><strong>Guide:</strong> An expandable "Custom Frontmatter Fields Guide" provides detailed usage notes, warnings about CSL compatibility, examples for common use cases (aliases, author links, status tracking), and tips for creating YAML arrays.</li>
+</ul>
+</li>
+</ul>
+<h2 id="citekey-generation-settings">Citekey Generation Settings</h2>
+<p>Configure how the unique <code>citekey</code> (used for filenames and linking) is automatically generated.</p>
+<ul>
+<li>
+<p><strong>Citekey Generation Guide:</strong> An expandable section explaining the purpose of citekeys and providing common format examples using the template system.</p>
+</li>
+<li>
+<p><strong>Citekey template:</strong></p>
+<ul>
+<li><strong>Description:</strong> The template for defining citekey formats. Uses the same template engine as other settings.</li>
+<li><strong>Default:</strong> <code>{{author|lowercase}}{{title|titleword}}{{year}}</code> (e.g., <code>smithquantum2023</code>)</li>
+<li><strong>Syntax:</strong> Use variables like <code>{{author}}</code>, <code>{{authors_family.0}}</code>, <code>{{year}}</code>, <code>{{title}}</code> combined with formatters like <code>|lowercase</code>, <code>|abbr3</code>, <code>|titleword</code>. Output is automatically sanitized (only letters and numbers kept).</li>
+<li><strong>Usage:</strong> Define your preferred citation key style here.</li>
+</ul>
+</li>
+<li>
+<p><strong>Use Zotero keys (if available):</strong></p>
+<ul>
+<li><strong>Description:</strong> If importing from Zotero (e.g., via bulk import or the connector) and this is ON, BibLib will prioritize using the key provided by Zotero instead of generating one using the template.</li>
+<li><strong>Default:</strong> <code>false</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Minimum citekey length:</strong></p>
+<ul>
+<li><strong>Description:</strong> Add a random numeric suffix if the generated key is shorter than this value.</li>
+<li><strong>Default:</strong> <code>6</code> </li>
+<li><strong>Usage:</strong> Helps ensure citekeys are unique when there may be similar author/year combinations.</li>
+</ul>
+</li>
+</ul>
+<h2 id="bulk-import-settings">Bulk Import Settings</h2>
+<p>Configure default behaviors for the "Bulk import references" command. These can be overridden in the bulk import modal itself.</p>
+<ul>
+<li>
+<p><strong>Attachment handling:</strong></p>
+<ul>
+<li><strong>Description:</strong> Default choice for how to handle files referenced in imported <code>.bib</code> or <code>.json</code> files.</li>
+<li><strong>Options:</strong> <code>Ignore attachments</code>, <code>Import attachments to vault</code>.</li>
+<li><strong>Default:</strong> <code>none</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Include annotations in note body:</strong></p>
+<ul>
+<li><strong>Description:</strong> Default setting for whether content from the BibTeX <code>annote</code> field should be added to the body of created notes.</li>
+<li><strong>Default:</strong> <code>true</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Citekey preference:</strong></p>
+<ul>
+<li><strong>Description:</strong> Default choice for whether to use citekeys from the import file or generate new ones based on BibLib settings.</li>
+<li><strong>Options:</strong> <code>Use imported citekeys</code>, <code>Generate new citekeys</code>.</li>
+<li><strong>Default:</strong> <code>imported</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Conflict resolution:</strong></p>
+<ul>
+<li><strong>Description:</strong> Default action to take when a literature note with the same target citekey already exists during bulk import.</li>
+<li><strong>Options:</strong> <code>Skip existing notes</code>, <code>Overwrite existing notes</code>.</li>
+<li><strong>Default:</strong> <code>skip</code></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["search.suggest"], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      
+    
+  </body>
+</html>
