@@ -6,6 +6,7 @@ import { ContributorField } from '../components/contributor-field';
 import { AdditionalFieldComponent } from '../components/additional-field';
 import { CitekeyGenerator } from '../../utils/citekey-generator';
 import { TemplateEngine } from '../../utils/template-engine';
+import { processYamlArray } from '../../utils/yaml-utils';
 import { 
     CSL_ALL_CSL_FIELDS, 
     CSL_NAME_FIELDS, 
@@ -385,8 +386,45 @@ export class EditBibliographyModal extends BibliographyModal {
                 for (const field of this.settings.customFrontmatterFields) {
                     if (field.enabled) {
                         try {
-                            const renderedValue = TemplateEngine.render(field.template, templateVariables);
-                            finalFrontmatterOutput[field.name] = renderedValue;
+                            // Skip if field name already exists in frontmatter (don't overwrite standard fields)
+                            if (finalFrontmatterOutput.hasOwnProperty(field.name)) {
+                                continue;
+                            }
+                            
+                            // Determine if this looks like an array/object template
+                            const isArrayTemplate = field.template.trim().startsWith('[') && 
+                                                   field.template.trim().endsWith(']');
+                            
+                            // Render the template with appropriate options
+                            const renderedValue = TemplateEngine.render(
+                                field.template,
+                                templateVariables, 
+                                { yamlArray: isArrayTemplate }
+                            );
+                            
+                            // Handle different types of rendered values
+                            if ((renderedValue.startsWith('[') && renderedValue.endsWith(']')) || 
+                                (renderedValue.startsWith('{') && renderedValue.endsWith('}'))) {
+                                try {
+                                    // For array templates, process with our shared utility function first
+                                    const processedValue = isArrayTemplate ? processYamlArray(renderedValue) : renderedValue;
+                                    
+                                    // Parse as JSON for arrays and objects
+                                    finalFrontmatterOutput[field.name] = JSON.parse(processedValue);
+                                } catch (e) {
+                                    // Special handling for array templates that should be empty arrays
+                                    if (isArrayTemplate && (renderedValue.trim() === '[]' || renderedValue.trim() === '[ ]')) {
+                                        finalFrontmatterOutput[field.name] = [];
+                                    } else {
+                                        // If JSON parsing fails, store as string
+                                        console.warn(`Failed to parse JSON for field ${field.name}: ${renderedValue}`);
+                                        finalFrontmatterOutput[field.name] = renderedValue;
+                                    }
+                                }
+                            } else {
+                                // For non-JSON values, store directly
+                                finalFrontmatterOutput[field.name] = renderedValue;
+                            }
                         } catch (error) {
                             console.error(`Error rendering custom field ${field.name}:`, error);
                         }
