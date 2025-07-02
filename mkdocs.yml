@@ -51,7 +51,6 @@ markdown_extensions:
 nav:
   - 'Introduction': 'index.md'
   - 'Core Concepts': 'core-concepts.md'
-  - 'Installation': 'installation.md'
   - 'Key Features': 'key-features.md'
   - 'Usage Guide': 'usage-guide.md'
   - 'Settings': 'settings.md'
