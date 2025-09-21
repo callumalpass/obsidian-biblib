@@ -3,7 +3,14 @@
 > [!NOTE]
 > For more on why/how to use BibLib, see the [documentation](https://callumalpass.github.io/obsidian-biblib)
 
-BibLib transforms Obsidian into an academic reference manager by storing each reference as a Markdown note with bibliographic metadata in YAML frontmatter using the [Citation Style Language](https://citationstyles.org/) (CSL) JSON format. BibLib ensures your references are portable and ready for automated citation formatting. All your reference data lives in plain text (Markdown and YAML), making it future-proof, version-controllable, and easy to work with in Obsidian's new Bases. This approach keeps your reference library **inside Obsidian**, so you can link and manage sources just like any other notes. ![Screenshot of biblib Obsidian plugin](https://github.com/callumalpass/obsidian-biblib/blob/main/screenshots/create-lit-note.gif?raw=true)
+BibLib transforms Obsidian into an academic reference manager by storing each reference as a Markdown note with bibliographic metadata in YAML frontmatter using the [Citation Style Language](https://citationstyles.org/) (CSL) JSON format. BibLib ensures your references are portable and ready for automated citation formatting. All your reference data lives in plain text (Markdown and YAML), making it future-proof, version-controllable, and easy to work with in Obsidian's new Bases. This approach keeps your reference library **inside Obsidian**, so you can link and manage sources just like any other notes. 
+
+![Screenshot of biblib Obsidian plugin](https://github.com/callumalpass/obsidian-biblib/blob/main/screenshots/create-lit-note.gif?raw=true)
+**Automatic retrieval of literature note metadata**
+
+<img width="954" height="987" alt="2025-09-21_16-01" src="https://github.com/user-attachments/assets/bda8cb07-35e3-4c73-8a12-1d061811106e" />
+**Example frontmatter of a note**
+
 
 ## Why BibLib?
 
