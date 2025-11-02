@@ -257,7 +257,7 @@ export class BibliographyModal extends Modal {
         // Create identifier field
         const citoidIdSetting = new Setting(citoidContent)
             .setName('Auto-lookup by identifier')
-            .setDesc('DOI, ISBN, arXiv ID, URL');
+            .setDesc('DOI, ISBN, arXiv ID, URL, PubMed, PMC, Wikidata QIDs');
         
         const citoidIdInput = citoidIdSetting.controlEl.createEl('input', {
             type: 'text',
