@@ -1,5 +1,12 @@
 import { requestUrl, Notice } from 'obsidian';
 // CitoidService only provides BibTeX fetching; JSON metadata via Citation.js
+import Cite from 'citation-js';
+import '@citation-js/plugin-isbn';
+import '@citation-js/plugin-doi';
+import '@citation-js/plugin-pubmed';
+import '@citation-js/plugin-wikidata';
+
+import '@citation-js/plugin-bibtex';
 
 export class CitoidService {
     private apiUrl: string = 'https://en.wikipedia.org/api/rest_v1/data/citation/bibtex/';
@@ -18,18 +25,21 @@ export class CitoidService {
         // Attempt to fetch BibTeX at configured endpoint
         const fetchBib = async (baseUrl: string): Promise<string> => {
             const fullUrl = `${baseUrl}${cleaned}`;
-            const resp = await requestUrl({
-                url: fullUrl,
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/x-bibtex',
-                    'User-Agent': 'Obsidian-BibLib'
-                }
-            });
-            if (resp.status !== 200) {
-                throw new Error(`Citoid BibTeX fetch failed: ${resp.status} at ${fullUrl}`);
-            }
-            return resp.text;
+
+            try {
+                const resp = await requestUrl({
+                    url: fullUrl,
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/x-bibtex',
+                        'User-Agent': 'Obsidian-BibLib'
+                    }
+                });
+
+                return resp.text;
+            } catch (err) {
+                return ''
+            }            
         };
 
         try {
@@ -45,8 +55,11 @@ export class CitoidService {
                     fallbackBase = fallbackBase.replace(/\/?$/, '/') + 'bibtex/';
                 }
                 text = await fetchBib(fallbackBase);
-                if (!text.trim().startsWith('@')) {
-                    throw new Error('Fallback Citoid endpoint did not return valid BibTeX');
+                
+                if (!text.trim().startsWith('@')) {                    
+                    const data = await Cite.async(identifier)
+                    const bibliography = data.format('bibtex')
+                    text = bibliography;
                 }
             }
             return text;
