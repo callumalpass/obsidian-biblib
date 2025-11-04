@@ -23,7 +23,7 @@ export class CitoidService {
     async fetchBibTeX(identifier: string): Promise<string> {
         const cleaned = encodeURIComponent(identifier.trim());
         // Attempt to fetch BibTeX at configured endpoint
-        const fetchBib = async (baseUrl: string): Promise<string> => {
+        const fetchBib = async (baseUrl: string): Promise<string | null> => {
             const fullUrl = `${baseUrl}${cleaned}`;
 
             try {
@@ -38,14 +38,15 @@ export class CitoidService {
 
                 return resp.text;
             } catch (err) {
-                return ''
-            }            
+                console.warn(`Citoid endpoint ${fullUrl} failed:`, err);
+                return null;
+            }
         };
 
         try {
             let text = await fetchBib(this.apiUrl);
             // If the response is not valid BibTeX (doesn't start with '@'), try fallback to '/bibtex/' path
-            if (!text.trim().startsWith('@')) {
+            if (!text || !text.trim().startsWith('@')) {
                 // Fallback to try retrieving valid BibTeX
                 // Derive fallback base URL: replace 'mediawiki/' with 'bibtex/', or append 'bibtex/'
                 let fallbackBase = this.apiUrl;
@@ -55,11 +56,25 @@ export class CitoidService {
                     fallbackBase = fallbackBase.replace(/\/?$/, '/') + 'bibtex/';
                 }
                 text = await fetchBib(fallbackBase);
-                
-                if (!text.trim().startsWith('@')) {                    
-                    const data = await Cite.async(identifier)
-                    const bibliography = data.format('bibtex')
-                    text = bibliography;
+
+                if (!text || !text.trim().startsWith('@')) {
+                    // Try citation-js as final fallback
+                    console.log('Citoid endpoints failed, attempting citation-js fallback');
+                    new Notice('Using citation-js fallback for identifier lookup');
+
+                    try {
+                        const data = await Cite.async(identifier);
+                        const bibliography = data.format('bibtex');
+
+                        if (!bibliography || !bibliography.trim().startsWith('@')) {
+                            throw new Error('citation-js did not return valid BibTeX');
+                        }
+
+                        text = bibliography;
+                    } catch (citeErr) {
+                        console.error('citation-js fallback failed:', citeErr);
+                        throw new Error(`All BibTeX fetch methods failed. Last error: ${citeErr.message}`);
+                    }
                 }
             }
             return text;
