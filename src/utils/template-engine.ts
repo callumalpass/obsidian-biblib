@@ -1,32 +1,121 @@
 /**
  * Unified Template Engine for BibLib
- * 
- * Provides a consistent rendering system for all templated content:
- * - Custom frontmatter fields
- * - Header templates
- * - Citekey generation
+ *
+ * A Handlebars-inspired template engine that renders templates with variables,
+ * conditionals, loops, and formatters. Used throughout BibLib for:
+ * - Custom frontmatter field templates
+ * - Note header templates
+ * - Citekey generation templates
+ * - Filename templates
+ *
+ * **Supported Syntax:**
+ * - Variables: `{{variable}}` or `{{variable|formatter}}`
+ * - Nested properties: `{{author.0.family}}` or `{{authors_family.0}}`
+ * - Conditionals: `{{#variable}}content{{/variable}}` (if truthy)
+ * - Inverted conditionals: `{{^variable}}content{{/variable}}` (if falsy)
+ * - Array iteration: `{{#array}}{{.}}{{/array}}` with special variables
+ *   - `{{.}}` - current item
+ *   - `{{@index}}` - 0-based index
+ *   - `{{@first}}`, `{{@last}}` - boolean flags
+ * - Formatters: `{{value|upper}}`, `{{title|truncate:30}}`, `{{author|abbr3}}`
+ * - Random strings: `{{rand|5}}` or `{{rand5}}`
+ *
+ * @example
+ * ```typescript
+ * const result = TemplateEngine.render(
+ *   '{{author|lower}}{{year}}',
+ *   { author: 'Smith', year: 2023 }
+ * );
+ * // => "smith2023"
+ *
+ * const withFormatting = TemplateEngine.render(
+ *   '{{title|titleword|upper}}',
+ *   { title: 'The Art of Computer Programming' },
+ *   { sanitizeForCitekey: true }
+ * );
+ * // => "ART"
+ * ```
  */
 import { processYamlArray } from './yaml-utils';
 
+/**
+ * Options for controlling template rendering behavior.
+ */
 export interface TemplateOptions {
-    /** Whether to sanitize output for citekeys (alphanumeric only) */
+    /**
+     * Whether to sanitize output for Pandoc citekey compliance.
+     * When enabled, ensures the result starts with a letter/digit/underscore
+     * and contains only allowed characters.
+     */
     sanitizeForCitekey?: boolean;
-    /** Whether to render as YAML array format */
+
+    /**
+     * Whether to render as a YAML array format.
+     * Applies special formatting for array values in YAML frontmatter.
+     */
     yamlArray?: boolean;
 }
 
+/**
+ * Static template engine for rendering Handlebars-style templates.
+ *
+ * All methods are static as the engine is stateless and doesn't require
+ * instantiation. Each render call is independent with its own variable context.
+ */
 export class TemplateEngine {
     /**
-     * Render a template with the given variables and options
-     * 
-     * @param template The template string
-     * @param variables Object containing variable values
-     * @param options Template processing options
-     * @returns Rendered string
+     * Render a template string with variables and optional formatting.
+     *
+     * This is the main entry point for template rendering. It processes templates
+     * in the following order:
+     * 1. Positive conditional blocks (`{{#var}}...{{/var}}`)
+     * 2. Negative conditional blocks (`{{^var}}...{{/var}}`)
+     * 3. Variable substitutions (`{{var}}` or `{{var|format}}`)
+     * 4. Optional sanitization for citekeys (Pandoc rules)
+     * 5. Optional YAML array formatting
+     *
+     * **Formatter Chaining:**
+     * You can chain formatters: `{{title|lowercase|truncate:20}}`
+     *
+     * **Special Variables:**
+     * - In array iterations: `.`, `@index`, `@first`, `@last`, `@odd`, `@even`
+     * - Random strings: Use `{{rand|N}}` or `{{randN}}` for N-character random string
+     *
+     * @param template - The template string to render
+     * @param variables - Object containing variable values (supports nested objects)
+     * @param options - Optional rendering configuration
+     * @returns The rendered string
+     *
+     * @example
+     * ```typescript
+     * // Basic variable substitution
+     * TemplateEngine.render('{{name}}', { name: 'John' });
+     * // => "John"
+     *
+     * // With formatter
+     * TemplateEngine.render('{{name|upper}}', { name: 'John' });
+     * // => "JOHN"
+     *
+     * // Conditional block
+     * TemplateEngine.render('{{#hasEmail}}Email: {{email}}{{/hasEmail}}',
+     *   { hasEmail: true, email: 'test@example.com' });
+     * // => "Email: test@example.com"
+     *
+     * // Array iteration
+     * TemplateEngine.render('{{#authors}}{{.}}, {{/authors}}',
+     *   { authors: ['Smith', 'Jones'] });
+     * // => "Smith, Jones, "
+     *
+     * // Citekey generation
+     * TemplateEngine.render('{{author|lower}}{{year}}',
+     *   { author: 'Smith', year: 2023 },
+     *   { sanitizeForCitekey: true });
+     * // => "smith2023"
+     * ```
      */
     static render(
-        template: string, 
-        variables: { [key: string]: any }, 
+        template: string,
+        variables: { [key: string]: any },
         options: TemplateOptions = {}
     ): string {
         // Start with the template
@@ -65,8 +154,45 @@ export class TemplateEngine {
     }
     
     /**
-     * Process positive conditional blocks {{#variable}}content{{/variable}}
-     * Also handles iteration if the variable is an array
+     * Process positive conditional blocks and array iterations.
+     *
+     * Handles `{{#variable}}content{{/variable}}` syntax:
+     * - For arrays: Iterates over each element, rendering content for each
+     * - For truthy non-arrays: Renders content once
+     * - For falsy values: Renders nothing
+     *
+     * **Array Iteration Variables:**
+     * Within array blocks, the following special variables are available:
+     * - `.` - Current array item
+     * - `@index` - Current index (0-based)
+     * - `@number` - Current number (1-based)
+     * - `@first` - Boolean, true for first item
+     * - `@last` - Boolean, true for last item
+     * - `@odd` - Boolean, true for odd-indexed items
+     * - `@even` - Boolean, true for even-indexed items
+     * - `@length` - Total array length
+     *
+     * Processes blocks recursively to support nested loops and conditionals.
+     *
+     * @param template - The template string to process
+     * @param variables - Available variables for substitution
+     * @returns Template with positive blocks processed
+     * @private
+     *
+     * @example
+     * ```typescript
+     * // Array iteration
+     * processPositiveBlocks(
+     *   '{{#authors}}{{.}}{{^@last}}, {{/@last}}{{/authors}}',
+     *   { authors: ['Smith', 'Jones', 'Brown'] }
+     * );
+     * // => "Smith, Jones, Brown"
+     *
+     * // Conditional rendering
+     * processPositiveBlocks('{{#hasDOI}}DOI: {{doi}}{{/hasDOI}}',
+     *   { hasDOI: true, doi: '10.1234/example' });
+     * // => "DOI: 10.1234/example"
+     * ```
      */
     private static processPositiveBlocks(template: string, variables: { [key: string]: any }): string {
         // Regex for positive blocks {{#variable}}content{{/variable}}
@@ -113,7 +239,29 @@ export class TemplateEngine {
     }
     
     /**
-     * Process negative conditional blocks {{^variable}}content{{/variable}}
+     * Process negative (inverted) conditional blocks.
+     *
+     * Handles `{{^variable}}content{{/variable}}` syntax:
+     * - Renders content when variable is falsy, empty, or doesn't exist
+     * - Falsy values include: undefined, null, empty string, empty array
+     *
+     * This is the logical opposite of positive blocks (`{{#variable}}`).
+     *
+     * @param template - The template string to process
+     * @param variables - Available variables for evaluation
+     * @returns Template with negative blocks processed
+     * @private
+     *
+     * @example
+     * ```typescript
+     * processNegativeBlocks('{{^authors}}No authors listed{{/authors}}',
+     *   { authors: [] });
+     * // => "No authors listed"
+     *
+     * processNegativeBlocks('{{^doi}}No DOI available{{/doi}}',
+     *   { title: 'Example' });
+     * // => "No DOI available"
+     * ```
      */
     private static processNegativeBlocks(template: string, variables: { [key: string]: any }): string {
         // Regex for negative blocks {{^variable}}content{{/variable}}
@@ -184,8 +332,33 @@ export class TemplateEngine {
     }
     
     /**
-     * Get a value from nested object properties using dot notation
-     * Example: 'user.profile.name' gets variables.user.profile.name
+     * Get a value from nested object properties using dot notation.
+     *
+     * Supports two access patterns:
+     * 1. Direct property: `'title'` → `obj.title`
+     * 2. Nested dot notation: `'author.0.family'` → `obj.author[0].family`
+     *
+     * Returns `undefined` if any intermediate property doesn't exist.
+     * This prevents errors when accessing deeply nested optional properties.
+     *
+     * @param obj - The object to traverse
+     * @param path - Property path (can use dot notation)
+     * @returns The value at the path, or undefined if not found
+     * @private
+     *
+     * @example
+     * ```typescript
+     * const data = { author: [{ family: 'Smith', given: 'John' }], year: 2023 };
+     *
+     * getNestedValue(data, 'year');
+     * // => 2023
+     *
+     * getNestedValue(data, 'author.0.family');
+     * // => "Smith"
+     *
+     * getNestedValue(data, 'author.1.family');
+     * // => undefined (array doesn't have index 1)
+     * ```
      */
     private static getNestedValue(obj: { [key: string]: any }, path: string): any {
         // Handle direct property access
@@ -209,7 +382,69 @@ export class TemplateEngine {
     }
     
     /**
-     * Format a value based on specified format
+     * Apply a formatter to a value.
+     *
+     * Supports 30+ formatters organized into categories:
+     *
+     * **Text Case:**
+     * - `upper`, `uppercase` - Convert to uppercase
+     * - `lower`, `lowercase` - Convert to lowercase
+     * - `capitalize` - Capitalize first letter of each word
+     * - `sentence` - Capitalize first letter only
+     * - `title` - Title case
+     *
+     * **Length/Truncation:**
+     * - `truncate[:N]` - Truncate to N characters (default 30)
+     * - `ellipsis[:N]` - Truncate with "..." (default 30)
+     * - `abbr[N]` - First N characters (abbr1, abbr2, abbr3, abbr4)
+     *
+     * **String Manipulation:**
+     * - `replace:find:replacement` - Regex find and replace
+     * - `trim` - Remove leading/trailing whitespace
+     * - `prefix:text` - Add prefix
+     * - `suffix:text` - Add suffix
+     * - `pad:length:char` - Pad to length with character
+     * - `slice:start[:end]` - Substring
+     *
+     * **Numbers:**
+     * - `number[:precision]` - Format as number with optional decimal places
+     *
+     * **Arrays:**
+     * - `count` - Array length
+     * - `join[:delimiter]` - Join array with delimiter (default: comma)
+     * - `split:delimiter` - Split string into array
+     *
+     * **Dates:**
+     * - `date[:format]` - Format date (iso, short, long, year, month, day)
+     *
+     * **Specialized:**
+     * - `titleword` - First significant word from title (skips stop words)
+     * - `shorttitle` - First 3 significant words
+     * - `json` - Convert to JSON string
+     * - `urlencode` / `urldecode` - URL encoding
+     *
+     * **Random:**
+     * - `rand[N]` - Random alphanumeric string of length N
+     *
+     * @param value - The value to format
+     * @param format - The formatter name and optional parameters (e.g., "truncate:30")
+     * @returns Formatted string
+     * @private
+     *
+     * @example
+     * ```typescript
+     * formatValue('HELLO', 'lower');
+     * // => "hello"
+     *
+     * formatValue('A Long Title Here', 'truncate:10');
+     * // => "A Long Tit"
+     *
+     * formatValue('Smith', 'abbr3');
+     * // => "Smi"
+     *
+     * formatValue(['a', 'b', 'c'], 'join: and ');
+     * // => "a and b and c"
+     * ```
      */
     private static formatValue(value: any, format: string): string {
         // Check for formatters with parameters (e.g. truncate:30)
@@ -430,8 +665,36 @@ export class TemplateEngine {
     }
     
     /**
-     * Extract the first N significant words from a title
-     * Used for titleword and shorttitle formatters
+     * Extract the first N significant words from a title, excluding stop words.
+     *
+     * Used by the `titleword` and `shorttitle` formatters for citekey generation.
+     * This method:
+     * 1. Removes HTML tags from the title
+     * 2. Splits into words
+     * 3. Filters out common stop words (a, an, the, and, or, etc.)
+     * 4. Takes first N significant words
+     * 5. Joins them and removes punctuation
+     * 6. Converts to lowercase
+     *
+     * If no significant words are found, falls back to using all words
+     * (even stop words) to ensure a result is always returned.
+     *
+     * @param title - The title string to process
+     * @param wordCount - Number of words to extract (default: 1)
+     * @returns Lowercase string with first N significant words, no spaces
+     * @private
+     *
+     * @example
+     * ```typescript
+     * extractTitleWord('The Art of Computer Programming', 1);
+     * // => "art" (skips "the")
+     *
+     * extractTitleWord('A Study on Machine Learning', 3);
+     * // => "studymachinelearning" (skips "a" and "on")
+     *
+     * extractTitleWord('An Introduction', 1);
+     * // => "introduction" (skips "an")
+     * ```
      */
     private static extractTitleWord(title: string, wordCount: number = 1): string {
         if (!title) {
@@ -473,8 +736,26 @@ export class TemplateEngine {
     }
     
     /**
-     * Generate a random alphanumeric string of the specified length
-     * Used for the rand formatter
+     * Generate a cryptographically random alphanumeric string.
+     *
+     * Used by the `{{rand|N}}` template variable and `rand` formatter.
+     * Useful for generating unique citekeys when collisions occur.
+     *
+     * The string contains only letters (a-z, A-Z) and digits (0-9).
+     * Length is clamped between 1 and 32 characters for safety.
+     *
+     * @param length - Desired length of the random string (default: 5, max: 32)
+     * @returns Random alphanumeric string
+     * @private
+     *
+     * @example
+     * ```typescript
+     * generateRandomString(5);
+     * // => "aB3xQ" (example, actual output is random)
+     *
+     * generateRandomString(10);
+     * // => "k2JhP9mNz4" (example)
+     * ```
      */
     private static generateRandomString(length: number = 5): string {
         const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

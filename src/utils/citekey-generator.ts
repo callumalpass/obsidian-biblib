@@ -1,16 +1,109 @@
 /**
- * Utility for generating citation keys
+ * Utility for generating Pandoc-compatible citation keys.
+ *
+ * Generates unique citation keys (citekeys) from CSL-JSON metadata using
+ * configurable templates. Citekeys follow Pandoc's rules:
+ * - Must start with a letter, digit, or underscore
+ * - Can contain alphanumerics and internal punctuation (:.#$%&-+?<>~/)
+ * - No trailing punctuation
+ *
+ * **Generation Priority:**
+ * 1. Zotero key (if `useZoteroKeys` is enabled and key exists)
+ * 2. Custom template (using TemplateEngine)
+ * 3. Fallback format (author-year)
+ *
+ * **Template Syntax:**
+ * Templates can use two formats:
+ * - Modern: `{{author|lowercase}}{{year}}` (Handlebars-style)
+ * - Legacy: `[auth:lower][year]` (converted to modern format)
+ *
+ * **Common Variables:**
+ * - `{{author}}` - First author's family name
+ * - `{{year}}` - Publication year
+ * - `{{title}}` or `{{shorttitle}}` - Title or first significant words
+ * - `{{rand|N}}` - Random N-character string (for uniqueness)
+ *
+ * @example
+ * ```typescript
+ * // Using template
+ * const citekey = CitekeyGenerator.generate(
+ *   { author: [{family: 'Smith'}], issued: {'date-parts': [[2023]]} },
+ *   { citekeyTemplate: '{{author|lowercase}}{{year}}', minCitekeyLength: 6 }
+ * );
+ * // => "smith2023"
+ *
+ * // Using Zotero key
+ * const zoteroKey = CitekeyGenerator.generate(
+ *   { id: 'ABCD1234', author: [{family: 'Jones'}] },
+ *   { useZoteroKeys: true }
+ * );
+ * // => "ABCD1234"
+ *
+ * // Fallback format
+ * const fallback = CitekeyGenerator.generate(
+ *   { author: [{family: 'Brown'}], issued: {'date-parts': [[2024]]} },
+ *   {} // No template
+ * );
+ * // => "brown2024"
+ * ```
  */
 import { CitekeyOptions } from '../types/settings';
 import { TemplateEngine } from './template-engine';
 
+/**
+ * Static utility class for generating citation keys.
+ *
+ * All methods are static as the generator is stateless. Each generation call
+ * is independent and based solely on the provided citation data and options.
+ */
 export class CitekeyGenerator {
        /**
-        * Generates a citekey based on available data and configuration.
-        * Priority: Zotero Key > Template > Fallback
-        * @param citationData The citation data (e.g., CSL-JSON object)
-        * @param options Citekey generation options from settings
-        * @returns A generated citekey string
+        * Generate a citation key from citation data.
+        *
+        * This is the main entry point for citekey generation. It follows a
+        * priority order and includes fallback mechanisms:
+        *
+        * 1. **Zotero Key** (if enabled): Uses existing `key` or `id` field
+        * 2. **Template**: Renders custom template with citation variables
+        * 3. **Fallback**: Simple "author-year" format
+        *
+        * The generated citekey is sanitized to comply with Pandoc's rules and
+        * optionally enforces a minimum length by adding a random suffix.
+        *
+        * @param citationData - CSL-JSON citation object or Zotero item
+        * @param options - Citekey generation options (template, min length, etc.)
+        * @returns Pandoc-compatible citation key
+        *
+        * @throws Never throws - returns error citekey on failure (e.g., "error_123")
+        *
+        * @example
+        * ```typescript
+        * const data = {
+        *   author: [{ family: 'Smith', given: 'John' }],
+        *   issued: { 'date-parts': [[2023]] },
+        *   title: 'A Study on Machine Learning'
+        * };
+        *
+        * // With template
+        * generate(data, {
+        *   citekeyTemplate: '{{author|lowercase}}{{year}}',
+        *   minCitekeyLength: 8
+        * });
+        * // => "smith2023"
+        *
+        * // With titleword formatter
+        * generate(data, {
+        *   citekeyTemplate: '{{author|lowercase}}{{title|titleword}}{{year}}'
+        * });
+        * // => "smithstudy2023"
+        *
+        * // Minimum length enforcement
+        * generate({ author: [{ family: 'Li' }], issued: { 'date-parts': [[2023]] } }, {
+        *   citekeyTemplate: '{{author|lowercase}}{{year}}',
+        *   minCitekeyLength: 10
+        * });
+        * // => "li2023456" (random suffix added to meet minimum)
+        * ```
         */
        static generate(citationData: any, options?: CitekeyOptions): string {
                // Ensure we have valid options, merging defaults
@@ -79,8 +172,35 @@ export class CitekeyGenerator {
        }
        
        /**
-        * Convert a square bracket template to a mustache template
-        * [auth:lower] -> {{auth|lowercase}}
+        * Convert legacy square bracket template syntax to modern Handlebars format.
+        *
+        * Provides backward compatibility with older citekey templates that use
+        * square bracket syntax. Converts field names and modifiers to the modern
+        * pipe-separated format.
+        *
+        * **Conversions:**
+        * - Field names: `[auth]` → `{{author}}`
+        * - Modifiers: `[auth:lower]` → `{{author|lowercase}}`
+        * - Chained: `[title:lower:truncate]` → `{{title|lower|truncate}}`
+        * - Functions: `[auth:abbr(3)]` → `{{author|abbr3}}`
+        * - Title words: `[title:words(1)]` → `{{title|titleword}}`
+        *
+        * **Field Mappings:**
+        * - `auth` → `author`
+        * - Other fields preserved as-is
+        *
+        * @param template - Legacy template with square brackets
+        * @returns Modern Handlebars template with double braces
+        * @private
+        *
+        * @example
+        * ```typescript
+        * convertToMustacheTemplate('[auth:lower][year]');
+        * // => "{{author|lowercase}}{{year}}"
+        *
+        * convertToMustacheTemplate('[auth:abbr(3)][title:words(1)][year]');
+        * // => "{{author|abbr3}}{{title|titleword}}{{year}}"
+        * ```
         */
        private static convertToMustacheTemplate(template: string): string {
            // Replace [field:mod1:mod2] with {{field|mod1|mod2}}
@@ -130,7 +250,44 @@ export class CitekeyGenerator {
        }
        
        /**
-        * Prepare variables for template rendering
+        * Prepare template variables for citekey generation.
+        *
+        * Creates a variable object that combines:
+        * 1. All fields from the original citation data (spread)
+        * 2. Convenience fields extracted for common use cases
+        *
+        * **Convenience Fields:**
+        * - `author` - First author's family name (extracted)
+        * - `year` - Publication year (extracted)
+        * - `title` - Full title
+        * - `shorttitle` - First 3 significant words
+        * - `authors` - Array of author objects for iteration
+        *
+        * These variables can be used in templates with formatters:
+        * `{{author|lowercase}}{{year}}` or `{{shorttitle|upper}}`
+        *
+        * @param citationData - Citation object (CSL-JSON or Zotero)
+        * @param config - Citekey generation options
+        * @returns Variables object for template rendering
+        * @private
+        *
+        * @example
+        * ```typescript
+        * const vars = prepareCitekeyVariables({
+        *   author: [{ family: 'Smith' }],
+        *   issued: { 'date-parts': [[2023]] },
+        *   title: 'The Art of Computer Programming'
+        * }, {});
+        *
+        * // vars = {
+        * //   author: 'smith',
+        * //   year: '2023',
+        * //   title: 'The Art of Computer Programming',
+        * //   shorttitle: 'artcomputerprogramming',
+        * //   authors: [{family: 'Smith'}],
+        * //   ...
+        * // }
+        * ```
         */
        private static prepareCitekeyVariables(citationData: any, config: CitekeyOptions): { [key: string]: any } {
            const variables: { [key: string]: any } = {
@@ -201,9 +358,42 @@ export class CitekeyGenerator {
 
 
        /**
-        * Extract the primary author part for a citekey (First author's last name).
-        * Returns cleaned, lowercase string or a fallback of 'unknown' when no author is found.
-        * Note: No longer falls back to title data to avoid template variable confusion.
+        * Extract the first author's family name for use in citekeys.
+        *
+        * Searches for author information in multiple fields to handle different
+        * data formats (CSL-JSON, Zotero, etc.):
+        * 1. `author` array (CSL-JSON)
+        * 2. `creators` array filtered by `creatorType: 'author'` (Zotero)
+        *
+        * Returns a cleaned, lowercase family name suitable for citekeys. If no
+        * author is found, returns "unknown" instead of falling back to title
+        * (to avoid template variable confusion).
+        *
+        * @param citationData - Citation object to extract author from
+        * @param config - Citekey generation options (currently unused)
+        * @returns Lowercase family name or "unknown"
+        * @private
+        *
+        * @example
+        * ```typescript
+        * // CSL-JSON format
+        * extractAuthorPart({ author: [{ family: 'Smith', given: 'John' }] }, {});
+        * // => "smith"
+        *
+        * // Zotero format
+        * extractAuthorPart({
+        *   creators: [{ creatorType: 'author', lastName: 'Jones', firstName: 'Mary' }]
+        * }, {});
+        * // => "jones"
+        *
+        * // Institutional author
+        * extractAuthorPart({ author: [{ literal: 'MIT Press' }] }, {});
+        * // => "mit"
+        *
+        * // No author
+        * extractAuthorPart({ title: 'Some Title' }, {});
+        * // => "unknown"
+        * ```
         */
        private static extractAuthorPart(citationData: any, config: CitekeyOptions): string {
                let authorName = '';
@@ -264,9 +454,40 @@ export class CitekeyGenerator {
        }
 
        /**
-        * Extract the 4-digit year part for a citekey.
-        * Handles CSL `issued.date-parts`, direct `year`, `issued.literal`, and general `date` fields.
-        * Returns year string or empty string if not found.
+        * Extract a 4-digit publication year from citation data.
+        *
+        * Attempts to find the year in multiple fields, in order of reliability:
+        * 1. `issued['date-parts'][0][0]` - CSL-JSON date format (most reliable)
+        * 2. `year` - Direct year field
+        * 3. `issued.literal` - Text date in `issued` field
+        * 4. `date` - General date field
+        * 5. `issued` - If it's a string
+        *
+        * Returns a 4-digit year string matching regex `\\d{4}`, or empty string
+        * if no valid year is found. Performs basic sanity checking (1000-3000 range).
+        *
+        * @param citationData - Citation object to extract year from
+        * @returns 4-digit year string or empty string
+        * @private
+        *
+        * @example
+        * ```typescript
+        * // CSL-JSON date-parts
+        * extractYearPart({ issued: { 'date-parts': [[2023, 1, 15]] } });
+        * // => "2023"
+        *
+        * // Direct year field
+        * extractYearPart({ year: 2024 });
+        * // => "2024"
+        *
+        * // Literal date string
+        * extractYearPart({ issued: { literal: 'January 2023' } });
+        * // => "2023"
+        *
+        * // No year found
+        * extractYearPart({ title: 'Some Title' });
+        * // => ""
+        * ```
         */
        private static extractYearPart(citationData: any): string {
                try {
