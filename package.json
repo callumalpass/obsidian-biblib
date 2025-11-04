@@ -6,26 +6,33 @@
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"version": "node version-bump.mjs && git add manifest.json versions.json"
+		"version": "node version-bump.mjs && git add manifest.json versions.json",
+		"test": "jest",
+		"test:watch": "jest --watch",
+		"test:coverage": "jest --coverage"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "MIT",
 	"devDependencies": {
+		"@jest/globals": "^30.2.0",
+		"@types/jest": "^30.0.0",
 		"@types/node": "^16.11.6",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
 		"@typescript-eslint/parser": "5.29.0",
 		"builtin-modules": "3.3.0",
 		"esbuild": "^0.25.2",
+		"jest": "^30.2.0",
 		"obsidian": "latest",
+		"ts-jest": "^29.4.5",
 		"tslib": "2.4.0",
 		"typescript": "4.7.4"
 	},
 	"dependencies": {
 		"@citation-js/date": "^0.5.1",
 		"@citation-js/plugin-bibtex": "^0.7.21",
-		"@citation-js/plugin-isbn": "^0.4.0",
 		"@citation-js/plugin-doi": "^0.7.21",
+		"@citation-js/plugin-isbn": "^0.4.0",
 		"@citation-js/plugin-pubmed": "^0.3.0",
 		"@citation-js/plugin-wikidata": "^0.7.21",
 		"buffer": "^6.0.3",
