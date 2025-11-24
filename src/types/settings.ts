@@ -96,6 +96,8 @@ export interface BibliographyPluginSettings {
         editUpdateCustomFrontmatterDefault: boolean;
         editRegenerateBodyDefault: boolean;
         editRenameFileOnCitekeyChange: boolean;
+        // Frontmatter settings
+        includeDefaultCslFrontmatter: boolean;
 }
 
 // --- Default Plugin Settings ---
@@ -175,6 +177,8 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         editRegenerateCitekeyDefault: false,
         editUpdateCustomFrontmatterDefault: true,
         editRegenerateBodyDefault: false,
-        editRenameFileOnCitekeyChange: true
+        editRenameFileOnCitekeyChange: true,
+        // Default frontmatter settings
+        includeDefaultCslFrontmatter: true
 };
 

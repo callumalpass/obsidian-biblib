@@ -36,50 +36,59 @@ export class FrontmatterBuilderService {
     try {
       const { citation, contributors, additionalFields, attachmentPaths, pluginSettings, relatedNotePaths } = data;
       
-      // Build base frontmatter object from essential citation fields
+      // Build base frontmatter object
       const frontmatter: Record<string, any> = {
-        id: citation.id,
-        type: citation.type,
-        title: citation.title,
-        // Use CSL date format for issued date
-        issued: {
-          'date-parts': [[
-            citation.year ? Number(citation.year) : undefined,
-            citation.month ? Number(citation.month) : undefined,
-            citation.day ? Number(citation.day) : undefined
-          ].filter(v => v !== undefined)], // Filter out undefined parts
-        },
-        // Add standard CSL fields (only if they have values)
-        ...(citation['title-short'] && { 'title-short': citation['title-short'] }),
-        ...(citation.page && { page: citation.page }),
-        ...(citation.URL && { URL: citation.URL }),
-        ...(citation.DOI && { DOI: citation.DOI }),
-        ...(citation['container-title'] && { 'container-title': citation['container-title'] }),
-        ...(citation.publisher && { publisher: citation.publisher }),
-        ...(citation['publisher-place'] && { 'publisher-place': citation['publisher-place'] }),
-        ...(citation.edition && { 
-          edition: isNaN(Number(citation.edition)) ? citation.edition : Number(citation.edition) 
-        }),
-        ...(citation.volume && { 
-          volume: isNaN(Number(citation.volume)) ? citation.volume : Number(citation.volume) 
-        }),
-        ...(citation.number && { 
-          number: isNaN(Number(citation.number)) ? citation.number : Number(citation.number) 
-        }),
-        ...(citation.language && { language: citation.language }),
-        ...(citation.abstract && { abstract: citation.abstract }),
-        
         // Ensure literature note tag is always present, while preserving any existing tags
         tags: citation.tags && Array.isArray(citation.tags)
           ? [...new Set([...citation.tags, pluginSettings.literatureNoteTag])]
           : [pluginSettings.literatureNoteTag]
       };
       
+      // Conditionally add CSL JSON frontmatter fields based on settings
+      if (pluginSettings.includeDefaultCslFrontmatter) {
+        Object.assign(frontmatter, {
+          id: citation.id,
+          type: citation.type,
+          title: citation.title,
+          // Use CSL date format for issued date
+          issued: {
+            'date-parts': [[
+              citation.year ? Number(citation.year) : undefined,
+              citation.month ? Number(citation.month) : undefined,
+              citation.day ? Number(citation.day) : undefined
+            ].filter(v => v !== undefined)], // Filter out undefined parts
+          },
+          // Add standard CSL fields (only if they have values)
+          ...(citation['title-short'] && { 'title-short': citation['title-short'] }),
+          ...(citation.page && { page: citation.page }),
+          ...(citation.URL && { URL: citation.URL }),
+          ...(citation.DOI && { DOI: citation.DOI }),
+          ...(citation['container-title'] && { 'container-title': citation['container-title'] }),
+          ...(citation.publisher && { publisher: citation.publisher }),
+          ...(citation['publisher-place'] && { 'publisher-place': citation['publisher-place'] }),
+          ...(citation.edition && { 
+            edition: isNaN(Number(citation.edition)) ? citation.edition : Number(citation.edition) 
+          }),
+          ...(citation.volume && { 
+            volume: isNaN(Number(citation.volume)) ? citation.volume : Number(citation.volume) 
+          }),
+          ...(citation.number && { 
+            number: isNaN(Number(citation.number)) ? citation.number : Number(citation.number) 
+          }),
+          ...(citation.language && { language: citation.language }),
+          ...(citation.abstract && { abstract: citation.abstract })
+        });
+      }
+      
       // Add contributors to frontmatter, preserving all CSL contributor properties
-      this.addContributorsToFrontmatter(frontmatter, contributors);
+      if (pluginSettings.includeDefaultCslFrontmatter) {
+        this.addContributorsToFrontmatter(frontmatter, contributors);
+      }
       
       // Add additional fields to frontmatter
-      this.addAdditionalFieldsToFrontmatter(frontmatter, additionalFields);
+      if (pluginSettings.includeDefaultCslFrontmatter) {
+        this.addAdditionalFieldsToFrontmatter(frontmatter, additionalFields);
+      }
       
       // Process custom frontmatter fields from plugin settings
       await this.processCustomFrontmatterFields(
