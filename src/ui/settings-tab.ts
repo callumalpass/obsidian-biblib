@@ -268,6 +268,16 @@ export class BibliographySettingTab extends PluginSettingTab {
 					this.plugin.settings.openNoteOnCreate = value;
 					await this.plugin.saveSettings();
 				}));
+
+		new Setting(containerEl)
+			.setName('Include default CSL JSON frontmatter')
+			.setDesc('Include default CSL JSON fields (id, type, title, authors, editors, DOI, abstract, etc.) in the frontmatter of new literature notes. When disabled, only the literature note tag and custom frontmatter fields will be included. This allows for minimal frontmatter tailored to your workflow.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.includeDefaultCslFrontmatter)
+				.onChange(async (value) => {
+					this.plugin.settings.includeDefaultCslFrontmatter = value;
+					await this.plugin.saveSettings();
+				}));
 	}
 
 	/**
