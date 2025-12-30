@@ -102,7 +102,7 @@
 /* Target the modal container when it contains our content */
 .modal:has(.bibliography-modal),
 .modal:has(.bibliography-bulk-import-modal) {
-  width: 900px;
+  width: 800px;
   max-width: 90vw;
 }
 
