@@ -61,3 +61,9 @@ To use your references with external tools, you can generate bibliography files.
 *   **`BibLib: Export bibliography as BibTeX`**: This command creates a BibTeX file (`bibliography.bib`).
 
 The paths for these files can be configured in the settings.
+
+## Browsing Your Library with Bases
+
+Obsidian's Bases feature (1.10+) allows you to create interactive table views of your literature notes. BibLib provides a ready-to-use Bases configuration with multiple views for browsing by author, year, type, venue, and more.
+
+See [Bases View for Literature Notes](bases-view.md) for the full configuration and setup instructions.
