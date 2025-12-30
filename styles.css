@@ -62,24 +62,19 @@
 .biblib-tab-navigation {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--biblib-spacing-xs);
+  gap: var(--biblib-spacing-sm);
   margin-bottom: var(--biblib-spacing-lg);
-  border-bottom: 1px solid var(--background-modifier-border);
-  padding-bottom: var(--biblib-spacing-sm);
 }
 
 .biblib-tab-button {
   background: transparent;
   border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  padding: var(--biblib-spacing-sm) var(--biblib-spacing-md);
+  padding: var(--biblib-spacing-xs) var(--biblib-spacing-sm);
   color: var(--text-muted);
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
-  transition: color var(--biblib-transition-fast), border-color var(--biblib-transition-fast);
-  white-space: nowrap;
+  transition: color var(--biblib-transition-fast);
 }
 
 .biblib-tab-button:hover {
@@ -88,12 +83,12 @@
 
 .biblib-tab-button:focus-visible {
   outline: 2px solid var(--interactive-accent);
-  outline-offset: -2px;
+  outline-offset: 2px;
 }
 
 .biblib-tab-button.active {
-  color: var(--interactive-accent);
-  border-bottom-color: var(--interactive-accent);
+  color: var(--text-accent);
+  font-weight: 600;
 }
 
 .biblib-settings-container {
