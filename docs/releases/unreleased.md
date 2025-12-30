@@ -38,6 +38,12 @@ Example:
 
 ## Changed
 
+- **Simplified literature note modal UI**: Cleaner design using Obsidian's default styling
+  - Collapsible auto-fill section uses native `<details>` element
+  - Single date input accepts flexible formats (YYYY, YYYY-MM, or YYYY-MM-DD)
+  - Attachment UI simplified to two buttons: "Import file" and "Link file"
+  - Form fields stack vertically for consistent input widths
+- **Reduced CSS footprint**: styles.css reduced from ~1500 to ~750 lines by using Obsidian defaults
 - Improved MetadataCache usage patterns
 - Enhanced error handling and validation in citoid service
 
