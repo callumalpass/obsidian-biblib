@@ -23,16 +23,16 @@ export class TemplateVariableBuilderService {
       // Current date and time (useful for templates)
       currentDate: new Date().toISOString().split('T')[0],
       currentTime: new Date().toISOString().split('T')[1].split('.')[0], // HH:MM:SS in ISO format
-      
-      // Formatted author list for display
-      authors: this.formatAuthorsForTemplate(contributors),
-      
+
+      // Formatted author list for display (e.g., "J. Smith", "J. Smith and B. Jones", "J. Smith et al.")
+      authorsDisplay: this.formatAuthorsForTemplate(contributors),
+
       // Add all citation fields directly (for access to any field)
       ...citation,
-      
-      // Add contributor lists by role
+
+      // Add contributor lists by role (includes 'authors' as array of full names)
       ...this.buildContributorLists(contributors),
-      
+
       // Override with explicit versions of common fields for clarity
       // These ensure consistent access even if the citation object structure changes
       citekey: citation.id || '',

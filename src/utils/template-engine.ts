@@ -212,8 +212,15 @@ export class TemplateEngine {
                 return value.map((item, index) => {
                     // For each iteration, create a new variables object
                     // with enhanced metadata about the iteration
-                    const iterationVars = { 
-                        ...variables, 
+                    // If item is an object, spread its properties to make them directly accessible
+                    // e.g., {{#authors}}{{family}}{{/authors}} can access author.family directly
+                    const itemProperties = (typeof item === 'object' && item !== null && !Array.isArray(item))
+                        ? item
+                        : {};
+
+                    const iterationVars = {
+                        ...variables,
+                        ...itemProperties,                       // Spread item properties for direct access
                         '.': item,                               // Current item
                         '@index': index,                         // Current index (0-based)
                         '@number': index + 1,                    // Current number (1-based)
@@ -313,8 +320,10 @@ export class TemplateEngine {
             }
             
             // If a format is specified, apply it
+            // Use trimStart() to preserve trailing whitespace which may be intentional
+            // (e.g., {{authors|join: and }} should keep the space after "and")
             if (format) {
-                return this.formatValue(value, format.trim());
+                return this.formatValue(value, format.trimStart());
             }
             
             // Otherwise, return the value as string

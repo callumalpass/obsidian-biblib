@@ -3,6 +3,17 @@ export class Notice {
   constructor(public message: string) {}
 }
 
+// Mock requestUrl for API calls
+export async function requestUrl(options: {
+  url: string;
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+}): Promise<{ text: string; json: any; status: number }> {
+  // This will be overridden in tests using jest.mock
+  throw new Error('requestUrl not mocked');
+}
+
 export class TFile {
   path: string;
   basename: string;

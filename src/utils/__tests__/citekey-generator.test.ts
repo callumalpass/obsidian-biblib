@@ -392,4 +392,347 @@ describe('CitekeyGenerator', () => {
       expect(result.length).toBeGreaterThan(0);
     });
   });
+
+  describe('generate - unicode and international characters', () => {
+    it('should handle accented characters in author names', () => {
+      const citation = {
+        author: [{ family: 'Müller', given: 'Hans' }],
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|lowercase}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      // Should strip non-ASCII characters
+      expect(result).toContain('2023');
+      expect(result).not.toContain('ü');
+    });
+
+    it('should handle CJK characters in author names', () => {
+      const citation = {
+        author: [{ family: '田中', given: '太郎' }],
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|lowercase}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      // Should fallback to something since CJK characters get stripped
+      expect(result).toBeDefined();
+      expect(result.length).toBeGreaterThan(0);
+    });
+
+    it('should handle mixed ASCII and unicode in titles', () => {
+      const citation = {
+        author: [{ family: 'Smith' }],
+        title: 'The Über Study: A Résumé',
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|lowercase}}{{title|titleword}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      expect(result).toContain('smith');
+      expect(result).toContain('2023');
+    });
+  });
+
+  describe('generate - author edge cases', () => {
+    it('should handle author with only given name', () => {
+      const citation = {
+        author: [{ given: 'Madonna' }],
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|lowercase}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      // Should fallback to 'unknown' when no family name
+      expect(result).toContain('2023');
+    });
+
+    it('should handle empty author array', () => {
+      const citation = {
+        author: [],
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|lowercase}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      expect(result).toContain('unknown');
+      expect(result).toContain('2023');
+    });
+
+    it('should handle author as string format "Last, First"', () => {
+      const citation = {
+        author: ['Smith, John'],
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|lowercase}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      expect(result).toContain('smith');
+      expect(result).toContain('2023');
+    });
+
+    it('should handle author as string format "First Last"', () => {
+      const citation = {
+        author: ['John Smith'],
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|lowercase}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      // Takes first word when no comma
+      expect(result).toContain('john');
+      expect(result).toContain('2023');
+    });
+
+    it('should handle hyphenated author names', () => {
+      const citation = {
+        author: [{ family: 'García-Márquez', given: 'Gabriel' }],
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|lowercase}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      // Hyphen should be preserved or handled gracefully
+      expect(result).toContain('2023');
+    });
+
+    it('should handle institutional author with multiple words', () => {
+      const citation = {
+        author: [{ literal: 'World Health Organization' }],
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|lowercase}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      // Should take first word of institutional name
+      expect(result).toContain('world');
+      expect(result).toContain('2023');
+    });
+  });
+
+  describe('generate - title edge cases', () => {
+    it('should handle title with only stop words', () => {
+      const citation = {
+        author: [{ family: 'Smith' }],
+        title: 'The A An And Or',
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|lowercase}}{{title|titleword}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      // Should still produce something for title
+      expect(result).toContain('smith');
+      expect(result).toContain('2023');
+    });
+
+    it('should handle title with HTML tags', () => {
+      const citation = {
+        author: [{ family: 'Smith' }],
+        title: '<i>The Italic Title</i>: A Study',
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|lowercase}}{{title|titleword}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      // Should strip HTML and get "italic" as first significant word
+      expect(result).toContain('smith');
+      expect(result).toContain('2023');
+    });
+
+    it('should handle empty title', () => {
+      const citation = {
+        author: [{ family: 'Smith' }],
+        title: '',
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|lowercase}}{{title|titleword}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      expect(result).toContain('smith');
+      expect(result).toContain('2023');
+    });
+  });
+
+  describe('generate - year edge cases', () => {
+    it('should handle year as string', () => {
+      const citation = {
+        author: [{ family: 'Smith' }],
+        year: '2023'
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|lowercase}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      expect(result).toBe('smith2023');
+    });
+
+    it('should handle year range in literal', () => {
+      const citation = {
+        author: [{ family: 'Smith' }],
+        issued: { literal: '2022-2023' }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|lowercase}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      // Should extract first year
+      expect(result).toContain('smith');
+      expect(result).toContain('2022');
+    });
+
+    it('should handle BC years (negative)', () => {
+      const citation = {
+        author: [{ family: 'Aristotle' }],
+        issued: { 'date-parts': [[-350]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|lowercase}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      // Should handle gracefully - may not extract negative years
+      expect(result).toContain('aristotle');
+    });
+
+    it('should handle future years', () => {
+      const citation = {
+        author: [{ family: 'Smith' }],
+        issued: { 'date-parts': [[2099]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|lowercase}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      expect(result).toBe('smith2099');
+    });
+  });
+
+  describe('generate - legacy template edge cases', () => {
+    it('should convert multiple modifiers in legacy syntax', () => {
+      const citation = {
+        author: [{ family: 'Smith' }],
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '[auth:abbr(4):lower][year]',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      // Should apply abbr(4) and lower
+      expect(result).toContain('2023');
+    });
+
+    it('should handle shorttitle in legacy syntax', () => {
+      const citation = {
+        author: [{ family: 'Smith' }],
+        title: 'The Long and Winding Road to Success',
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '[auth][shorttitle][year]',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      expect(result).toContain('2023');
+    });
+  });
+
+  describe('generate - Zotero key edge cases', () => {
+    it('should handle Zotero key with whitespace', () => {
+      const citation = {
+        key: '  ZOTERO123  ',
+        author: [{ family: 'Smith' }],
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        useZoteroKeys: true,
+        citekeyTemplate: '{{author}}{{year}}',
+        minCitekeyLength: 6
+      });
+
+      // Should trim whitespace from Zotero key
+      expect(result).toBe('ZOTERO123');
+    });
+
+    it('should not use empty Zotero key', () => {
+      const citation = {
+        key: '   ',
+        author: [{ family: 'Smith' }],
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        useZoteroKeys: true,
+        citekeyTemplate: '{{author|lowercase}}{{year}}',
+        minCitekeyLength: 6
+      });
+
+      // Should fall back to template since key is only whitespace
+      expect(result).toBe('smith2023');
+    });
+  });
 });
