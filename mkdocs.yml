@@ -55,6 +55,7 @@ nav:
   - 'Usage Guide': 'usage-guide.md'
   - 'Settings': 'settings.md'
   - 'Templating': 'templating-system-guide.md'
+  - 'Bases View': 'bases-view.md'
   - 'Troubleshooting & FAQ': 'troubleshooting-faq.md'
   # - 'User Guide':
   # - 'Installation': 'guide/installation.md'

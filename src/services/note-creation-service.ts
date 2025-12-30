@@ -679,8 +679,37 @@ export class NoteCreationService {
           year: citation.year || '',
           type: citation.type || '',
           'container-title': citation['container-title'] || '',
-          // More variables could be added here as needed
         });
+
+        // Add author-related template variables
+        // Extract authors from citation.author (CSL-JSON format)
+        const authors = citation.author || [];
+        if (Array.isArray(authors) && authors.length > 0) {
+          // authors: Array of formatted full names (e.g., ["John Smith", "Jane Doe"])
+          variables.authors = authors.map((a: any) => {
+            if (a.literal) return a.literal;
+            const family = a.family || '';
+            const given = a.given || '';
+            if (family && given) return `${given} ${family}`;
+            return family || given || '';
+          }).filter(Boolean);
+
+          // authors_family: Array of family names only
+          variables.authors_family = authors
+            .map((a: any) => a.family || a.literal || '')
+            .filter(Boolean);
+
+          // authors_given: Array of given names only
+          variables.authors_given = authors
+            .map((a: any) => a.given || '')
+            .filter(Boolean);
+
+          // author: First author's family name (for citekey-style templates)
+          const firstAuthor = authors[0];
+          if (firstAuthor) {
+            variables.author = firstAuthor.family || firstAuthor.literal || '';
+          }
+        }
       }
       
       // Use template engine to render the filename

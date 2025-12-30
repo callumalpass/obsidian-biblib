@@ -57,42 +57,112 @@
    Base Modal Styles
    ========================================================================== */
 
-.modal:has(.bibliography-modal) {
+.modal:has(.bibliography-modal),
+.modal:has(.bibliography-bulk-import-modal) {
   width: 700px;
   max-width: 90vw;
 }
 
-.bibliography-modal,
-.bibliography-bulk-import-modal {
+/* Move scrolling to modal-content so scrollbar appears at edge */
+.modal:has(.bibliography-modal) .modal-content,
+.modal:has(.bibliography-bulk-import-modal) .modal-content {
   max-height: 80vh;
   overflow-y: auto;
+  padding-right: 0;
+  /* Firefox scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: var(--background-modifier-border) transparent;
 }
 
-/* Modal headings */
+/* Webkit scrollbar for modal */
+.modal:has(.bibliography-modal) .modal-content::-webkit-scrollbar,
+.modal:has(.bibliography-bulk-import-modal) .modal-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.modal:has(.bibliography-modal) .modal-content::-webkit-scrollbar-track,
+.modal:has(.bibliography-bulk-import-modal) .modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal:has(.bibliography-modal) .modal-content::-webkit-scrollbar-thumb,
+.modal:has(.bibliography-bulk-import-modal) .modal-content::-webkit-scrollbar-thumb {
+  background: var(--background-modifier-border);
+  border-radius: 5px;
+  border: 2px solid var(--modal-background);
+}
+
+.modal:has(.bibliography-modal) .modal-content::-webkit-scrollbar-thumb:hover,
+.modal:has(.bibliography-bulk-import-modal) .modal-content::-webkit-scrollbar-thumb:hover {
+  background: var(--background-modifier-border-hover);
+}
+
+/* Modal content padding */
+.bibliography-modal,
+.bibliography-bulk-import-modal {
+  padding: 0 16px 20px 0;
+}
+
+/* Modal title */
 .bibliography-modal h2 {
-  margin-bottom: 1em;
+  margin: 0 0 20px 0;
+  font-size: var(--font-ui-large);
+  font-weight: 600;
+  color: var(--text-normal);
 }
 
-.bibliography-modal h3,
-.bibliography-modal h4 {
-  margin: 1.5em 0 0.75em 0;
+/* Section headings */
+.bibliography-modal h3 {
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
   font-size: var(--font-ui-medium);
+  font-weight: 600;
+  color: var(--text-normal);
+  border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .bibliography-modal h4 {
+  margin: 20px 0 8px 0;
+  font-size: var(--font-ui-small);
+  font-weight: 600;
   color: var(--text-muted);
-  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-/* Stack setting items vertically in modal for consistent input widths */
+/* Section dividers */
+.bibliography-modal hr {
+  margin: 24px 0;
+  border: none;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+/* Stack setting items vertically in modal */
 .bibliography-modal .setting-item {
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
+  gap: 6px;
+  padding: 12px 0;
+  border-top: none;
+}
+
+.bibliography-modal .setting-item:first-child {
+  padding-top: 0;
 }
 
 .bibliography-modal .setting-item-info {
   width: 100%;
+}
+
+.bibliography-modal .setting-item-name {
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.bibliography-modal .setting-item-description {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  margin-top: 2px;
 }
 
 .bibliography-modal .setting-item-control {
@@ -104,6 +174,30 @@
 .bibliography-modal .setting-item-control input[type="text"],
 .bibliography-modal .setting-item-control textarea {
   flex: 1;
+}
+
+/* Input field styling */
+.bibliography-modal input[type="text"],
+.bibliography-modal textarea,
+.bibliography-modal select {
+  background-color: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--input-radius);
+  padding: 8px 10px;
+  font-size: var(--font-ui-small);
+  transition: border-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
+}
+
+.bibliography-modal input[type="text"]:focus,
+.bibliography-modal textarea:focus,
+.bibliography-modal select:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+  outline: none;
+}
+
+.bibliography-modal input[type="text"]::placeholder {
+  color: var(--text-faint);
 }
 
 /* ==========================================================================
@@ -163,14 +257,40 @@
    ========================================================================== */
 
 .bibliography-autofill-details {
-  margin-bottom: 1em;
+  margin-bottom: 20px;
+  background-color: var(--background-secondary);
+  border-radius: var(--radius-m);
+  border: 1px solid var(--background-modifier-border);
 }
 
 .bibliography-autofill-details summary {
   cursor: pointer;
-  padding: 8px 0;
+  padding: 12px 16px;
   font-weight: 500;
+  font-size: var(--font-ui-small);
   color: var(--text-muted);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bibliography-autofill-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.bibliography-autofill-details summary::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 5px solid currentColor;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform 150ms ease;
+}
+
+.bibliography-autofill-details[open] summary::before {
+  transform: rotate(90deg);
 }
 
 .bibliography-autofill-details summary:hover {
@@ -179,12 +299,15 @@
 
 .bibliography-autofill-details[open] summary {
   color: var(--text-normal);
-  margin-bottom: 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .bibliography-autofill-content {
-  padding-left: 8px;
-  border-left: 2px solid var(--background-modifier-border);
+  padding: 16px;
+}
+
+.bibliography-autofill-content .setting-item:last-child {
+  padding-bottom: 0;
 }
 
 .bibliography-zotero-notice {
@@ -436,15 +559,21 @@
 
 .bibliography-contributors,
 .bibliography-additional-fields {
-  margin: 8px 0;
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .bibliography-contributor,
 .bibliography-additional-field {
   display: grid;
   gap: 8px;
-  margin-bottom: 8px;
+  padding: 10px 12px;
   align-items: center;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
 }
 
 .bibliography-contributor {
@@ -928,7 +1057,7 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
 
 .bibliography-attachments-display,
 .bibliography-related-notes-display {
-  margin: 8px 0;
+  margin: 12px 0 0 0;
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
 }
@@ -938,6 +1067,9 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
   list-style-type: none;
   padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .bibliography-attachments-list li,
@@ -945,18 +1077,30 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 0;
+  padding: 8px 12px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
 }
 
 .bibliography-remove-attachment-button,
 .bibliography-remove-related-note-button {
+  background: none;
+  border: none;
   color: var(--text-muted);
-  font-size: var(--font-ui-smaller);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-s);
+  line-height: 1;
 }
 
 .bibliography-remove-attachment-button:hover,
 .bibliography-remove-related-note-button:hover {
   color: var(--text-error);
+  background-color: var(--background-modifier-error-hover);
 }
 
 .attachment-type-badge {
