@@ -38,10 +38,9 @@ describe('TemplateVariableBuilderService', () => {
     });
 
     it('should handle missing citation id', () => {
-      const citationWithoutId = { ...baseCitation };
-      delete citationWithoutId.id;
+      const { id, ...citationWithoutId } = baseCitation;
 
-      const result = service.buildVariables(citationWithoutId, baseContributors);
+      const result = service.buildVariables(citationWithoutId as Citation, baseContributors);
       expect(result.citekey).toBe('');
     });
 

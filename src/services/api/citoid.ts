@@ -77,7 +77,7 @@ export class CitoidService {
                     }
                 }
             }
-            return text;
+            return text!;
         } catch (err) {
             console.error('Error fetching BibTeX from Citoid:', err);
             throw err;

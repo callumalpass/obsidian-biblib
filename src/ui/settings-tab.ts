@@ -251,8 +251,9 @@ export class BibliographySettingTab extends PluginSettingTab {
 		
 		new Setting(containerEl)
 			.setName('Literature note tag')
-			.setDesc('Tag used to identify literature notes in frontmatter')
+			.setDesc('Tag(s) used to identify literature notes in frontmatter. Separate multiple tags with commas or spaces (e.g., "literature_note, excalidraw").')
 			.addText(text => text
+				.setPlaceholder('literature_note')
 				.setValue(this.plugin.settings.literatureNoteTag)
 				.onChange(async (value) => {
 					this.plugin.settings.literatureNoteTag = value.trim();

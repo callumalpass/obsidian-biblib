@@ -1,58 +1,17 @@
 /* ==========================================================================
-   Plugin CSS Custom Properties
+   Plugin CSS Custom Properties (minimal set)
    ========================================================================== */
 
-.biblib-tab-navigation,
-.bibliography-modal,
-.bibliography-bulk-import-modal,
 .biblib-settings-container {
-  /* Spacing */
-  --biblib-spacing-xs: 4px;
   --biblib-spacing-sm: 8px;
   --biblib-spacing-md: 16px;
   --biblib-spacing-lg: 20px;
-  --biblib-spacing-xl: 24px;
-
-  /* Border radius */
   --biblib-radius-sm: 4px;
   --biblib-radius-md: 6px;
-  --biblib-radius-lg: 8px;
-
-  /* Transitions */
-  --biblib-transition-fast: 0.15s ease;
-  --biblib-transition-normal: 0.25s ease;
-  --biblib-transition-slow: 0.4s ease;
-
-  /* Focus ring */
-  --biblib-shadow-focus: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
-
-  /* Font sizes */
   --biblib-font-sm: 0.85em;
   --biblib-font-md: 0.9em;
   --biblib-font-base: 14px;
-}
-
-/* ==========================================================================
-   Reduced Motion Support
-   ========================================================================== */
-
-@media (prefers-reduced-motion: reduce) {
-  .biblib-tab-navigation,
-  .bibliography-modal,
-  .bibliography-bulk-import-modal,
-  .biblib-settings-container {
-    --biblib-transition-fast: 0.01ms;
-    --biblib-transition-normal: 0.01ms;
-    --biblib-transition-slow: 0.01ms;
-  }
-
-  .bibliography-modal *,
-  .bibliography-bulk-import-modal *,
-  .biblib-settings-container * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+  --biblib-shadow-focus: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
 }
 
 /* ==========================================================================
@@ -62,19 +21,18 @@
 .biblib-tab-navigation {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--biblib-spacing-sm);
-  margin-bottom: var(--biblib-spacing-lg);
+  gap: 8px;
+  margin-bottom: 20px;
 }
 
 .biblib-tab-button {
   background: transparent;
   border: none;
-  padding: var(--biblib-spacing-xs) var(--biblib-spacing-sm);
+  padding: 4px 8px;
   color: var(--text-muted);
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
-  transition: color var(--biblib-transition-fast);
 }
 
 .biblib-tab-button:hover {
@@ -99,236 +57,74 @@
    Base Modal Styles
    ========================================================================== */
 
-/* Target the modal container when it contains our content */
-.modal:has(.bibliography-modal),
-.modal:has(.bibliography-bulk-import-modal) {
-  width: 800px;
+.modal:has(.bibliography-modal) {
+  width: 700px;
   max-width: 90vw;
 }
 
 .bibliography-modal,
 .bibliography-bulk-import-modal {
-  padding: var(--biblib-spacing-lg);
   max-height: 80vh;
   overflow-y: auto;
-  box-sizing: border-box;
 }
 
-/* Scrollbar Styling - Consolidated for all scrollable containers */
-.bibliography-modal,
-.bibliography-bulk-import-modal,
-.template-variables-list,
-.custom-fields-help > div {
-  /* Firefox scrollbar support */
-  scrollbar-width: thin;
-  scrollbar-color: var(--background-modifier-border) var(--background-primary);
+/* Modal headings */
+.bibliography-modal h2 {
+  margin-bottom: 1em;
 }
 
-/* WebKit scrollbar styling */
-.bibliography-modal::-webkit-scrollbar,
-.bibliography-bulk-import-modal::-webkit-scrollbar,
-.template-variables-list::-webkit-scrollbar,
-.custom-fields-help > div::-webkit-scrollbar {
-  width: var(--biblib-spacing-sm);
+.bibliography-modal h3,
+.bibliography-modal h4 {
+  margin: 1.5em 0 0.75em 0;
+  font-size: var(--font-ui-medium);
 }
 
-.bibliography-modal::-webkit-scrollbar-track,
-.bibliography-bulk-import-modal::-webkit-scrollbar-track,
-.template-variables-list::-webkit-scrollbar-track,
-.custom-fields-help > div::-webkit-scrollbar-track {
-  background: var(--background-primary);
+.bibliography-modal h4 {
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
-.bibliography-modal::-webkit-scrollbar-thumb,
-.bibliography-bulk-import-modal::-webkit-scrollbar-thumb,
-.template-variables-list::-webkit-scrollbar-thumb,
-.custom-fields-help > div::-webkit-scrollbar-thumb {
-  background-color: var(--background-modifier-border);
-  border-radius: var(--biblib-radius-sm);
+/* Stack setting items vertically in modal for consistent input widths */
+.bibliography-modal .setting-item {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
-.bibliography-modal::-webkit-scrollbar-thumb:hover,
-.bibliography-bulk-import-modal::-webkit-scrollbar-thumb:hover,
-.template-variables-list::-webkit-scrollbar-thumb:hover,
-.custom-fields-help > div::-webkit-scrollbar-thumb:hover {
-  background-color: var(--background-modifier-hover);
+.bibliography-modal .setting-item-info {
+  width: 100%;
 }
 
-/* Modal Headings */
-.bibliography-modal h2,
-.bibliography-bulk-import-modal h2 {
-  margin-bottom: var(--biblib-spacing-lg);
-  text-align: center;
-  color: var(--text-normal);
+.bibliography-modal .setting-item-control {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 8px;
 }
 
-.bibliography-modal h3 {
-  margin-bottom: var(--biblib-spacing-lg);
-  text-align: left;
-  color: var(--text-normal);
-}
-
-.bibliography-bulk-import-modal h3 {
-  margin-top: var(--biblib-spacing-xl);
-  margin-bottom: var(--biblib-spacing-md);
-  color: var(--text-normal);
-}
-
-/* Loading State */
-.bibliography-modal.loading {
-  pointer-events: none;
-  opacity: 0.7;
-  position: relative;
-}
-
-.bibliography-modal.loading::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 24px;
-  height: 24px;
-  margin: -12px 0 0 -12px;
-  border: 3px solid var(--background-modifier-border);
-  border-top-color: var(--interactive-accent);
-  border-radius: 50%;
-  animation: biblib-spin 0.8s linear infinite;
-}
-
-@keyframes biblib-spin {
-  to {
-    transform: rotate(360deg);
-  }
+.bibliography-modal .setting-item-control input[type="text"],
+.bibliography-modal .setting-item-control textarea {
+  flex: 1;
 }
 
 /* ==========================================================================
-   Form Elements (Inputs, Textareas, Selects)
+   Form Elements
    ========================================================================== */
 
-/* Base Styles for Inputs, Selects, Textareas */
-.bibliography-modal input[type="text"],
-.bibliography-modal input[type="number"],
-.bibliography-modal input[type="date"],
-.bibliography-modal select,
-.bibliography-modal textarea,
-.bibliography-citoid-input,
-.bibliography-bibtex-input,
-.link-path-input { /* Added link path input */
-  width: 100%;
-  padding: 8px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  background-color: var(--background-primary);
-  color: var(--text-normal);
-  box-sizing: border-box;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-}
-
-/* Textarea Specifics */
-.bibliography-modal textarea,
-.bibliography-bibtex-input { /* BibTeX input often acts like textarea */
-  resize: vertical;
-  min-height: 100px; /* Default min-height */
-  line-height: 1.4;
-}
-
-/* Specific Overrides & Additions */
-.bibliography-citoid-input,
+/* BibTeX textarea */
 .bibliography-bibtex-input {
-  font-family: var(--font-monospace);
-  margin-bottom: 8px;
-}
-
-.bibliography-bibtex-input {
-  min-height: 100px; /* Redundant, but safe to keep */
-  padding: 10px; /* Specific padding */
-  font-size: 0.9em; /* Specific font size */
-}
-
-/* Textarea in custom frontmatter (refined style) */
-.custom-frontmatter-field textarea {
   width: 100%;
-  min-height: 100px;
+  min-height: 80px;
   font-family: var(--font-monospace);
-  font-size: 14px;
-  padding: 10px;
-  background-color: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  box-sizing: border-box;
+  font-size: var(--font-ui-smaller);
   resize: vertical;
-  margin-top: 8px;
 }
 
-/* Template field container */
-.custom-frontmatter-template-container {
+/* Full-width inputs where needed */
+.bibliography-input-full {
   width: 100%;
-  margin-top: 8px;
 }
 
-/* Field name input styling */
-.custom-frontmatter-field-name {
-  width: 100%;
-  padding: 6px 10px;
-  font-size: 14px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  background-color: var(--background-primary);
-  margin-top: 8px;
-}
-
-/* Interaction States */
-.bibliography-modal input:hover,
-.bibliography-modal select:hover,
-.bibliography-modal textarea:hover {
-  border-color: var(--interactive-accent);
-}
-
-.bibliography-modal input:focus,
-.bibliography-modal select:focus,
-.bibliography-modal textarea:focus {
-  border-color: var(--interactive-accent);
-  outline: none;
-  box-shadow: var(--biblib-shadow-focus);
-}
-
-/* Enhanced focus-visible for keyboard navigation */
-.bibliography-modal input:focus-visible,
-.bibliography-modal select:focus-visible,
-.bibliography-modal textarea:focus-visible,
-.bibliography-modal button:focus-visible {
-  outline: 2px solid var(--interactive-accent);
-  outline-offset: 2px;
-  box-shadow: var(--biblib-shadow-focus);
-}
-
-.custom-frontmatter-field textarea:focus,
-.custom-frontmatter-field-name:focus {
-  background-color: var(--background-primary);
-  border-color: var(--interactive-accent);
-  box-shadow: var(--biblib-shadow-focus);
-  outline: none;
-}
-
-.bibliography-modal input:disabled,
-.bibliography-modal select:disabled,
-.bibliography-modal textarea:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Validation - using higher specificity instead of !important */
-.bibliography-modal input:invalid,
-.bibliography-modal select:invalid,
-.bibliography-modal .is-invalid,
-.bibliography-modal .has-error input,
-.bibliography-bulk-import-modal .is-invalid,
-.bibliography-bulk-import-modal .has-error input {
-  border-color: var(--text-error);
-  background-color: var(--background-modifier-error-hover);
-}
-
-/* File Input (Hidden by default) */
+/* File input hidden */
 .bibliography-modal input[type="file"] {
   display: none;
 }
@@ -337,197 +133,64 @@
    Buttons
    ========================================================================== */
 
-/* Base Button Styles */
-.bibliography-modal button,
-.bibliography-bibtex-button {
-  padding: var(--biblib-spacing-sm) var(--biblib-spacing-md);
-  border-radius: var(--biblib-radius-sm);
-  border: 1px solid var(--background-modifier-border);
-  background-color: var(--background-primary);
-  color: var(--text-normal);
-  cursor: pointer;
-  transition: background-color var(--biblib-transition-fast), border-color var(--biblib-transition-fast);
-  font-weight: 500;
-  box-sizing: border-box;
-}
-
-.bibliography-modal button:hover,
-.bibliography-bibtex-button:hover {
-  background-color: var(--background-modifier-hover);
-}
-
-.bibliography-modal button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Primary Action Buttons */
-.bibliography-modal .create-button,
-.bibliography-bibtex-button {
-  background-color: var(--interactive-accent);
-  color: var(--text-on-accent);
-  border: none;
-  font-weight: 600;
-}
-
-.bibliography-modal .create-button:hover,
-.bibliography-bibtex-button:hover {
-  background-color: var(--interactive-accent-hover);
-}
-
-.bibliography-modal .create-button {
+/* Form button container */
+.bibliography-form-buttons {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  margin-top: var(--biblib-spacing-lg);
-  padding: 12px var(--biblib-spacing-md);
+  gap: 8px;
+  margin-top: 1.5em;
+  padding-top: 1em;
+  border-top: 1px solid var(--background-modifier-border);
 }
 
-.bibliography-bibtex-button {
-  display: block;
-  margin-top: 10px;
+.bibliography-form-buttons button {
+  flex: 1;
 }
 
-/* Secondary Buttons */
-.bibliography-add-contributor-button,
-.bibliography-add-field-button {
-  margin: 10px 0;
-  width: 100%;
-  background-color: var(--background-secondary);
-  border: 1px dashed var(--background-modifier-border);
-}
-
-.bibliography-add-contributor-button:hover,
-.bibliography-add-field-button:hover {
-  border-style: solid;
-  border-color: var(--interactive-accent);
-  color: var(--text-accent);
-}
-
-/* Tertiary / Utility Buttons */
-.bibliography-modal .citekey-regenerate-button {
-  padding: var(--biblib-spacing-xs) var(--biblib-spacing-sm);
-  margin-left: var(--biblib-spacing-sm);
-  font-size: var(--biblib-font-base);
-  background-color: var(--background-secondary);
-}
-
-.bibliography-modal .citekey-regenerate-button:hover {
-  background-color: var(--background-modifier-hover);
-  color: var(--text-accent);
-}
-
-/* Destructive / Remove Buttons */
+/* Remove buttons - minimal styling */
 .bibliography-remove-contributor-button,
 .bibliography-remove-field-button {
-  padding: var(--biblib-spacing-xs) var(--biblib-spacing-sm);
-  color: var(--text-error);
-  background-color: transparent;
-  border-color: transparent;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
 }
 
 .bibliography-remove-contributor-button:hover,
 .bibliography-remove-field-button:hover {
-  background-color: var(--background-modifier-error-hover);
   color: var(--text-error);
 }
 
-/* Cancel Button */
-.bibliography-modal .bibliography-cancel-button {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  margin-top: var(--biblib-spacing-lg);
-}
-
-/* Link Button Container (in Temp Modal) */
-.link-button-container {
-  margin-top: 1rem;
-  display: flex;
-  gap: 0.5rem;
-}
-
 /* ==========================================================================
-   Citoid and BibTeX Sections
+   Auto-fill Section (using native <details>)
    ========================================================================== */
 
-.bibliography-citoid-container {
-  background-color: var(--background-secondary);
-  padding: var(--biblib-spacing-md);
-  border-radius: var(--biblib-radius-lg);
-  margin-bottom: var(--biblib-spacing-xl);
-  transition: padding var(--biblib-transition-normal);
-  overflow: hidden;
+.bibliography-autofill-details {
+  margin-bottom: 1em;
 }
 
-.bibliography-citoid-container.collapsed {
-  padding-top: 0;
-  padding-bottom: 0;
-}
-
-.bibliography-citoid-toggle {
+.bibliography-autofill-details summary {
   cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  user-select: none;
-  margin-bottom: var(--biblib-spacing-sm);
-  padding: var(--biblib-spacing-md);
-  margin: calc(-1 * var(--biblib-spacing-md));
-  margin-bottom: var(--biblib-spacing-sm);
-  border-radius: var(--biblib-radius-lg);
-  transition: background-color var(--biblib-transition-fast);
+  padding: 8px 0;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
-.bibliography-citoid-container.collapsed .bibliography-citoid-toggle {
-  margin-bottom: calc(-1 * var(--biblib-spacing-md));
+.bibliography-autofill-details summary:hover {
+  color: var(--text-normal);
 }
 
-.bibliography-citoid-toggle:hover {
-  background-color: var(--background-modifier-hover);
-  color: var(--text-accent);
+.bibliography-autofill-details[open] summary {
+  color: var(--text-normal);
+  margin-bottom: 8px;
 }
 
-.bibliography-citoid-toggle-icon {
-  transition: transform var(--biblib-transition-normal);
-}
-
-.bibliography-citoid-container.collapsed .bibliography-citoid-toggle-icon {
-  transform: rotate(-90deg);
-}
-
-.bibliography-citoid-content {
-  opacity: 1;
-  max-height: 1000px;
-  transition: opacity var(--biblib-transition-normal), max-height var(--biblib-transition-normal);
-  overflow: hidden;
-}
-
-.bibliography-citoid-container.collapsed .bibliography-citoid-content {
-  opacity: 0;
-  max-height: 0;
-  margin-top: 0;
-  margin-bottom: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-}
-
-.bibliography-citoid-input-container,
-.bibliography-bibtex-container {
-  margin: var(--biblib-spacing-md) 0;
+.bibliography-autofill-content {
+  padding-left: 8px;
+  border-left: 2px solid var(--background-modifier-border);
 }
 
 .bibliography-zotero-notice {
-  font-size: var(--biblib-font-sm);
-  color: var(--text-accent);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
   font-style: italic;
-  margin-left: var(--biblib-spacing-sm);
-  padding: var(--biblib-spacing-xs) var(--biblib-spacing-sm);
-  background-color: var(--background-secondary-alt);
-  border-radius: var(--biblib-radius-sm);
-  border-left: 2px solid var(--interactive-accent);
 }
 
 /* ==========================================================================
@@ -766,69 +429,43 @@
 }
 
 
-/* ==========================================================================
-   Date Input Container
-   ========================================================================== */
-
-.bibliography-date-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Responsive columns */
-  gap: var(--size-4-4);
-  margin: var(--size-4-4) 0;
-}
-
-.bibliography-date-container .setting-item-info {
-   margin-bottom: var(--size-4-1); /* Space between label and input */
-}
 
 /* ==========================================================================
-   Contributors & Additional Fields Sections
+   Contributors & Additional Fields
    ========================================================================== */
 
 .bibliography-contributors,
-.bibliography-contributors-list,
-.bibliography-additional-fields,
-.bibliography-additional-fields-list {
-  margin: var(--biblib-spacing-md) 0;
+.bibliography-additional-fields {
+  margin: 8px 0;
 }
 
 .bibliography-contributor,
 .bibliography-additional-field {
   display: grid;
-  gap: var(--biblib-spacing-sm);
-  margin-bottom: var(--biblib-spacing-sm);
+  gap: 8px;
+  margin-bottom: 8px;
   align-items: center;
 }
 
 .bibliography-contributor {
-  grid-template-columns: 1fr 1fr 1fr auto;
+  grid-template-columns: 100px 1fr 1fr auto;
 }
 
 .bibliography-additional-field {
-  grid-template-columns: 1fr 1fr 2fr auto; /* Type, Key, Value, Remove */
+  grid-template-columns: 80px 1fr 2fr auto;
 }
 
-/* Ensure inputs/selects within these grids have no extra margin */
-.bibliography-contributor select,
-.bibliography-contributor input,
-.bibliography-additional-field select,
-.bibliography-additional-field input {
-  margin: 0;
-}
-
-/* Highlight non-standard CSL fields */
+/* Non-standard CSL field warning */
 .bibliography-additional-field.non-csl-field {
-  background-color: var(--background-modifier-error-hover);
-  border: 1px solid var(--text-error);
-}
-
-.bibliography-additional-field.non-csl-field:hover {
+  padding: 4px;
+  border-radius: 4px;
   background-color: var(--background-modifier-error-hover);
 }
 
-/* Container for value input in additional fields (if needed for specific styling) */
-.bibliography-field-value-container {
-  margin: 0;
+.bibliography-field-warning {
+  grid-column: 1 / -1;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
 }
 
 /* ==========================================================================
@@ -1073,92 +710,33 @@
 }
 
 /* ==========================================================================
-   Bulk Import Modal Specifics
+   Bulk Import Modal
    ========================================================================== */
 
+.bibliography-bulk-import-modal h3 {
+  margin: 1.5em 0 0.5em 0;
+}
+
 .bibliography-bulk-import-modal .bulk-import-warning {
-  padding: 12px 16px;
-  margin-bottom: 20px;
-  border-radius: 5px;
-  background-color: var(--background-secondary-alt);
-  border: 1px solid var(--text-error);
-  color: var(--text-error); /* Ensure text is visible */
-}
-
-.bibliography-bulk-import-modal .bulk-import-warning p {
-  margin: 8px 0;
-  line-height: 1.4;
-  color: inherit; /* Inherit from parent */
-}
-
-.bibliography-bulk-import-modal .bulk-import-instructions {
-  padding: 12px 16px;
-  margin-bottom: 20px;
-  border-radius: 5px;
-  background-color: var(--background-secondary-alt);
-  border: 1px solid var(--interactive-accent);
-}
-
-.bibliography-bulk-import-modal .bulk-import-instructions h3 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  color: var(--interactive-accent);
-  font-size: 1.1em;
-  border: none; /* Override guide heading style if it cascaded */
-  padding: 0;
-}
-
-.bibliography-bulk-import-modal .bulk-import-instructions ol {
-  margin: 0 0 10px 20px;
-  padding: 0;
-}
-
-.bibliography-bulk-import-modal .bulk-import-instructions li {
-  margin-bottom: 8px;
-  line-height: 1.4;
-}
-
-.bibliography-bulk-import-modal .bulk-import-instructions p {
-  margin: 8px 0;
-  line-height: 1.4;
-  font-weight: 500;
+  color: var(--text-error);
+  margin-bottom: 1em;
 }
 
 .bibliography-bulk-import-modal .file-info {
-  margin: 10px 0 20px;
-  padding: 10px;
-  border-radius: 4px;
-  background-color: var(--background-secondary-alt);
-  font-style: italic;
   color: var(--text-muted);
-  border: 1px dashed var(--background-modifier-border); /* Add subtle border */
+  font-style: italic;
+  margin: 1em 0;
 }
 
 .bibliography-bulk-import-modal .file-info.has-file {
-  color: var(--text-normal);
-  font-weight: bold;
+  color: var(--text-success);
   font-style: normal;
-  background-color: var(--background-modifier-success-hover); /* Use success bg */
-  border-color: var(--text-success); /* Use success border */
 }
 
 .bibliography-bulk-import-modal .import-button-container {
-  margin-top: 30px;
+  margin-top: 1.5em;
   display: flex;
   justify-content: center;
-  padding-bottom: 10px; /* Space at bottom */
-}
-/* Ensure import button uses primary styles */
-.bibliography-bulk-import-modal .import-button-container button {
-  /* Inherits base button, apply primary styles if needed */
-   background-color: var(--interactive-accent);
-   color: var(--text-on-accent);
-   border: none;
-   font-weight: 600;
-   padding: 10px 24px; /* Larger padding for primary action */
-}
-.bibliography-bulk-import-modal .import-button-container button:hover {
-    background-color: var(--interactive-accent-hover);
 }
 
 /* ==========================================================================
@@ -1166,57 +744,20 @@
    ========================================================================== */
 
 .zotero-attachment-indicator {
-  margin-left: var(--biblib-spacing-sm);
-  font-size: 16px;
-  padding: 2px 6px;
-  border-radius: var(--biblib-radius-sm);
-  background-color: var(--interactive-accent);
-  color: var(--text-on-accent);
-  font-weight: 500;
-  display: inline-block;
-  vertical-align: middle;
-  cursor: help;
-  transition: background-color var(--biblib-transition-fast);
-  animation: fade-in var(--biblib-transition-normal) forwards;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-accent);
+  margin-left: 4px;
 }
 
-.zotero-attachment-indicator:hover {
-  background-color: var(--interactive-accent-hover);
-}
-
-/* Container for the import section */
-.import-section-container {
-  margin-bottom: 0;
-}
-
-/* Placeholder for zotero note - initially empty */
 .zotero-note-placeholder {
   display: none;
 }
 
-/* Container for the zotero note */
-.zotero-note-container {
-  display: block;
-  width: 100%;
-  margin-top: 8px;
-}
-
 .zotero-attachment-note {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
   font-style: italic;
-  display: block;
-  padding: var(--biblib-spacing-xs) var(--biblib-spacing-sm);
-  border: 1px solid var(--interactive-accent);
-  border-radius: var(--biblib-radius-sm);
-  animation: fade-in 0.5s ease-out forwards;
-  cursor: help;
-}
-
-/* Animation for Zotero elements */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: translateY(0); }
+  margin-top: 4px;
 }
 
 /* ==========================================================================
@@ -1347,59 +888,32 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
 }
 
 /* ==========================================================================
-   Status Bar Indicator for Zotero Connector
+   Status Bar - Zotero Connector
    ========================================================================== */
 
 .zotero-connector-status {
   display: flex;
   align-items: center;
-  gap: var(--biblib-spacing-sm);
-  opacity: 0.8;
-  padding: 0 var(--biblib-spacing-sm);
+  gap: 4px;
   cursor: pointer;
-  border-radius: var(--biblib-radius-sm);
-  transition: background-color var(--biblib-transition-fast);
-}
-
-.zotero-connector-status:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-.zotero-connector-status .status-icon {
-    font-size: 10px;
 }
 
 .zotero-connector-status.active {
-    color: var(--text-success);
-}
-
-.zotero-connector-status.active .status-icon {
-    color: var(--interactive-success);
+  color: var(--text-success);
 }
 
 .zotero-connector-status.inactive {
-    color: var(--text-muted);
-}
-
-.zotero-connector-status.inactive .status-icon {
-    color: var(--text-faint);
+  color: var(--text-muted);
 }
 
 /* ==========================================================================
-   Utility & Visibility Classes
-   Note: !important is intentional for utility classes to ensure they
-   override component-specific display values when applied dynamically.
+   Utility Classes
    ========================================================================== */
 
 .setting-hidden {
   display: none !important;
 }
 
-.setting-visible {
-  display: block !important;
-}
-
-/* Attachment container visibility */
 .attachment-container .hidden {
   display: none;
 }
@@ -1414,12 +928,9 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
 
 .bibliography-attachments-display,
 .bibliography-related-notes-display {
-  margin-top: 10px;
-  margin-bottom: 20px;
-  padding: 10px;
-  border-radius: 4px;
-  background-color: var(--background-secondary);
-  min-height: 30px;
+  margin: 8px 0;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
 }
 
 .bibliography-attachments-list,
@@ -1434,45 +945,24 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 8px;
-  margin-bottom: 6px;
-  border-radius: 4px;
-  background-color: var(--background-primary);
+  padding: 4px 0;
 }
 
 .bibliography-remove-attachment-button,
 .bibliography-remove-related-note-button {
-  padding: 2px 6px;
-  border: none;
-  border-radius: 3px;
-  background-color: var(--background-modifier-error);
-  color: var(--text-on-accent);
-  cursor: pointer;
-  font-size: 12px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
 }
 
 .bibliography-remove-attachment-button:hover,
 .bibliography-remove-related-note-button:hover {
-  background-color: var(--text-error);
+  color: var(--text-error);
 }
 
 .attachment-type-badge {
-  display: inline-block;
-  padding: 2px 6px;
-  margin-right: 8px;
-  border-radius: 3px;
-  font-size: 10px;
-  font-weight: bold;
-}
-
-.attachment-type-badge.import {
-  background-color: var(--interactive-accent);
-  color: var(--text-on-accent);
-}
-
-.attachment-type-badge.link {
-  background-color: var(--interactive-success);
-  color: var(--text-on-accent);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  margin-right: 4px;
 }
 
 /* ==========================================================================
@@ -1480,30 +970,10 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
    ========================================================================== */
 
 @media screen and (max-width: 600px) {
-  /* Stack grid items vertically on small screens */
   .bibliography-contributor,
-  .bibliography-additional-field {
-    grid-template-columns: 1fr;
-  }
-
-  /* Reduce padding on modal for small screens */
-  .bibliography-modal,
-  .bibliography-bulk-import-modal {
-    padding: 10px;
-  }
-
-  /* Allow date fields to stack */
+  .bibliography-additional-field,
   .bibliography-date-container {
-     grid-template-columns: 1fr; /* Stack date inputs */
-  }
-
-  /* Adjust custom field controls */
-  .custom-frontmatter-field .setting-item-control {
-      gap: var(--size-4-2); /* Reduce gap */
-  }
-  .custom-frontmatter-field .setting-item-control > .text-input,
-  .custom-frontmatter-field .setting-item-control > .text-area-input {
-      flex-basis: 100%; /* Force stacking */
+    grid-template-columns: 1fr;
   }
 }
 

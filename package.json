@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"build:test": "npm run build && node copy-files.mjs",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"test": "jest",
 		"test:watch": "jest --watch",

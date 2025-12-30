@@ -192,19 +192,23 @@ export class EditBibliographyModal extends BibliographyModal {
             const attachments = frontmatter.attachment || frontmatter.pdflink;
             if (Array.isArray(attachments)) {
                 // Filter to ensure only valid string paths are processed
-                const validPaths = attachments.filter(path => 
+                const validPaths = attachments.filter(path =>
                     typeof path === 'string' && path.trim().length > 0
                 );
                 validPaths.forEach(path => {
+                    // Strip Obsidian wikilink formatting if present (e.g., "[[path|PDF]]" -> "path")
+                    const rawPath = this.extractRawPathFromWikilink(path);
                     this.attachmentData.push({
                         type: AttachmentType.LINK,
-                        path: path
+                        path: rawPath
                     });
                 });
             } else if (typeof attachments === 'string' && attachments.trim().length > 0) {
+                // Strip Obsidian wikilink formatting if present
+                const rawPath = this.extractRawPathFromWikilink(attachments);
                 this.attachmentData.push({
                     type: AttachmentType.LINK,
-                    path: attachments
+                    path: rawPath
                 });
             }
         }
@@ -259,12 +263,15 @@ export class EditBibliographyModal extends BibliographyModal {
             
             // Get current citekey
             const currentCitekey = existingFrontmatter.id || existingFrontmatter.citekey;
-            let newCitekey = currentCitekey;
-            
-            // Generate new citekey if requested
+            let newCitekey: string;
+
+            // Generate new citekey if requested, otherwise use the form value
             if (this.regenerateCitekeyOnSave) {
                 newCitekey = CitekeyGenerator.generate(updatedModalData.citation, this.settings.citekeyOptions);
                 updatedModalData.citation.id = newCitekey;
+            } else {
+                // Use the citekey from the form (may have been manually edited)
+                newCitekey = updatedModalData.citation.id || currentCitekey;
             }
             
             // Start with existing frontmatter to preserve non-CSL fields
@@ -357,8 +364,19 @@ export class EditBibliographyModal extends BibliographyModal {
             
             // Update attachment links
             if (updatedModalData.attachmentData.length > 0) {
-                const attachmentPaths = updatedModalData.attachmentData.map(a => a.path);
-                finalFrontmatterOutput.attachment = attachmentPaths;
+                const attachmentPaths = updatedModalData.attachmentData.map(a => a.path).filter((p): p is string => p !== undefined);
+                // Format attachment paths as Obsidian wikilinks (same logic as TemplateVariableBuilderService)
+                const formattedAttachments = attachmentPaths.map(path => {
+                    if (path.endsWith('.pdf')) {
+                        return `[[${path}|PDF]]`;
+                    } else if (path.endsWith('.epub')) {
+                        return `[[${path}|EPUB]]`;
+                    } else {
+                        const extension = path.split('.').pop()?.toUpperCase() || 'FILE';
+                        return `[[${path}|${extension}]]`;
+                    }
+                });
+                finalFrontmatterOutput.attachment = formattedAttachments;
             } else {
                 delete finalFrontmatterOutput.attachment;
                 delete finalFrontmatterOutput.pdflink;
@@ -496,12 +514,26 @@ export class EditBibliographyModal extends BibliographyModal {
             this.attachmentData.map(a => a.path).filter((p): p is string => p !== undefined),
             this.relatedNotePaths
         );
-        
+
         let filename = TemplateEngine.render(this.settings.filenameTemplate, templateVariables);
-        
+
         // Sanitize filename
         filename = filename.replace(/[\\/:*?"<>|]/g, '-');
-        
+
         return filename;
+    }
+
+    /**
+     * Extract raw path from Obsidian wikilink format
+     * e.g., "[[path/to/file.pdf|PDF]]" -> "path/to/file.pdf"
+     * If the input is not a wikilink, returns it unchanged.
+     */
+    private extractRawPathFromWikilink(input: string): string {
+        // Match [[path|alias]] or [[path]] format
+        const wikiLinkMatch = input.match(/^\[\[([^\]|]+)(?:\|[^\]]+)?\]\]$/);
+        if (wikiLinkMatch) {
+            return wikiLinkMatch[1];
+        }
+        return input;
     }
 }

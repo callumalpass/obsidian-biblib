@@ -59,6 +59,26 @@ export interface ModalFieldConfig {
     defaultValue?: string | boolean | number; // For new notes
 }
 
+// --- Utility function for parsing tags ---
+
+/**
+ * Parse a tag string into an array of individual tags.
+ * Supports comma-separated and space-separated formats.
+ * @param tagString The string containing one or more tags
+ * @returns Array of individual tags, trimmed and filtered for empty values
+ */
+export function parseLiteratureNoteTags(tagString: string): string[] {
+	if (!tagString || tagString.trim() === '') {
+		return [];
+	}
+
+	// Split by comma or whitespace, trim each tag, and filter out empty strings
+	return tagString
+		.split(/[,\s]+/)
+		.map(tag => tag.trim())
+		.filter(tag => tag.length > 0);
+}
+
 // --- Interface for Overall Plugin Settings ---
 
 export interface BibliographyPluginSettings {

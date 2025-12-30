@@ -25,6 +25,8 @@ Example:
 
 ## Added
 
+- (#12) **Multiple tags support**: The "Literature note tag" setting now supports multiple comma or space-separated tags (e.g., "literature_note, excalidraw"). All specified tags are added to new literature notes, enabling workflows like Excalidraw flip notes.
+  - Thanks to @bepolymathe for the feature request
 - **Testing infrastructure**: Jest testing framework with initial test suites for citekey generator and template engine
 - **Expanded test coverage**: Added 127 new tests across 5 test files (190 total tests), covering yaml-utils, citoid service, and template-variable-builder-service
 - **New template variable `authorsDisplay`**: Formatted author string for display (e.g., "J. Smith", "J. Smith and B. Jones", "J. Smith et al.")
@@ -44,3 +46,8 @@ Example:
 - **Template engine: trailing whitespace preserved in formatter arguments** - Formatters like `join`, `prefix`, and `split` now correctly preserve trailing whitespace (e.g., `{{authors|join: and }}` produces "Smith and Jones" instead of "SmithandJones")
 - (#11) **Template engine: object property access in array iteration** - When iterating over arrays of objects, properties are now directly accessible (e.g., `{{#authors}}{{family}}{{/authors}}` works correctly)
   - Thanks to @bepolymathe for reporting
+- (#16) **Documentation fixes**: Fixed broken links and aligned documentation with actual plugin UI
+  - Fixed 404 errors for Templating, Key Features, and Troubleshooting pages
+  - Updated Settings documentation to match the actual tab names and order in the plugin
+  - Section names now match the UI: "File Organization", "Templates", "Citation Keys", "Custom Fields", "Modal Configuration", "Zotero Integration", "Bibliography Export"
+  - Thanks to @Zichen-Wang for reporting

@@ -1,5 +1,5 @@
 import { App, Notice, TFile, TAbstractFile, normalizePath } from 'obsidian';
-import { BibliographyPluginSettings } from '../types';
+import { BibliographyPluginSettings, parseLiteratureNoteTags } from '../types';
 import { Citation, Contributor, AdditionalField, AttachmentData, AttachmentType } from '../types/citation';
 import { ReferenceParserService, ParsedReference } from './reference-parser-service';
 import { NoteContentBuilderService } from './note-content-builder-service';
@@ -522,7 +522,7 @@ export class NoteCreationService {
       page: cslObject.page || '',
       language: cslObject.language || '',
       abstract: cslObject.abstract || '',
-      tags: [this.settings.literatureNoteTag],
+      tags: parseLiteratureNoteTags(this.settings.literatureNoteTag),
     };
     
     // Extract contributors
@@ -759,7 +759,8 @@ export class NoteCreationService {
         if (!frontmatter) continue;
         
         const tags = frontmatter.tags;
-        if (!tags || !Array.isArray(tags) || !tags.includes(this.settings.literatureNoteTag)) continue;
+        const configuredTags = parseLiteratureNoteTags(this.settings.literatureNoteTag);
+        if (!tags || !Array.isArray(tags) || !configuredTags.some(configuredTag => tags.includes(configuredTag))) continue;
         
         const type = frontmatter.type;
         if (!type || !['book', 'collection', 'document'].includes(type)) continue;

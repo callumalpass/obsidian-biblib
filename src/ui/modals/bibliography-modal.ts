@@ -42,9 +42,7 @@ export class BibliographyModal extends Modal {
     private pageInput: HTMLInputElement;
     private urlInput: HTMLInputElement;
     private containerTitleInput: HTMLInputElement;
-    private yearInput: HTMLInputElement;
-    private monthDropdown: HTMLSelectElement;
-    private dayInput: HTMLInputElement;
+    private dateInput: HTMLInputElement;
     private publisherInput: HTMLInputElement;
     private publisherPlaceInput: HTMLInputElement;
     private editionInput: HTMLInputElement;
@@ -57,11 +55,6 @@ export class BibliographyModal extends Modal {
     private additionalFieldsContainer: HTMLDivElement;
     
     // Attachment UI elements
-    private attachmentTypeSelect: HTMLSelectElement;
-    private importSettingEl: HTMLElement;
-    private linkSettingEl: HTMLElement;
-    private importButtonComponent: ButtonComponent | null = null;
-    private linkButtonComponent: ButtonComponent | null = null;
     protected attachmentsDisplayEl: HTMLElement;
     
     // Multiple attachments support
@@ -178,215 +171,139 @@ export class BibliographyModal extends Modal {
      */
     protected updateAttachmentsDisplay(): void {
         if (!this.attachmentsDisplayEl) return;
-        
-        this.attachmentsDisplayEl.empty(); // Clear previous display
-        
+        this.attachmentsDisplayEl.empty();
+
         if (this.attachmentData.length === 0) {
-            this.attachmentsDisplayEl.setText('No attachments added.');
+            this.attachmentsDisplayEl.createSpan({ text: 'No attachments', cls: 'setting-item-description' });
             return;
         }
-        
-        const listEl = this.attachmentsDisplayEl.createEl('ul', { cls: 'bibliography-attachments-list' });
-        
+
+        const list = this.attachmentsDisplayEl.createEl('ul', { cls: 'bibliography-attachments-list' });
         this.attachmentData.forEach((attachment, index) => {
-            const listItemEl = listEl.createEl('li');
-            
-            // Determine display name based on attachment type
-            let displayName = '';
-            if (attachment.type === AttachmentType.IMPORT && attachment.file) {
-                displayName = attachment.filename || attachment.file.name;
-                listItemEl.createSpan({
-                    cls: 'attachment-type-badge import',
-                    text: 'IMPORT'
-                });
-            } else if (attachment.type === AttachmentType.LINK && attachment.path) {
-                displayName = attachment.path.split('/').pop() || attachment.path;
-                listItemEl.createSpan({
-                    cls: 'attachment-type-badge link',
-                    text: 'LINK'
-                });
-            }
-            
-            // Add file name
-            const nameSpan = listItemEl.createSpan({ text: displayName });
-            
-            // Add remove button
-            const removeButton = listItemEl.createEl('button', {
-                cls: 'bibliography-remove-attachment-button',
-                text: 'Remove'
-            });
-            removeButton.onclick = () => {
-                this.attachmentData.splice(index, 1);
-                this.updateAttachmentsDisplay(); // Refresh display
-            };
+            const li = list.createEl('li');
+            const type = attachment.type === AttachmentType.IMPORT ? 'Import' : 'Link';
+            const name = attachment.type === AttachmentType.IMPORT
+                ? (attachment.filename || attachment.file?.name || 'Unknown')
+                : (attachment.path?.split('/').pop() || 'Unknown');
+
+            li.createSpan({ text: `${type}: ${name}` });
+            li.createEl('button', { text: '×', cls: 'bibliography-remove-attachment-button' })
+                .onclick = () => { this.attachmentData.splice(index, 1); this.updateAttachmentsDisplay(); };
         });
     }
 
     private createCitoidLookupSection(contentEl: HTMLElement) {
-        const citoidContainer = contentEl.createDiv({ cls: 'bibliography-citoid-container' });
-        
-        // Create collapsible header
-        const toggleHeader = citoidContainer.createDiv({ cls: 'bibliography-citoid-toggle' });
-        toggleHeader.createEl('h3', { text: 'Auto-fill' });
-        const toggleIcon = toggleHeader.createSpan({ cls: 'bibliography-citoid-toggle-icon', text: '▼' });
-        
-        // Determine if the section should be collapsed:
-        // 1. If we have Zotero attachment data, always collapse and show a notice
-        // 2. If opened via command, expand by default
-        // 3. Otherwise, collapse by default
-        if (this.attachmentData.length > 0 && this.attachmentData[0].type === AttachmentType.IMPORT) {
-            toggleHeader.createSpan({
-                cls: 'bibliography-zotero-notice',
-                text: 'Zotero data loaded - auto-fill section collapsed'
-            });
-            citoidContainer.addClass('collapsed');
-        } else if (!this.openedViaCommand) {
-            // Collapse by default if not opened via command
-            citoidContainer.addClass('collapsed');
+        // Use native <details> for collapsible section
+        const details = contentEl.createEl('details', { cls: 'bibliography-autofill-details' });
+
+        // Determine if should be open by default
+        const shouldBeOpen = this.openedViaCommand &&
+            !(this.attachmentData.length > 0 && this.attachmentData[0].type === AttachmentType.IMPORT);
+        if (shouldBeOpen) {
+            details.setAttribute('open', '');
         }
-        
-        // Toggle collapse on click
-        toggleHeader.addEventListener('click', () => {
-            citoidContainer.toggleClass('collapsed', !citoidContainer.hasClass('collapsed'));
-            toggleIcon.textContent = citoidContainer.hasClass('collapsed') ? '▶' : '▼';
-        });
-        
-        // Content container
-        const citoidContent = citoidContainer.createDiv({ cls: 'bibliography-citoid-content' });
-        
-        // Create identifier field
-        const citoidIdSetting = new Setting(citoidContent)
-            .setName('Auto-lookup by identifier')
-            .setDesc('DOI, ISBN, arXiv ID, URL, PubMed, PMC, Wikidata QIDs');
-        
-        const citoidIdInput = citoidIdSetting.controlEl.createEl('input', {
-            type: 'text',
-            placeholder: 'E.g., 10.1038/nrn3241, arXiv:1910.13461'
-        });
-        
-        // Add lookup button
-        const lookupButton = new ButtonComponent(citoidIdSetting.controlEl)
-            .setButtonText(UI_TEXT.LOOKUP)
-            .setCta()
-            .onClick(async () => {
-                const identifier = citoidIdInput.value.trim();
-                if (!identifier) {
-                    new Notice('Please enter an identifier to lookup');
-                    return;
-                }
-                
-                // Disable button and show loading state
-                lookupButton.setDisabled(true);
-                lookupButton.setButtonText(UI_TEXT.LOADING);
-                
-                try {
-                    // Call Citoid service to get BibTeX
-                    const cslData = await this.citationService.fetchNormalized(identifier);
-                    
-                    if (cslData) {
-                        this.populateFormFromCitoid(cslData);
-                        new Notice('Citation data loaded successfully');
-                    } else {
-                        new Notice('No citation data found for this identifier');
+
+        // Summary (clickable header)
+        const summary = details.createEl('summary');
+        summary.createSpan({ text: 'Auto-fill from identifier or BibTeX' });
+        if (this.attachmentData.length > 0 && this.attachmentData[0].type === AttachmentType.IMPORT) {
+            summary.createSpan({ cls: 'bibliography-zotero-notice', text: ' (Zotero data loaded)' });
+        }
+
+        // Content
+        const citoidContent = details.createDiv({ cls: 'bibliography-autofill-content' });
+
+        // Identifier lookup
+        new Setting(citoidContent)
+            .setName('Lookup by identifier')
+            .setDesc('DOI, ISBN, arXiv ID, URL, PubMed, PMC, Wikidata QIDs')
+            .addText(text => {
+                text.setPlaceholder('e.g., 10.1038/nrn3241');
+                text.inputEl.addClass('bibliography-identifier-input');
+            })
+            .addButton(button => {
+                button.setButtonText(UI_TEXT.LOOKUP).setCta();
+                button.onClick(async () => {
+                    const input = citoidContent.querySelector('.bibliography-identifier-input') as HTMLInputElement;
+                    const identifier = input?.value.trim();
+                    if (!identifier) {
+                        new Notice('Please enter an identifier');
+                        return;
                     }
-                } catch (error) {
-                    console.error('Error fetching citation data:', error);
-                    new Notice(`Error fetching citation data: ${error instanceof Error ? error.message : String(error)}`);
-                } finally {
-                    // Reset button state
-                    lookupButton.setDisabled(false);
-                    lookupButton.setButtonText('Lookup');
-                }
+
+                    button.setDisabled(true);
+                    button.setButtonText(UI_TEXT.LOADING);
+
+                    try {
+                        const cslData = await this.citationService.fetchNormalized(identifier);
+                        if (cslData) {
+                            this.populateFormFromCitoid(cslData);
+                            new Notice('Citation data loaded');
+                        } else {
+                            new Notice('No citation data found');
+                        }
+                    } catch (error) {
+                        new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
+                    } finally {
+                        button.setDisabled(false);
+                        button.setButtonText(UI_TEXT.LOOKUP);
+                    }
+                });
             });
-            
-        // Add BibTeX paste section
-        citoidContent.createEl('h3', { text: 'Auto-fill from BibTeX' });
-        const bibtexContainer = citoidContent.createDiv({ cls: 'bibliography-bibtex-container' });
-        
-        const bibtexInput = bibtexContainer.createEl('textarea', {
-            placeholder: 'Paste BibTeX entry here...',
+
+        // BibTeX paste
+        const bibtexSetting = new Setting(citoidContent)
+            .setName('Paste BibTeX')
+            .setDesc('Parse a BibTeX entry to fill the form');
+
+        const bibtexInput = bibtexSetting.controlEl.createEl('textarea', {
+            placeholder: 'Paste BibTeX here...',
             cls: 'bibliography-bibtex-input'
         });
-        
-        const bibtexButton = bibtexContainer.createEl('button', {
-            text: 'Parse BibTeX',
-            cls: 'bibliography-bibtex-button'
-        });
-        
-        bibtexButton.onclick = () => {
-            const bibtexText = bibtexInput.value.trim();
-            if (!bibtexText) {
-                new Notice(ERROR_MESSAGES.EMPTY_BIBTEX);
-                return;
-            }
-            
-            new Notice(UI_TEXT.PARSING_BIBTEX);
-            bibtexButton.setAttr('disabled', 'true');
-            bibtexButton.textContent = UI_TEXT.PARSING;
-            
-            try {
-                const normalizedData = this.citationService.parseBibTeX(bibtexText);
-                if (!normalizedData) {
-                    new Notice(ERROR_MESSAGES.NO_BIBTEX_DATA);
+
+        bibtexSetting.addButton(button => {
+            button.setButtonText('Parse');
+            button.onClick(() => {
+                const bibtexText = bibtexInput.value.trim();
+                if (!bibtexText) {
+                    new Notice(ERROR_MESSAGES.EMPTY_BIBTEX);
                     return;
                 }
-                this.populateFormFromCitoid(normalizedData);
-                new Notice(SUCCESS_MESSAGES.BIBTEX_PARSED);
-            } catch (error) {
-                console.error('Error parsing BibTeX data:', error);
-                new Notice(ERROR_MESSAGES.BIBTEX_PARSE_FAILED);
-            } finally {
-                bibtexButton.removeAttribute('disabled');
-                bibtexButton.textContent = UI_TEXT.PARSE_BIBTEX;
-            }
-        };
+
+                button.setDisabled(true);
+                button.setButtonText(UI_TEXT.PARSING);
+
+                try {
+                    const normalizedData = this.citationService.parseBibTeX(bibtexText);
+                    if (!normalizedData) {
+                        new Notice(ERROR_MESSAGES.NO_BIBTEX_DATA);
+                        return;
+                    }
+                    this.populateFormFromCitoid(normalizedData);
+                    new Notice(SUCCESS_MESSAGES.BIBTEX_PARSED);
+                } catch (error) {
+                    new Notice(ERROR_MESSAGES.BIBTEX_PARSE_FAILED);
+                } finally {
+                    button.setDisabled(false);
+                    button.setButtonText('Parse');
+                }
+            });
+        });
     }
 
     private createAttachmentSection(contentEl: HTMLElement) {
-        const attachmentContainer = contentEl.createDiv({ cls: 'attachment-container' });
-        
-        // Add section heading
-        const attachmentHeading = attachmentContainer.createEl('div', { cls: 'setting-item-heading', text: 'Attachments' });
-        
-        // Create attachment setting
-        const attachmentSetting = new Setting(attachmentContainer)
-            .setDesc('Add attachments to this citation');
-        
-        // Create the attachment type dropdown
-        const dropdownContainer = attachmentSetting.controlEl.createEl('div');
-        const attachmentTypeDropdown = dropdownContainer.createEl('select', { cls: 'dropdown' });
-        
-        // Store dropdown reference
-        this.attachmentTypeSelect = attachmentTypeDropdown;
-        
-        // Add options
-        const importOption = attachmentTypeDropdown.createEl('option', { value: AttachmentType.IMPORT, text: 'Import file' });
-        const linkOption = attachmentTypeDropdown.createEl('option', { value: AttachmentType.LINK, text: 'Link to existing file' });
-        
-        // Add button - add it directly to the setting
-        attachmentSetting.addButton(button => {
-            button
-                .setButtonText('Add attachment')
-                .setCta() // Make it a call-to-action button
-                .onClick(() => {
-                    // Handle adding attachment based on the selected type
-                    if (this.attachmentTypeSelect.value === AttachmentType.IMPORT.toString()) {
-                        this.addImportAttachment();
-                    } else if (this.attachmentTypeSelect.value === AttachmentType.LINK.toString()) {
-                        this.addLinkAttachment();
-                    }
-                });
-        });
-        
-        // Create container for displaying attachments list
-        this.attachmentsDisplayEl = attachmentContainer.createDiv({ cls: 'bibliography-attachments-display' });
-        this.updateAttachmentsDisplay(); // Initialize display
-        
-        // Import file input - store references for use with import dialog
-        this.importSettingEl = document.createElement('div');
-        
-        // Link to existing file - store references for use with link dialog
-        this.linkSettingEl = document.createElement('div');
+        new Setting(contentEl)
+            .setName('Attachments')
+            .setDesc('Import a file or link to an existing vault file')
+            .addButton(button => {
+                button.setButtonText('Import file').onClick(() => this.addImportAttachment());
+            })
+            .addButton(button => {
+                button.setButtonText('Link file').onClick(() => this.addLinkAttachment());
+            });
+
+        this.attachmentsDisplayEl = contentEl.createDiv({ cls: 'bibliography-attachments-display' });
+        this.updateAttachmentsDisplay();
     }
     
     /**
@@ -442,399 +359,205 @@ export class BibliographyModal extends Modal {
         }).open();
     }
     
-    // We no longer need the updateAttachmentVisibility method as we've changed the UI approach
-
     private createMainForm(contentEl: HTMLElement) {
         const formContainer = contentEl.createDiv({ cls: 'bibliography-form' });
-        
-        // Contributors section
-        formContainer.createEl('h4', { text: 'Contributors' });
-        
-        // Container for contributor fields
-        this.contributorsListContainer = formContainer.createDiv({ cls: 'bibliography-contributors' });
-        
-        // Add initial contributor field (typically an author)
+
+        this.createContributorsSection(formContainer);
+        this.createCoreFieldsSection(formContainer);
+        this.createCustomFieldsSection(formContainer);
+        this.createAdditionalFieldsSection(formContainer);
+        this.createRelatedNotesSection(formContainer);
+        this.createCitekeySection(formContainer);
+        this.createActionButtons(formContainer);
+    }
+
+    private createContributorsSection(container: HTMLElement): void {
+        container.createEl('h4', { text: 'Contributors' });
+        this.contributorsListContainer = container.createDiv({ cls: 'bibliography-contributors' });
         this.addContributorField('author');
-        
-        // Add button to add more contributors
-        const addContributorButton = new ButtonComponent(formContainer)
+
+        new ButtonComponent(container)
             .setButtonText('Add contributor')
             .onClick(() => this.addContributorField('author'));
+    }
 
-		// --- ADDED: Horizontal Rule ---
-        formContainer.createEl('hr');
-
-        // Create core fields section
-        const coreFieldsContainer = formContainer.createDiv({ cls: 'bibliography-form-core' });
-        
-        
-        // Type field (CSL type)
-        new Setting(coreFieldsContainer)
+    private createCoreFieldsSection(container: HTMLElement): void {
+        // Type dropdown
+        new Setting(container)
             .setName('Type')
             .setDesc('Type of reference')
             .addDropdown(dropdown => {
-                // Add common types first
-                dropdown.addOption('article-journal', 'Journal article');
-                dropdown.addOption('book', 'Book');
-                dropdown.addOption('chapter', 'Book chapter');
-                dropdown.addOption('paper-conference', 'Conference paper');
-                dropdown.addOption('report', 'Report');
-                dropdown.addOption('thesis', 'Thesis');
-                dropdown.addOption('webpage', 'Web page');
-                
-                // Add divider
+                const commonTypes = ['article-journal', 'book', 'chapter', 'paper-conference', 'report', 'thesis', 'webpage'];
+                const commonLabels = ['Journal article', 'Book', 'Book chapter', 'Conference paper', 'Report', 'Thesis', 'Web page'];
+
+                commonTypes.forEach((type, i) => dropdown.addOption(type, commonLabels[i]));
                 dropdown.addOption('divider1', '------------------');
-                
-                // Add all other CSL types alphabetically
-                const cslTypes = [...CSL_TYPES].filter(type => 
-                    !['article-journal', 'book', 'chapter', 'paper-conference', 'report', 'thesis', 'webpage'].includes(type)
-                ).sort();
-                
-                cslTypes.forEach(type => {
-                    // Format the type label for display (capitalize, replace hyphens with spaces)
-                    const labelText = type
-                        .split('-')
-                        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-                        .join(' ');
-                    
-                    dropdown.addOption(type, labelText);
+
+                [...CSL_TYPES].filter(t => !commonTypes.includes(t)).sort().forEach(type => {
+                    const label = type.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                    dropdown.addOption(type, label);
                 });
-                
-                // Set article-journal as default
+
                 dropdown.setValue('article-journal');
-                
                 this.typeDropdown = dropdown.selectEl;
-                
-                // Remove divider items if they ever get selected
-                dropdown.onChange(value => {
-                    if (value.startsWith('divider')) {
-                        dropdown.setValue('article-journal');
-                    }
-                });
-                
-                return dropdown;
+                dropdown.onChange(v => { if (v.startsWith('divider')) dropdown.setValue('article-journal'); });
             });
-        
-        // Title field
-        new Setting(coreFieldsContainer)
-            .setName('Title')
-            .setDesc('Title of the work')
-            .addText(text => {
-                this.titleInput = text.inputEl;
-                text.inputEl.addClass('bibliography-input-full');
-                return text;
-            });
-        
-        // Short title field
-        new Setting(coreFieldsContainer)
-            .setName('Short title')
-            .setDesc('Abbreviated title (optional)')
-            .addText(text => {
-                this.titleShortInput = text.inputEl;
-                return text;
-            });
-        
-        // Page field
-        new Setting(coreFieldsContainer)
-            .setName('Pages')
-            .setDesc('Page range (e.g., 123-145)')
-            .addText(text => {
-                this.pageInput = text.inputEl;
-                return text;
-            });
-        
-        // URL field
-        new Setting(coreFieldsContainer)
-            .setName('URL')
-            .setDesc('Web address')
-            .addText(text => {
-                this.urlInput = text.inputEl;
-                text.inputEl.type = 'url';
-                return text;
-            });
-        
-        // Container title field (journal, book, etc.)
-        new Setting(coreFieldsContainer)
-            .setName('Container title')
-            .setDesc('Journal, book, or website name')
-            .addText(text => {
-                this.containerTitleInput = text.inputEl;
-                text.inputEl.addClass('bibliography-input-full');
-                return text;
-            });
-        
-        // Create a simple grid for date inputs
-        const dateContainer = coreFieldsContainer.createDiv({ cls: 'bibliography-date-container' });
-        
-        // Year field
-        const yearSetting = new Setting(dateContainer)
-            .setName('Year')
-            .setDesc('Publication year');
-        
-        this.yearInput = yearSetting.controlEl.createEl('input', { type: 'number' });
-        this.yearInput.placeholder = 'YYYY';
-        
-        // Month field
-        const monthSetting = new Setting(dateContainer)
-            .setName('Month')
-            .setDesc('Publication month');
-        
-        this.monthDropdown = monthSetting.controlEl.createEl('select');
-        // Add month options
-        this.monthDropdown.createEl('option', { value: '', text: '' });
-        const months = ['January', 'February', 'March', 'April', 'May', 'June', 
-                       'July', 'August', 'September', 'October', 'November', 'December'];
-        
-        months.forEach((month, index) => {
-            const monthNumber = (index + 1).toString();
-            this.monthDropdown.createEl('option', { 
-                value: monthNumber, 
-                text: monthNumber.padStart(2, '0') // Display "01", "02", etc.
-            });
-        });
-        
-        // Day field
-        const daySetting = new Setting(dateContainer)
-            .setName('Day')
-            .setDesc('Publication day');
-        
-        this.dayInput = daySetting.controlEl.createEl('input', { type: 'number' });
-        this.dayInput.placeholder = 'DD';
-        this.dayInput.min = '1';
-        this.dayInput.max = '31';
-        
-        // Publisher field
-        new Setting(coreFieldsContainer)
-            .setName('Publisher')
-            .setDesc('Name of publisher')
-            .addText(text => {
-                this.publisherInput = text.inputEl;
-                return text;
-            });
-        
-        // Publisher place field
-        new Setting(coreFieldsContainer)
-            .setName('Publisher place')
-            .setDesc('Location of publisher')
-            .addText(text => {
-                this.publisherPlaceInput = text.inputEl;
-                return text;
-            });
-        
-        // Edition field
-        new Setting(coreFieldsContainer)
-            .setName('Edition')
-            .setDesc('Edition number or description')
-            .addText(text => {
-                this.editionInput = text.inputEl;
-                return text;
-            });
-        
-        // Volume field
-        new Setting(coreFieldsContainer)
-            .setName('Volume')
-            .setDesc('Volume number')
-            .addText(text => {
-                this.volumeInput = text.inputEl;
-                return text;
-            });
-        
-        // Number/Issue field
-        new Setting(coreFieldsContainer)
-            .setName('Number/Issue')
-            .setDesc('Issue or number identifier')
-            .addText(text => {
-                this.numberInput = text.inputEl;
-                return text;
-            });
-        
-        // Language field
-        new Setting(coreFieldsContainer)
-            .setName('Language')
-            .setDesc('Primary language of the work')
+
+        // Title
+        new Setting(container).setName('Title').setDesc('Title of the work')
+            .addText(t => { this.titleInput = t.inputEl; t.inputEl.addClass('bibliography-input-full'); });
+
+        // Short title
+        new Setting(container).setName('Short title').setDesc('Abbreviated title (optional)')
+            .addText(t => { this.titleShortInput = t.inputEl; });
+
+        // Pages
+        new Setting(container).setName('Pages').setDesc('Page range (e.g., 123-145)')
+            .addText(t => { this.pageInput = t.inputEl; });
+
+        // URL
+        new Setting(container).setName('URL').setDesc('Web address')
+            .addText(t => { this.urlInput = t.inputEl; t.inputEl.type = 'url'; });
+
+        // Container title
+        new Setting(container).setName('Container title').setDesc('Journal, book, or website name')
+            .addText(t => { this.containerTitleInput = t.inputEl; t.inputEl.addClass('bibliography-input-full'); });
+
+        // Date
+        new Setting(container).setName('Date').setDesc('Publication date (YYYY, YYYY-MM, or YYYY-MM-DD)')
+            .addText(t => { this.dateInput = t.inputEl; t.setPlaceholder('e.g., 2024, 2024-03, 2024-03-15'); });
+
+        // Publisher
+        new Setting(container).setName('Publisher').setDesc('Name of publisher')
+            .addText(t => { this.publisherInput = t.inputEl; });
+
+        // Publisher place
+        new Setting(container).setName('Publisher place').setDesc('Location of publisher')
+            .addText(t => { this.publisherPlaceInput = t.inputEl; });
+
+        // Edition
+        new Setting(container).setName('Edition').setDesc('Edition number or description')
+            .addText(t => { this.editionInput = t.inputEl; });
+
+        // Volume
+        new Setting(container).setName('Volume').setDesc('Volume number')
+            .addText(t => { this.volumeInput = t.inputEl; });
+
+        // Number/Issue
+        new Setting(container).setName('Number/Issue').setDesc('Issue or number identifier')
+            .addText(t => { this.numberInput = t.inputEl; });
+
+        // Language
+        new Setting(container).setName('Language').setDesc('Primary language of the work')
             .addDropdown(dropdown => {
                 dropdown.addOption('', 'Select language...');
-                
-                // Add favorite languages from settings
-                if (this.settings.favoriteLanguages && this.settings.favoriteLanguages.length > 0) {
+
+                // Favorites first
+                if (this.settings.favoriteLanguages?.length) {
                     this.settings.favoriteLanguages.forEach(lang => {
-                        if (lang.code && lang.name) {
-                            dropdown.addOption(lang.code, lang.name);
-                        }
+                        if (lang.code && lang.name) dropdown.addOption(lang.code, lang.name);
                     });
-                    
-                    // Add a visual separator (disabled option)
-                    const separatorOption = dropdown.selectEl.createEl('option', {
-                        text: '──────────────',
-                        value: '_separator'
-                    });
-                    separatorOption.disabled = true;
+                    const sep = dropdown.selectEl.createEl('option', { text: '──────────────', value: '_separator' });
+                    sep.disabled = true;
                 }
-                
-                // Standard language list (excluding any that are already in favorites)
-                const standardLanguages = [
-                    { code: 'en', name: 'English' },
-                    { code: 'fr', name: 'French' },
-                    { code: 'de', name: 'German' },
-                    { code: 'es', name: 'Spanish' },
-                    { code: 'it', name: 'Italian' },
-                    { code: 'ja', name: 'Japanese' },
-                    { code: 'zh', name: 'Chinese' },
-                    { code: 'ru', name: 'Russian' },
-                    { code: 'pt', name: 'Portuguese' },
-                    { code: 'ar', name: 'Arabic' },
-                    { code: 'ko', name: 'Korean' },
-                    { code: 'la', name: 'Latin' },
-                    { code: 'el', name: 'Greek' },
-                    { code: 'other', name: 'Other' }
+
+                const standardLangs = [
+                    { code: 'en', name: 'English' }, { code: 'fr', name: 'French' },
+                    { code: 'de', name: 'German' }, { code: 'es', name: 'Spanish' },
+                    { code: 'it', name: 'Italian' }, { code: 'ja', name: 'Japanese' },
+                    { code: 'zh', name: 'Chinese' }, { code: 'ru', name: 'Russian' },
+                    { code: 'pt', name: 'Portuguese' }, { code: 'ar', name: 'Arabic' },
+                    { code: 'ko', name: 'Korean' }, { code: 'la', name: 'Latin' },
+                    { code: 'el', name: 'Greek' }, { code: 'other', name: 'Other' }
                 ];
-                
-                // Get favorite language codes for exclusion
-                const favoriteCodes = new Set(this.settings.favoriteLanguages?.map(lang => lang.code) || []);
-                
-                // Add standard languages that aren't in favorites
-                standardLanguages.forEach(lang => {
-                    if (!favoriteCodes.has(lang.code)) {
-                        dropdown.addOption(lang.code, lang.name);
-                    }
-                });
-                
+                const favCodes = new Set(this.settings.favoriteLanguages?.map(l => l.code) || []);
+                standardLangs.forEach(l => { if (!favCodes.has(l.code)) dropdown.addOption(l.code, l.name); });
+
                 this.languageDropdown = dropdown.selectEl;
-                return dropdown;
             });
-        
-        // DOI field
-        new Setting(coreFieldsContainer)
-            .setName('DOI')
-            .setDesc('Digital Object Identifier')
-            .addText(text => {
-                this.doiInput = text.inputEl;
-                return text;
-            });
-        
-        // Abstract field
-        new Setting(coreFieldsContainer)
-            .setName('Abstract')
-            .setDesc('Summary of the work')
-            .addTextArea(textarea => {
-                this.abstractInput = textarea.inputEl;
-                textarea.inputEl.rows = 4;
-                textarea.inputEl.addClass('bibliography-input-full');
-                return textarea;
-            });
-        
-        // User-defined default fields section
-        if (this.settings.defaultModalFields && this.settings.defaultModalFields.length > 0) {
-            formContainer.createEl('h4', { text: 'Custom fields' });
-            const defaultFieldsContainer = formContainer.createDiv({ cls: 'bibliography-default-fields' });
-            this.createDefaultFields(defaultFieldsContainer);
+
+        // DOI
+        new Setting(container).setName('DOI').setDesc('Digital Object Identifier')
+            .addText(t => { this.doiInput = t.inputEl; });
+
+        // Abstract
+        new Setting(container).setName('Abstract').setDesc('Summary of the work')
+            .addTextArea(t => { this.abstractInput = t.inputEl; t.inputEl.rows = 4; t.inputEl.addClass('bibliography-input-full'); });
+    }
+
+    private createCustomFieldsSection(container: HTMLElement): void {
+        if (this.settings.defaultModalFields?.length) {
+            container.createEl('h4', { text: 'Custom fields' });
+            const fieldsContainer = container.createDiv({ cls: 'bibliography-default-fields' });
+            this.createDefaultFields(fieldsContainer);
         }
-        
-        // Additional fields section
-        formContainer.createEl('h4', { text: 'Additional fields' });
-        
-        // Container for additional fields
-        this.additionalFieldsContainer = formContainer.createDiv({ cls: 'bibliography-additional-fields' });
-        
-        // Add button to add more fields
-        const addFieldButton = new ButtonComponent(formContainer)
+    }
+
+    private createAdditionalFieldsSection(container: HTMLElement): void {
+        container.createEl('h4', { text: 'Additional fields' });
+        this.additionalFieldsContainer = container.createDiv({ cls: 'bibliography-additional-fields' });
+
+        new ButtonComponent(container)
             .setButtonText('Add field')
             .onClick(() => this.addAdditionalField('', '', 'standard'));
-            
-		// --- ADDED: Horizontal Rule ---
-        formContainer.createEl('hr');
+    }
 
-        // --- Related Notes Section ---
-        formContainer.createEl('h4', { text: 'Related notes' });
-        const relatedNotesSetting = new Setting(formContainer)
-            .setName('Link related notes')
-            .setDesc('Select existing notes in your vault that relate to this entry.');
+    private createRelatedNotesSection(container: HTMLElement): void {
+        const displayEl = container.createDiv({ cls: 'bibliography-related-notes-display' });
 
-        // Container to display selected notes
-        const relatedNotesDisplayEl = formContainer.createDiv({ cls: 'bibliography-related-notes-display' });
-        this.updateRelatedNotesDisplay(relatedNotesDisplayEl); // Set initial state
-
-        // Add button to trigger note selection
-        relatedNotesSetting.addButton(button => button
-            .setButtonText('Add related note')
-            .onClick(() => {
-                // Open the Note Suggest Modal
-                new NoteSuggestModal(this.app, (selectedFile) => {
-                    if (selectedFile && !this.relatedNotePaths.includes(selectedFile.path)) {
-                        this.relatedNotePaths.push(selectedFile.path);
-                        this.updateRelatedNotesDisplay(relatedNotesDisplayEl); // Update UI
-                    } else if (selectedFile) {
-                        new Notice(`Note "${selectedFile.basename}" is already selected.`);
+        new Setting(container)
+            .setName('Related notes')
+            .setDesc('Link existing notes that relate to this entry')
+            .addButton(btn => btn.setButtonText('Add note').onClick(() => {
+                new NoteSuggestModal(this.app, (file) => {
+                    if (file && !this.relatedNotePaths.includes(file.path)) {
+                        this.relatedNotePaths.push(file.path);
+                        this.updateRelatedNotesDisplay(displayEl);
+                    } else if (file) {
+                        new Notice(`"${file.basename}" is already selected.`);
                     }
                 }).open();
             }));
 
-		// --- ADDED: Horizontal Rule ---
-        formContainer.createEl('hr');
+        this.updateRelatedNotesDisplay(displayEl);
+    }
 
-        formContainer.createEl('h4', { text: 'Identifier' });
-		new Setting(formContainer) // <-- Appended to formContainer now
+    private createCitekeySection(container: HTMLElement): void {
+        new Setting(container)
             .setName('Citekey')
             .setDesc('Unique citation key used as filename')
             .addText(text => {
                 this.idInput = text.inputEl;
                 text.setPlaceholder('Autogenerated from author and year');
-
-                // Add regenerate button - with null check to satisfy TS
-                const parentElement = text.inputEl.parentElement;
-                if (!parentElement) return text;
-
-                const regenerateButton = new ButtonComponent(parentElement)
-                    .setIcon('reset')
-                    .setTooltip('Regenerate citekey')
-                    .onClick(() => {
-                        // Get current form data for citekey generation
-                        const formData = this.getFormValues();
-
-                        // Only attempt to generate if we have required fields
-                        if (formData.title || (formData.author && formData.author.length > 0)) {
-                            // Generate citekey using current form data
-                            const citekey = CitekeyGenerator.generate(formData, this.settings.citekeyOptions);
-                            // Update ID field
-                            this.idInput.value = citekey;
-                        } else {
-                            new Notice('Add author and title first to generate citekey');
-                        }
-                    });
-
-                return text;
+            })
+            .addButton(btn => {
+                btn.setIcon('reset').setTooltip('Regenerate citekey').onClick(() => {
+                    const formData = this.getFormValues();
+                    if (formData.title || formData.author?.length) {
+                        this.idInput.value = CitekeyGenerator.generate(formData, this.settings.citekeyOptions);
+                    } else {
+                        new Notice('Add author and title first to generate citekey');
+                    }
+                });
             });
-        
-        // Create final buttons (Cancel and Create Note)
-        const finalButtonContainer = formContainer.createDiv({ cls: 'bibliography-form-buttons' });
-        
-        // Cancel button
-        const cancelButton = finalButtonContainer.createEl('button', { 
-            text: 'Cancel',
-            cls: 'bibliography-cancel-button'
-        });
-        cancelButton.onclick = () => this.close();
-        
-        // Submit button
-        const submitButton = finalButtonContainer.createEl('button', { 
-            text: 'Create note', 
-            cls: 'mod-cta create-button' // Use call to action style
-        });
-        submitButton.onclick = async () => { // Make async
-            // Get the current form values
-            const citation: Citation = this.getFormValues();
-            
-            // Validate required fields before proceeding
-            if (!this.validateForm(citation)) {
-                return;
-            }
-            
-            // Disable button during submission
-            submitButton.disabled = true;
-            submitButton.textContent = 'Creating...';
+    }
 
-            await this.handleSubmit(citation);
-        };
+    private createActionButtons(container: HTMLElement): void {
+        const btnContainer = container.createDiv({ cls: 'bibliography-form-buttons' });
+
+        new ButtonComponent(btnContainer).setButtonText('Cancel').onClick(() => this.close());
+
+        const submitBtn = new ButtonComponent(btnContainer)
+            .setButtonText('Create note')
+            .setCta()
+            .onClick(async () => {
+                const citation = this.getFormValues();
+                if (!this.validateForm(citation)) return;
+
+                submitBtn.setDisabled(true);
+                submitBtn.setButtonText('Creating...');
+                await this.handleSubmit(citation);
+            });
     }
 
     /**
@@ -886,29 +609,27 @@ export class BibliographyModal extends Modal {
             this.abstractInput.value = cslData.abstract || '';
             this.editionInput.value = cslData.edition || '';
             
-            // Date fields - try issued date or individual field values
-            if (cslData.issued && cslData.issued['date-parts'] && 
+            // Date field - build partial date string (YYYY, YYYY-MM, or YYYY-MM-DD)
+            if (cslData.issued && cslData.issued['date-parts'] &&
                 cslData.issued['date-parts'][0] && cslData.issued['date-parts'][0].length > 0) {
-                
                 const dateParts = cslData.issued['date-parts'][0];
-                this.yearInput.value = dateParts[0] || '';
-                
-                if (dateParts.length > 1) {
-                    this.monthDropdown.value = dateParts[1].toString();
+                let dateStr = String(dateParts[0]);
+                if (dateParts[1]) {
+                    dateStr += `-${String(dateParts[1]).padStart(2, '0')}`;
+                    if (dateParts[2]) {
+                        dateStr += `-${String(dateParts[2]).padStart(2, '0')}`;
+                    }
                 }
-                
-                if (dateParts.length > 2) {
-                    this.dayInput.value = dateParts[2].toString();
-                }
-            } else {
-                // Try individual fields if issued.date-parts not available
-                this.yearInput.value = cslData.year || '';
+                this.dateInput.value = dateStr;
+            } else if (cslData.year) {
+                let dateStr = String(cslData.year);
                 if (cslData.month) {
-                    this.monthDropdown.value = cslData.month.toString();
+                    dateStr += `-${String(cslData.month).padStart(2, '0')}`;
+                    if (cslData.day) {
+                        dateStr += `-${String(cslData.day).padStart(2, '0')}`;
+                    }
                 }
-                if (cslData.day) {
-                    this.dayInput.value = cslData.day.toString();
-                }
+                this.dateInput.value = dateStr;
             }
             
             // Language dropdown
@@ -1245,28 +966,38 @@ export class BibliographyModal extends Modal {
 			})
 			.filter(a => a.family || a.given || a.literal); // Ensure we don't have empty objects
         
-        // Handle date fields
-        const year = this.yearInput.value.trim();
-        const month = this.monthDropdown.value.trim();
-        const day = this.dayInput.value.trim();
-        
-        if (year) {
-            citation.year = year;
-            if (month) {
-                citation.month = month;
-                if (day) {
-                    citation.day = day;
+        // Handle date field - parse YYYY, YYYY-MM, or YYYY-MM-DD
+        const dateValue = this.dateInput.value.trim();
+        if (dateValue) {
+            // Try full date first (YYYY-MM-DD)
+            let dateMatch = dateValue.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+            if (dateMatch) {
+                const year = parseInt(dateMatch[1], 10);
+                const month = parseInt(dateMatch[2], 10);
+                const day = parseInt(dateMatch[3], 10);
+                citation.year = year.toString();
+                citation.month = month.toString();
+                citation.day = day.toString();
+                citation.issued = { 'date-parts': [[year, month, day]] };
+            } else {
+                // Try year-month (YYYY-MM)
+                dateMatch = dateValue.match(/^(\d{4})-(\d{1,2})$/);
+                if (dateMatch) {
+                    const year = parseInt(dateMatch[1], 10);
+                    const month = parseInt(dateMatch[2], 10);
+                    citation.year = year.toString();
+                    citation.month = month.toString();
+                    citation.issued = { 'date-parts': [[year, month]] };
+                } else {
+                    // Try year only (YYYY)
+                    dateMatch = dateValue.match(/^(\d{4})$/);
+                    if (dateMatch) {
+                        const year = parseInt(dateMatch[1], 10);
+                        citation.year = year.toString();
+                        citation.issued = { 'date-parts': [[year]] };
+                    }
                 }
             }
-            
-            // Build CSL issued field
-            citation.issued = {
-                'date-parts': [[
-                    year ? Number(year) : undefined,
-                    month ? Number(month) : undefined,
-                    day ? Number(day) : undefined
-                ].filter(v => v !== undefined) as number[]]
-            };
         }
         
         // Add values from user-defined default fields
@@ -1311,30 +1042,23 @@ export class BibliographyModal extends Modal {
      * @param displayEl The HTML element to update
      */
     protected updateRelatedNotesDisplay(displayEl: HTMLElement): void {
-        displayEl.empty(); // Clear previous display
+        displayEl.empty();
 
         if (this.relatedNotePaths.length === 0) {
-            displayEl.setText('No notes selected.');
+            displayEl.createSpan({ text: 'No related notes', cls: 'setting-item-description' });
             return;
         }
 
-        const listEl = displayEl.createEl('ul', { cls: 'bibliography-related-notes-list' });
-
+        const list = displayEl.createEl('ul', { cls: 'bibliography-related-notes-list' });
         this.relatedNotePaths.forEach(notePath => {
-            const listItemEl = listEl.createEl('li');
-            // Display basename for better readability
+            const li = list.createEl('li');
             const basename = notePath.substring(notePath.lastIndexOf('/') + 1);
-            listItemEl.createSpan({ text: basename }); // Display note name/path
-
-            // Add remove button
-            const removeButton = listItemEl.createEl('button', {
-                cls: 'bibliography-remove-related-note-button',
-                text: 'Remove'
-            });
-            removeButton.onclick = () => {
-                this.relatedNotePaths = this.relatedNotePaths.filter(p => p !== notePath);
-                this.updateRelatedNotesDisplay(displayEl); // Refresh the display
-            };
+            li.createSpan({ text: basename });
+            li.createEl('button', { text: '×', cls: 'bibliography-remove-related-note-button' })
+                .onclick = () => {
+                    this.relatedNotePaths = this.relatedNotePaths.filter(p => p !== notePath);
+                    this.updateRelatedNotesDisplay(displayEl);
+                };
         });
     }
     

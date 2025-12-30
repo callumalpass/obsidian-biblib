@@ -1,5 +1,5 @@
 import { stringifyYaml } from 'obsidian';
-import { BibliographyPluginSettings } from '../types';
+import { BibliographyPluginSettings, parseLiteratureNoteTags } from '../types';
 import { Citation, Contributor, AdditionalField } from '../types/citation';
 import { TemplateEngine } from '../utils/template-engine';
 import { TemplateVariableBuilderService } from './template-variable-builder-service';
@@ -69,10 +69,11 @@ export class FrontmatterBuilderService {
         ...(citation.language && { language: citation.language }),
         ...(citation.abstract && { abstract: citation.abstract }),
         
-        // Ensure literature note tag is always present, while preserving any existing tags
+        // Ensure literature note tags are always present, while preserving any existing tags
+        // Parse the literatureNoteTag setting which may contain multiple comma/space-separated tags
         tags: citation.tags && Array.isArray(citation.tags)
-          ? [...new Set([...citation.tags, pluginSettings.literatureNoteTag])]
-          : [pluginSettings.literatureNoteTag]
+          ? [...new Set([...citation.tags, ...parseLiteratureNoteTags(pluginSettings.literatureNoteTag)])]
+          : parseLiteratureNoteTags(pluginSettings.literatureNoteTag)
       };
       
       // Add contributors to frontmatter, preserving all CSL contributor properties
