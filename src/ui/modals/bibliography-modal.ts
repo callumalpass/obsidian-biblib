@@ -1,5 +1,6 @@
-import { App, Modal, Notice, Setting, ButtonComponent, FuzzySuggestModal, TFile } from 'obsidian';
+import { App, Modal, Notice, Setting, ButtonComponent } from 'obsidian';
 import { NoteSuggestModal } from './note-suggest-modal';
+import { FileSuggestModal } from '../components/file-suggest-modal';
 import { BibliographyPluginSettings } from '../../types/settings';
 import { Contributor, AdditionalField, Citation, AttachmentData, AttachmentType } from '../../types/citation';
 import { ContributorField } from '../components/contributor-field';
@@ -8,19 +9,12 @@ import { CitoidService } from '../../services/api/citoid';
 import { CitationService } from '../../services/citation-service';
 import { CitekeyGenerator } from '../../utils/citekey-generator';
 import { CSL_TYPES } from '../../utils/csl-variables';
-import { 
-    NoteCreationService,
-    TemplateVariableBuilderService,
-    FrontmatterBuilderService, 
-    NoteContentBuilderService,
-    AttachmentManagerService,
-    ReferenceParserService
-} from '../../services';
-import { 
-    ERROR_MESSAGES, 
-    SUCCESS_MESSAGES, 
+import { NoteCreationService } from '../../services';
+import {
+    ERROR_MESSAGES,
+    SUCCESS_MESSAGES,
     UI_TEXT,
-    NOTICE_DURATION_SHORT 
+    NOTICE_DURATION_SHORT
 } from '../../constants';
 
 export class BibliographyModal extends Modal {
@@ -70,35 +64,20 @@ export class BibliographyModal extends Modal {
     private openedViaCommand: boolean = true;
     
     constructor(
-        app: App, 
-        protected settings: BibliographyPluginSettings, 
+        app: App,
+        protected settings: BibliographyPluginSettings,
+        citoidService: CitoidService,
+        citationService: CitationService,
+        noteCreationService: NoteCreationService,
         openedViaCommand: boolean = true
     ) {
         super(app);
-        
-        // Initialize services
-        this.citoidService = new CitoidService();
-        
-        // Pass the citekey options to ensure generated citekeys respect user settings
-        this.citationService = new CitationService(this.settings.citekeyOptions);
-        
-        
-        // Set up new service layer
-        const templateVariableBuilder = new TemplateVariableBuilderService();
-        const frontmatterBuilder = new FrontmatterBuilderService(templateVariableBuilder);
-        const noteContentBuilder = new NoteContentBuilderService(frontmatterBuilder, templateVariableBuilder);
-        const attachmentManager = new AttachmentManagerService(app, settings);
-        const referenceParser = new ReferenceParserService(this.citationService);
-        
-        // Create the note creation service
-        this.noteCreationService = new NoteCreationService(
-            app,
-            settings,
-            referenceParser,
-            noteContentBuilder,
-            attachmentManager
-        );
-        
+
+        // Store injected services
+        this.citoidService = citoidService;
+        this.citationService = citationService;
+        this.noteCreationService = noteCreationService;
+
         this.openedViaCommand = openedViaCommand;
     }
 
@@ -1131,33 +1110,5 @@ export class BibliographyModal extends Modal {
     onClose() {
         const { contentEl } = this;
         contentEl.empty();
-    }
-}
-
-/**
- * Modal for selecting a file from the vault
- */
-class FileSuggestModal extends FuzzySuggestModal<TFile> {
-    private files: TFile[];
-    private onSelect: (file: TFile) => void;
-    
-    constructor(app: App, onSelect: (file: TFile) => void) {
-        super(app);
-        // Allow all file types
-        this.files = this.app.vault.getFiles();
-        this.onSelect = onSelect;
-    }
-    
-    getItems(): TFile[] {
-        return this.files;
-    }
-    
-    getItemText(file: TFile): string {
-        // Show extension type more prominently
-        return `${file.path} (${file.extension.toUpperCase()})`;
-    }
-    
-    onChooseItem(file: TFile, evt: MouseEvent | KeyboardEvent): void {
-        this.onSelect(file);
     }
 }

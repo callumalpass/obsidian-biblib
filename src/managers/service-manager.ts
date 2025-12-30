@@ -8,6 +8,7 @@ import { NoteContentBuilderService } from '../services/note-content-builder-serv
 import { AttachmentManagerService } from '../services/attachment-manager-service';
 import { NoteCreationService } from '../services/note-creation-service';
 import { StatusBarService } from '../services/status-bar-service';
+import { CitoidService } from '../services/api/citoid';
 
 /**
  * Manages the initialization and access to services used by the bibliography plugin.
@@ -17,6 +18,7 @@ import { StatusBarService } from '../services/status-bar-service';
 export class ServiceManager {
     // Core services
     private citationService: CitationService;
+    private citoidService: CitoidService;
     private templateVariableBuilder: TemplateVariableBuilderService;
     private frontmatterBuilder: FrontmatterBuilderService;
     private noteContentBuilder: NoteContentBuilderService;
@@ -38,6 +40,7 @@ export class ServiceManager {
     private initializeServices(): void {
         // Initialize all services that DO NOT depend on Node.js modules first
         this.citationService = new CitationService(this.settings.citekeyOptions);
+        this.citoidService = new CitoidService();
         this.templateVariableBuilder = new TemplateVariableBuilderService();
         this.frontmatterBuilder = new FrontmatterBuilderService(this.templateVariableBuilder);
         this.noteContentBuilder = new NoteContentBuilderService(
@@ -78,6 +81,13 @@ export class ServiceManager {
      */
     public getCitationService(): CitationService {
         return this.citationService;
+    }
+
+    /**
+     * Get the citoid service instance
+     */
+    public getCitoidService(): CitoidService {
+        return this.citoidService;
     }
 
     /**

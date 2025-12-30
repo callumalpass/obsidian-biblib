@@ -1,27 +1,18 @@
-import { App, Modal, Notice, Setting, TFile, ButtonComponent, ToggleComponent, stringifyYaml } from 'obsidian';
+import { App, Notice, Setting, TFile, ToggleComponent, stringifyYaml } from 'obsidian';
 import { BibliographyModal } from './bibliography-modal';
 import { BibliographyPluginSettings } from '../../types/settings';
 import { Citation, Contributor, AdditionalField, AttachmentData, AttachmentType } from '../../types/citation';
-import { ContributorField } from '../components/contributor-field';
-import { AdditionalFieldComponent } from '../components/additional-field';
 import { CitekeyGenerator } from '../../utils/citekey-generator';
 import { TemplateEngine } from '../../utils/template-engine';
 import { processYamlArray } from '../../utils/yaml-utils';
-import { 
-    CSL_ALL_CSL_FIELDS, 
-    CSL_NAME_FIELDS, 
-    CSL_NUMBER_FIELDS, 
-    CSL_DATE_FIELDS 
+import {
+    CSL_ALL_CSL_FIELDS,
+    CSL_NAME_FIELDS,
+    CSL_NUMBER_FIELDS,
+    CSL_DATE_FIELDS
 } from '../../utils/csl-variables';
-import { 
-    NoteCreationService,
-    TemplateVariableBuilderService,
-    FrontmatterBuilderService,
-    NoteContentBuilderService,
-    AttachmentManagerService,
-    ReferenceParserService,
-    CitationService
-} from '../../services';
+import { CitoidService } from '../../services/api/citoid';
+import { NoteCreationService, CitationService, TemplateVariableBuilderService } from '../../services';
 
 export class EditBibliographyModal extends BibliographyModal {
     private fileToEdit: TFile;
@@ -37,10 +28,17 @@ export class EditBibliographyModal extends BibliographyModal {
     private updateCustomFrontmatterToggle: ToggleComponent;
     private regenerateBodyToggle: ToggleComponent;
 
-    constructor(app: App, settings: BibliographyPluginSettings, fileToEdit: TFile) {
-        super(app, settings, false); // false = not opened via command
+    constructor(
+        app: App,
+        settings: BibliographyPluginSettings,
+        citoidService: CitoidService,
+        citationService: CitationService,
+        noteCreationService: NoteCreationService,
+        fileToEdit: TFile
+    ) {
+        super(app, settings, citoidService, citationService, noteCreationService, false); // false = not opened via command
         this.fileToEdit = fileToEdit;
-        
+
         // Initialize with settings defaults
         this.regenerateCitekeyOnSave = settings.editRegenerateCitekeyDefault;
         this.updateCustomFrontmatterOnSave = settings.editUpdateCustomFrontmatterDefault;

@@ -29,7 +29,7 @@ export default class BibliographyPlugin extends Plugin {
             this.app,
             this,
             this.settings,
-            this.serviceManager.getNoteCreationService()
+            this.serviceManager
         );
 
         // Register commands
@@ -51,8 +51,7 @@ export default class BibliographyPlugin extends Plugin {
             this.app,
             this,
             this.settings,
-            this.serviceManager.getCitationService(),
-            this.serviceManager.getStatusBarService()
+            this.serviceManager
         );
 
         // Initialize the Zotero connector

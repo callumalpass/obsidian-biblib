@@ -2,8 +2,7 @@ import { App, Notice, Platform, Plugin, debounce } from 'obsidian';
 import { BibliographyModal } from '../ui/modals/bibliography-modal';
 import { BibliographyPluginSettings } from '../types/settings';
 import { AttachmentData, AttachmentType } from '../types/citation';
-import { CitationService } from '../services/citation-service';
-import { StatusBarService } from '../services/status-bar-service';
+import { ServiceManager } from './service-manager';
 
 // Import the TYPE ONLY for type hints, the actual class is loaded dynamically
 import type { ConnectorServer as ConnectorServerType } from '../services/connector-server';
@@ -14,25 +13,24 @@ import type { ConnectorServer as ConnectorServerType } from '../services/connect
  */
 export class ZoteroConnectorManager {
     private connectorServer: ConnectorServerType | null = null;
-    
+
     // Track active bibliography modal for Zotero imports
     private activeZoteroModal: BibliographyModal | null = null;
-    
+
     // Track item ID being processed to avoid duplicate modals
     private activeZoteroItemId: string | null = null;
-    
+
     // Track processed session IDs to avoid duplicate imports
     private processedSessionIds: Set<string> = new Set();
-    
+
     // Track item processing to prevent duplicates from Zotero Connector
     private processingItem: boolean = false;
 
     constructor(
-        private app: App, 
+        private app: App,
         private plugin: Plugin,
         private settings: BibliographyPluginSettings,
-        private citationService: CitationService,
-        private statusBarService: StatusBarService
+        private serviceManager: ServiceManager
     ) {}
 
     /**
@@ -161,7 +159,7 @@ export class ZoteroConnectorManager {
             if (this.connectorServer) {
                 await this.connectorServer.start(); // Call start on the instance
                 // Update status bar after successful start
-                this.statusBarService.setConnectorServer(this.connectorServer);
+                this.serviceManager.getStatusBarService().setConnectorServer(this.connectorServer);
             } else {
                 // This case should ideally not happen if instantiation succeeded
                 console.error("ConnectorServer instance is null immediately after instantiation.");
@@ -174,7 +172,7 @@ export class ZoteroConnectorManager {
             new Notice(`Failed to start Zotero Connector server: ${error.message}`);
             this.connectorServer = null; // Reset on failure
             // Update status bar after failure
-            this.statusBarService.setConnectorServer(null);
+            this.serviceManager.getStatusBarService().setConnectorServer(null);
         }
     }
 
@@ -187,12 +185,12 @@ export class ZoteroConnectorManager {
                 this.connectorServer.stop(); // Call stop on the instance
                 this.connectorServer = null;
                 // Update status bar after stopping
-                this.statusBarService.setConnectorServer(null);
+                this.serviceManager.getStatusBarService().setConnectorServer(null);
             } catch (error) {
                 console.error("Error stopping connector server:", error);
                 this.connectorServer = null; // Ensure it's null even if stop fails
                 // Update status bar after error
-                this.statusBarService.setConnectorServer(null);
+                this.serviceManager.getStatusBarService().setConnectorServer(null);
             }
         }
     }
@@ -201,7 +199,7 @@ export class ZoteroConnectorManager {
      * Initialize the status bar for Zotero connector
      */
     public initializeStatusBar(): void {
-        this.statusBarService.addZoteroStatusBarItem(
+        this.serviceManager.getStatusBarService().addZoteroStatusBarItem(
             this.plugin, 
             this.toggleZoteroConnector.bind(this)
         );
@@ -274,7 +272,7 @@ export class ZoteroConnectorManager {
             }
             
             // Parse the Zotero item using the dedicated service method
-            const cslData = this.citationService.parseZoteroItem(item);
+            const cslData = this.serviceManager.getCitationService().parseZoteroItem(item);
 
             if (!cslData) {
                 // parseZoteroItem should throw on failure, but double-check
@@ -283,7 +281,14 @@ export class ZoteroConnectorManager {
 
             // Open bibliography modal with pre-filled data
             // Set openedViaCommand to false since this is opened via Zotero
-            const modal = new BibliographyModal(this.app, this.settings, false);
+            const modal = new BibliographyModal(
+                this.app,
+                this.settings,
+                this.serviceManager.getCitoidService(),
+                this.serviceManager.getCitationService(),
+                this.serviceManager.getNoteCreationService(),
+                false
+            );
             
             // Store reference to the modal for potential future attachments
             this.activeZoteroModal = modal;

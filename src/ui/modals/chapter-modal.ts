@@ -1,19 +1,12 @@
-import { App, Modal, Notice, Setting, TFile, ButtonComponent, FuzzySuggestModal } from 'obsidian';
+import { App, Modal, Notice, Setting, TFile, ButtonComponent } from 'obsidian';
 import { NoteSuggestModal } from './note-suggest-modal';
+import { FileSuggestModal } from '../components/file-suggest-modal';
 import { BibliographyPluginSettings } from '../../types/settings';
 import { Contributor, AdditionalField, Citation, AttachmentData, AttachmentType } from '../../types/citation';
 import { ContributorField } from '../components/contributor-field';
 import { AdditionalFieldComponent } from '../components/additional-field';
 import { CitekeyGenerator } from '../../utils/citekey-generator';
-import { 
-    NoteCreationService,
-    TemplateVariableBuilderService,
-    FrontmatterBuilderService,
-    NoteContentBuilderService,
-    AttachmentManagerService,
-    ReferenceParserService,
-    CitationService
-} from '../../services';
+import { NoteCreationService, CitationService } from '../../services';
 
 // Define type for book entries used in this modal
 type BookEntry = { id: string; title: string; path: string; frontmatter: any };
@@ -57,28 +50,19 @@ export class ChapterModal extends Modal {
 
     private initialBookPath?: string;
 
-    constructor(app: App, private settings: BibliographyPluginSettings, initialBookPath?: string) {
+    constructor(
+        app: App,
+        private settings: BibliographyPluginSettings,
+        citationService: CitationService,
+        noteCreationService: NoteCreationService,
+        initialBookPath?: string
+    ) {
         super(app);
-        
-        // Initialize citation service for citekey generation
-        this.citationService = new CitationService(this.settings.citekeyOptions);
-        
-        // Set up new service layer
-        const templateVariableBuilder = new TemplateVariableBuilderService();
-        const frontmatterBuilder = new FrontmatterBuilderService(templateVariableBuilder);
-        const noteContentBuilder = new NoteContentBuilderService(frontmatterBuilder, templateVariableBuilder);
-        const attachmentManager = new AttachmentManagerService(app, settings);
-        const referenceParser = new ReferenceParserService(this.citationService);
-        
-        // Create the note creation service
-        this.noteCreationService = new NoteCreationService(
-            app,
-            settings,
-            referenceParser,
-            noteContentBuilder,
-            attachmentManager
-        );
-        
+
+        // Store injected services
+        this.citationService = citationService;
+        this.noteCreationService = noteCreationService;
+
         this.initialBookPath = initialBookPath;
     }
 
@@ -1126,33 +1110,5 @@ export class ChapterModal extends Modal {
     onClose() {
         const { contentEl } = this;
         contentEl.empty();
-    }
-}
-
-/**
- * Modal for selecting a file from the vault
- */
-class FileSuggestModal extends FuzzySuggestModal<TFile> {
-    private files: TFile[];
-    private onSelect: (file: TFile) => void;
-    
-    constructor(app: App, onSelect: (file: TFile) => void) {
-        super(app);
-        // Allow all file types
-        this.files = this.app.vault.getFiles();
-        this.onSelect = onSelect;
-    }
-    
-    getItems(): TFile[] {
-        return this.files;
-    }
-    
-    getItemText(file: TFile): string {
-        // Show extension type more prominently
-        return `${file.path} (${file.extension.toUpperCase()})`;
-    }
-    
-    onChooseItem(file: TFile, evt: MouseEvent | KeyboardEvent): void {
-        this.onSelect(file);
     }
 }

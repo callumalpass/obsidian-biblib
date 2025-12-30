@@ -1,11 +1,11 @@
-import { App, Notice, Plugin, TFile } from 'obsidian';
+import { App, Notice, Plugin } from 'obsidian';
 import { BibliographyModal } from '../ui/modals/bibliography-modal';
 import { ChapterModal } from '../ui/modals/chapter-modal';
 import { BulkImportModal } from '../ui/modals/bulk-import-modal';
 import { EditBibliographyModal } from '../ui/modals/edit-bibliography-modal';
 import { BibliographyPluginSettings } from '../types/settings';
 import { BibliographyBuilder } from '../services/bibliography-builder';
-import { NoteCreationService } from '../services/note-creation-service';
+import { ServiceManager } from './service-manager';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants';
 
 /**
@@ -16,7 +16,7 @@ export class CommandRegistry {
         private app: App,
         private plugin: Plugin,
         private settings: BibliographyPluginSettings,
-        private noteCreationService: NoteCreationService
+        private serviceManager: ServiceManager
     ) {}
 
     /**
@@ -36,7 +36,14 @@ export class CommandRegistry {
             id: 'create-literature-note',
             name: 'Create literature note',
             callback: () => {
-                new BibliographyModal(this.app, this.settings, true).open();
+                new BibliographyModal(
+                    this.app,
+                    this.settings,
+                    this.serviceManager.getCitoidService(),
+                    this.serviceManager.getCitationService(),
+                    this.serviceManager.getNoteCreationService(),
+                    true
+                ).open();
             },
         });
 
@@ -59,7 +66,14 @@ export class CommandRegistry {
 
                 if (checking) return true;
 
-                new EditBibliographyModal(this.app, this.settings, activeFile).open();
+                new EditBibliographyModal(
+                    this.app,
+                    this.settings,
+                    this.serviceManager.getCitoidService(),
+                    this.serviceManager.getCitationService(),
+                    this.serviceManager.getNoteCreationService(),
+                    activeFile
+                ).open();
                 return true;
             },
         });
@@ -69,7 +83,12 @@ export class CommandRegistry {
             id: 'create-chapter-entry',
             name: 'Create book chapter entry',
             callback: () => {
-                new ChapterModal(this.app, this.settings).open();
+                new ChapterModal(
+                    this.app,
+                    this.settings,
+                    this.serviceManager.getCitationService(),
+                    this.serviceManager.getNoteCreationService()
+                ).open();
             },
         });
 
@@ -78,7 +97,11 @@ export class CommandRegistry {
             id: 'bulk-import-references',
             name: 'Bulk import references',
             callback: () => {
-                new BulkImportModal(this.app, this.settings, this.noteCreationService).open();
+                new BulkImportModal(
+                    this.app,
+                    this.settings,
+                    this.serviceManager.getNoteCreationService()
+                ).open();
             },
         });
 
@@ -105,7 +128,13 @@ export class CommandRegistry {
 
                 if (checking) return true;
 
-                new ChapterModal(this.app, this.settings, activeFile.path).open();
+                new ChapterModal(
+                    this.app,
+                    this.settings,
+                    this.serviceManager.getCitationService(),
+                    this.serviceManager.getNoteCreationService(),
+                    activeFile.path
+                ).open();
                 return true;
             },
         });
