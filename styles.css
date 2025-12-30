@@ -1,4 +1,39 @@
 /* ==========================================================================
+   Plugin CSS Custom Properties
+   ========================================================================== */
+
+.biblib-tab-navigation,
+.bibliography-modal,
+.bibliography-bulk-import-modal,
+.biblib-settings-container {
+  /* Spacing */
+  --biblib-spacing-xs: 4px;
+  --biblib-spacing-sm: 8px;
+  --biblib-spacing-md: 16px;
+  --biblib-spacing-lg: 20px;
+  --biblib-spacing-xl: 24px;
+
+  /* Border radius */
+  --biblib-radius-sm: 4px;
+  --biblib-radius-md: 6px;
+  --biblib-radius-lg: 8px;
+
+  /* Transitions */
+  --biblib-transition-fast: 0.2s ease;
+  --biblib-transition-normal: 0.3s ease;
+
+  /* Shadows */
+  --biblib-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --biblib-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.12);
+  --biblib-shadow-lg: 0 3px 6px rgba(0, 0, 0, 0.12);
+
+  /* Font sizes */
+  --biblib-font-sm: 0.85em;
+  --biblib-font-md: 0.9em;
+  --biblib-font-base: 14px;
+}
+
+/* ==========================================================================
    Settings Tab Navigation Styles
    ========================================================================== */
 
@@ -44,20 +79,30 @@
    ========================================================================== */
 
 .bibliography-modal,
-.bibliography-bulk-import-modal { /* Added bulk import modal here */
-  padding: 20px;
+.bibliography-bulk-import-modal {
+  padding: var(--biblib-spacing-lg);
   max-width: 800px;
   max-height: 80vh;
   overflow-y: auto;
-  box-sizing: border-box; /* Added for consistency */
+  box-sizing: border-box;
 }
 
-/* Scrollbar Styling (Applies to modals with overflow-y: auto) */
+/* Scrollbar Styling - Consolidated for all scrollable containers */
+.bibliography-modal,
+.bibliography-bulk-import-modal,
+.template-variables-list,
+.custom-fields-help > div {
+  /* Firefox scrollbar support */
+  scrollbar-width: thin;
+  scrollbar-color: var(--background-modifier-border) var(--background-primary);
+}
+
+/* WebKit scrollbar styling */
 .bibliography-modal::-webkit-scrollbar,
 .bibliography-bulk-import-modal::-webkit-scrollbar,
-.template-variables-list::-webkit-scrollbar, /* Added for template list */
-.custom-fields-help > div::-webkit-scrollbar { /* Added for help section */
-  width: 8px;
+.template-variables-list::-webkit-scrollbar,
+.custom-fields-help > div::-webkit-scrollbar {
+  width: var(--biblib-spacing-sm);
 }
 
 .bibliography-modal::-webkit-scrollbar-track,
@@ -72,7 +117,7 @@
 .template-variables-list::-webkit-scrollbar-thumb,
 .custom-fields-help > div::-webkit-scrollbar-thumb {
   background-color: var(--background-modifier-border);
-  border-radius: 4px;
+  border-radius: var(--biblib-radius-sm);
 }
 
 .bibliography-modal::-webkit-scrollbar-thumb:hover,
@@ -85,22 +130,20 @@
 /* Modal Headings */
 .bibliography-modal h2,
 .bibliography-bulk-import-modal h2 {
-  margin-bottom: 20px;
+  margin-bottom: var(--biblib-spacing-lg);
   text-align: center;
   color: var(--text-normal);
 }
 
-/* General h3 within modal (can be overridden) */
 .bibliography-modal h3 {
-  margin-bottom: 20px;
+  margin-bottom: var(--biblib-spacing-lg);
   text-align: left;
   color: var(--text-normal);
 }
 
-/* Bulk Import h3 has specific margin */
 .bibliography-bulk-import-modal h3 {
-  margin-top: 24px;
-  margin-bottom: 16px;
+  margin-top: var(--biblib-spacing-xl);
+  margin-bottom: var(--biblib-spacing-md);
   color: var(--text-normal);
 }
 
@@ -216,12 +259,15 @@
   cursor: not-allowed;
 }
 
-/* Validation */
+/* Validation - using higher specificity instead of !important */
 .bibliography-modal input:invalid,
 .bibliography-modal select:invalid,
-.is-invalid, .has-error input {
-  border-color: var(--text-error) !important;
-  background-color: rgba(var(--color-red-rgb), 0.05) !important;
+.bibliography-modal .is-invalid,
+.bibliography-modal .has-error input,
+.bibliography-bulk-import-modal .is-invalid,
+.bibliography-bulk-import-modal .has-error input {
+  border-color: var(--text-error);
+  background-color: var(--background-modifier-error-hover);
 }
 
 /* File Input (Hidden by default) */
@@ -267,12 +313,11 @@
 }
 
 .bibliography-modal .create-button {
-  display: flex; /* Keep flex for centering content if needed */
-  justify-content: center; /* Example alignment */
-  align-items: center; /* Example alignment */
+  display: flex;
+  justify-content: center;
+  align-items: center;
   width: 100%;
-  margin-top: 20px;
-  /* padding: 12px; */ /* Consider if base padding is sufficient */
+  margin-top: var(--biblib-spacing-lg);
 }
 
 .bibliography-bibtex-button {
@@ -307,28 +352,25 @@
 /* Destructive / Remove Buttons */
 .bibliography-remove-contributor-button,
 .bibliography-remove-field-button {
-  padding: 4px 8px; /* Smaller padding */
+  padding: var(--biblib-spacing-xs) var(--biblib-spacing-sm);
   color: var(--text-error);
-  background-color: transparent; /* Usually transparent */
-  border-color: transparent; /* Usually transparent */
+  background-color: transparent;
+  border-color: transparent;
 }
 
 .bibliography-remove-contributor-button:hover,
 .bibliography-remove-field-button:hover {
   background-color: var(--background-modifier-error-hover);
   color: var(--text-error);
-  /* border-color: var(--text-error); */ /* Optional: add border on hover */
 }
 
 /* Cancel Button */
 .bibliography-modal .bibliography-cancel-button {
-  display: flex; /* Keep flex */
-  justify-content: center; /* Example alignment */
-  align-items: center; /* Example alignment */
+  display: flex;
+  justify-content: center;
+  align-items: center;
   width: 100%;
-  margin-top: 20px;
-  /* Inherits base styles */
-  /* padding: 12px; */ /* Consider if base padding is sufficient */
+  margin-top: var(--biblib-spacing-lg);
 }
 
 /* Link Button Container (in Temp Modal) */
@@ -344,17 +386,16 @@
 
 .bibliography-citoid-container {
   background-color: var(--background-secondary);
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 24px;
-  transition: all 0.3s ease;
-  overflow: hidden; /* Moved from collapsed state for consistency */
+  padding: var(--biblib-spacing-md);
+  border-radius: var(--biblib-radius-lg);
+  margin-bottom: var(--biblib-spacing-xl);
+  transition: padding var(--biblib-transition-normal);
+  overflow: hidden;
 }
 
 .bibliography-citoid-container.collapsed {
   padding-top: 0;
   padding-bottom: 0;
-  /* overflow: hidden; */ /* Already applied to base */
 }
 
 .bibliography-citoid-toggle {
@@ -613,21 +654,6 @@
   box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
 }
 
-/* Card-style custom fields in settings */
-.custom-frontmatter-field {
-  background-color: var(--background-secondary);
-  border-radius: 8px;
-  margin-bottom: 12px;
-  padding: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.custom-frontmatter-field:hover {
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
-  transform: translateY(-1px);
-}
-
 /* Improved toggle button styling */
 .checkbox-container {
   border-radius: 12px;
@@ -722,12 +748,12 @@
 
 /* Highlight non-standard CSL fields */
 .bibliography-additional-field.non-csl-field {
-	background-color: rgba(255, 0, 0, 0.1); /* Light red background */
-	border: 1px solid var(--text-error); /* Red border */
-	border-radius: 4px;
-    padding: 5px; /* Add slight padding */
-    margin-left: -5px; /* Counteract padding for alignment */
-    margin-right: -5px; /* Counteract padding for alignment */
+  background-color: var(--background-modifier-error-hover);
+  border: 1px solid var(--text-error);
+  border-radius: var(--biblib-radius-sm);
+  padding: 5px;
+  margin-left: -5px;
+  margin-right: -5px;
 }
 
 /* Container for value input in additional fields (if needed for specific styling) */
@@ -746,11 +772,17 @@
 
 .custom-frontmatter-field {
   border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-l);
-  padding: var(--size-4-4);
-  margin-bottom: var(--size-4-4);
+  border-radius: var(--biblib-radius-lg);
+  padding: var(--biblib-spacing-md);
+  margin-bottom: var(--biblib-spacing-md);
   background-color: var(--background-secondary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--biblib-shadow-sm);
+  transition: transform var(--biblib-transition-fast), box-shadow var(--biblib-transition-fast);
+}
+
+.custom-frontmatter-field:hover {
+  box-shadow: var(--biblib-shadow-lg);
+  transform: translateY(-1px);
 }
 
 /* Header for custom frontmatter field */
@@ -1071,19 +1103,18 @@
    ========================================================================== */
 
 .zotero-attachment-indicator {
-  margin-left: 8px;
-  font-size: 16px; /* Keep size specific */
+  margin-left: var(--biblib-spacing-sm);
+  font-size: 16px;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--biblib-radius-sm);
   background-color: var(--interactive-accent);
   color: var(--text-on-accent);
   font-weight: 500;
   display: inline-block;
-  /* vertical-align: right; */ /* This is not a standard value, maybe 'middle' or 'baseline'? */
-  vertical-align: middle; /* Adjusted alignment */
+  vertical-align: middle;
   cursor: help;
-  transition: background-color 0.2s ease;
-  animation: fade-in 0.3s ease-out forwards;
+  transition: background-color var(--biblib-transition-fast);
+  animation: fade-in var(--biblib-transition-normal) forwards;
 }
 
 .zotero-attachment-indicator:hover {
@@ -1136,98 +1167,127 @@
    CSL Key Styling
    ========================================================================== */
 
-/* IMPORTANT: This section should be updated whenever CSL_ALL_CSL_FIELDS changes in src/utils/csl-variables.ts */
+/*
+ * CSL field highlighting for frontmatter properties.
+ * To enable: add 'biblib-csl-styling-enabled' class to document.body
+ *
+ * NOTE: Update --biblib-csl-fields when CSL_ALL_CSL_FIELDS changes in
+ * src/utils/csl-variables.ts. Consider generating this list dynamically
+ * in TypeScript for easier maintenance.
+ */
 
-/* Default style for all frontmatter keys */
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property-key, /* Live Preview */
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line .cm-meta.cm-yaml-key /* Source Mode */
-{
-  /* Default style for all keys  */
+/* Default style for all frontmatter keys (dimmed) */
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property-key,
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line .cm-meta.cm-yaml-key {
   font-style: italic;
   opacity: 0.7;
 }
 
-/* These CSS selectors target CSL fields defined in the source */
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="id"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="type"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="title"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="author"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="editor"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="chair"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="translator"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="container-author"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="collection-editor"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="issued"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="accessed"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="year"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="month"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="day"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="volume"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="number"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="issue"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="page"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="container-title"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="collection-title"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="DOI"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="ISBN"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="ISSN"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="URL"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="publisher"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="publisher-place"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="abstract"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="language"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="event"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="event-place"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="genre"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="source"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="medium"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="note"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="scale"] .metadata-property-key,
-body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property[data-property-key="status"] .metadata-property-key,
+/* CSL field list - grouped by category for maintainability */
+/* Live Preview mode - using :is() for cleaner selectors */
+body.biblib-csl-styling-enabled .cm-s-obsidian .metadata-container .metadata-property:is(
+  /* Core fields */
+  [data-property-key="id"],
+  [data-property-key="type"],
+  [data-property-key="title"],
+  /* Name fields */
+  [data-property-key="author"],
+  [data-property-key="editor"],
+  [data-property-key="chair"],
+  [data-property-key="translator"],
+  [data-property-key="container-author"],
+  [data-property-key="collection-editor"],
+  /* Date fields */
+  [data-property-key="issued"],
+  [data-property-key="accessed"],
+  [data-property-key="year"],
+  [data-property-key="month"],
+  [data-property-key="day"],
+  /* Number fields */
+  [data-property-key="volume"],
+  [data-property-key="number"],
+  [data-property-key="issue"],
+  [data-property-key="page"],
+  /* Container fields */
+  [data-property-key="container-title"],
+  [data-property-key="collection-title"],
+  /* Identifier fields */
+  [data-property-key="DOI"],
+  [data-property-key="ISBN"],
+  [data-property-key="ISSN"],
+  [data-property-key="URL"],
+  /* Publication fields */
+  [data-property-key="publisher"],
+  [data-property-key="publisher-place"],
+  /* Other standard fields */
+  [data-property-key="abstract"],
+  [data-property-key="language"],
+  [data-property-key="event"],
+  [data-property-key="event-place"],
+  [data-property-key="genre"],
+  [data-property-key="source"],
+  [data-property-key="medium"],
+  [data-property-key="note"],
+  [data-property-key="scale"],
+  [data-property-key="status"]
+) .metadata-property-key {
+  font-style: normal;
+  font-weight: bold;
+  opacity: 1;
+  color: var(--interactive-accent);
+}
 
-/* Also target source mode keys */
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="id"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="type"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="title"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="author"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="editor"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="chair"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="translator"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="container-author"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="collection-editor"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="issued"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="accessed"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="year"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="month"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="day"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="volume"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="number"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="issue"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="page"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="container-title"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="collection-title"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="DOI"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="ISBN"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="ISSN"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="URL"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="publisher"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="publisher-place"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="abstract"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="language"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="event"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="event-place"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="genre"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="source"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="medium"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="note"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="scale"],
-body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key[cm-property-key="status"]
-{
-  /* Style for standard CSL keys - overrides default style */
-  font-style: normal !important;
-  font-weight: bold !important;
-  opacity: 1.0 !important;
-  color: var(--interactive-accent) !important;
+/* Source Mode - using :is() for cleaner selectors */
+body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key:is(
+  /* Core fields */
+  [cm-property-key="id"],
+  [cm-property-key="type"],
+  [cm-property-key="title"],
+  /* Name fields */
+  [cm-property-key="author"],
+  [cm-property-key="editor"],
+  [cm-property-key="chair"],
+  [cm-property-key="translator"],
+  [cm-property-key="container-author"],
+  [cm-property-key="collection-editor"],
+  /* Date fields */
+  [cm-property-key="issued"],
+  [cm-property-key="accessed"],
+  [cm-property-key="year"],
+  [cm-property-key="month"],
+  [cm-property-key="day"],
+  /* Number fields */
+  [cm-property-key="volume"],
+  [cm-property-key="number"],
+  [cm-property-key="issue"],
+  [cm-property-key="page"],
+  /* Container fields */
+  [cm-property-key="container-title"],
+  [cm-property-key="collection-title"],
+  /* Identifier fields */
+  [cm-property-key="DOI"],
+  [cm-property-key="ISBN"],
+  [cm-property-key="ISSN"],
+  [cm-property-key="URL"],
+  /* Publication fields */
+  [cm-property-key="publisher"],
+  [cm-property-key="publisher-place"],
+  /* Other standard fields */
+  [cm-property-key="abstract"],
+  [cm-property-key="language"],
+  [cm-property-key="event"],
+  [cm-property-key="event-place"],
+  [cm-property-key="genre"],
+  [cm-property-key="source"],
+  [cm-property-key="medium"],
+  [cm-property-key="note"],
+  [cm-property-key="scale"],
+  [cm-property-key="status"]
+) {
+  font-style: normal;
+  font-weight: bold;
+  opacity: 1;
+  color: var(--interactive-accent);
 }
 
 /* ==========================================================================
@@ -1235,14 +1295,14 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
    ========================================================================== */
 
 .zotero-connector-status {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    opacity: 0.8;
-    padding: 0 8px;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: var(--biblib-spacing-sm);
+  opacity: 0.8;
+  padding: 0 var(--biblib-spacing-sm);
+  cursor: pointer;
+  border-radius: var(--biblib-radius-sm);
+  transition: background-color var(--biblib-transition-fast);
 }
 
 .zotero-connector-status:hover {
@@ -1271,6 +1331,8 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
 
 /* ==========================================================================
    Utility & Visibility Classes
+   Note: !important is intentional for utility classes to ensure they
+   override component-specific display values when applied dynamically.
    ========================================================================== */
 
 .setting-hidden {
@@ -1278,16 +1340,16 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
 }
 
 .setting-visible {
-  display: block !important; /* Or flex, grid, etc. depending on context */
+  display: block !important;
 }
 
-/* These seem specific to an attachment container structure */
+/* Attachment container visibility */
 .attachment-container .hidden {
   display: none;
 }
 
 .attachment-container .visible {
-  display: block; /* Or flex, grid, etc. */
+  display: block;
 }
 
 /* ==========================================================================
@@ -1436,8 +1498,8 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
 .template-playground-wrapper,
 .template-settings-container,
 .template-guide-container {
-  margin: 20px 0;
-  padding-top: 8px;
+  margin: var(--biblib-spacing-lg) 0;
+  padding-top: var(--biblib-spacing-sm);
   border-top: 1px solid var(--background-modifier-border);
 }
 
@@ -1445,7 +1507,7 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
 .template-settings-container h3,
 .template-guide-container h3 {
   margin-top: 0;
-  margin-bottom: 12px;
+  margin-bottom: var(--biblib-spacing-md);
   font-size: 1em;
   font-weight: 600;
   color: var(--text-normal);
@@ -1456,11 +1518,11 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
   width: 100%;
   height: 200px;
   font-family: var(--font-monospace);
-  font-size: 14px;
+  font-size: var(--biblib-font-base);
   padding: 10px;
   background-color: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
+  border-radius: var(--biblib-radius-sm);
   box-sizing: border-box;
   resize: vertical;
 }
@@ -1472,47 +1534,47 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
 }
 
 /* ==========================================================================
-   Template Playground Styles 
+   Template Playground Styles
    ========================================================================== */
 
 .template-playground-container {
-  margin: 20px 0;
-  padding: 20px;
+  margin: var(--biblib-spacing-lg) 0;
+  padding: var(--biblib-spacing-lg);
   background-color: var(--background-secondary);
-  border-radius: 8px;
+  border-radius: var(--biblib-radius-lg);
   border: 1px solid var(--background-modifier-border);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--biblib-shadow-sm);
 }
 
 .template-playground-description {
   margin-top: 0;
-  margin-bottom: 16px;
+  margin-bottom: var(--biblib-spacing-md);
   color: var(--text-normal);
   font-size: 0.95em;
   line-height: 1.5;
 }
 
 .template-playground-input-container {
-  margin-bottom: 16px;
+  margin-bottom: var(--biblib-spacing-md);
 }
 
 .template-playground-label {
   display: block;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: var(--biblib-spacing-sm);
   color: var(--text-accent);
-  font-size: 14px;
+  font-size: var(--biblib-font-base);
 }
 
 .template-playground-textarea {
   width: 100%;
-  min-height: 180px !important;
+  min-height: 180px;
   font-family: var(--font-monospace);
-  font-size: 14px;
+  font-size: var(--biblib-font-base);
   padding: 10px;
   background-color: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
+  border-radius: var(--biblib-radius-sm);
   box-sizing: border-box;
   resize: vertical;
 }
@@ -1526,11 +1588,11 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
 .template-playground-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding: 12px;
+  gap: var(--biblib-spacing-md);
+  margin-bottom: var(--biblib-spacing-lg);
+  padding: var(--biblib-spacing-md);
   background-color: var(--background-primary);
-  border-radius: 6px;
+  border-radius: var(--biblib-radius-md);
   border: 1px solid var(--background-modifier-border);
   justify-content: space-between;
   align-items: center;
@@ -1540,7 +1602,7 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
 .template-playground-modes {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--biblib-spacing-md);
   flex: 1;
 }
 
@@ -1554,7 +1616,7 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
 .template-playground-toggle-label,
 .template-playground-examples-label {
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--biblib-font-base);
   color: var(--text-accent);
 }
 
@@ -1762,44 +1824,6 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
   border-color: var(--interactive-accent);
 }
 
-/* YAML preview specific styling */
-.yaml-preview-container {
-  padding: 16px;
-  background-color: var(--background-primary);
-  border-radius: 6px;
-  border: 1px solid var(--background-modifier-border);
-  margin-top: 16px;
-  max-height: 400px;
-  overflow: auto;
-}
-
-.yaml-preview-heading {
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 12px;
-  color: var(--text-accent);
-}
-
-.yaml-preview-explanation {
-  font-size: 14px;
-  line-height: 1.6;
-  margin-top: 8px;
-  color: var(--text-normal);
-}
-
-.yaml-preview-biblib-note {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--background-modifier-border);
-}
-
-.yaml-preview-biblib-note h4 {
-  font-size: 15px;
-  font-weight: 600;
-  margin: 0 0 12px 0;
-  color: var(--text-accent);
-}
-
 /* Frontmatter Preview Styling */
 .frontmatter-preview-code {
   padding: 0;
@@ -1822,21 +1846,24 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
 .yaml-preview-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
+  gap: var(--biblib-spacing-sm);
+  padding: var(--biblib-spacing-md);
   background-color: var(--background-primary);
-  border-radius: 4px;
+  border-radius: var(--biblib-radius-sm);
   border: 1px solid var(--background-modifier-border);
-  margin-top: 16px;
+  margin-top: var(--biblib-spacing-md);
   max-height: 300px;
   overflow: auto;
+  /* Firefox scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: var(--background-modifier-border) var(--background-primary);
 }
 
 .yaml-preview-heading {
-  font-size: 0.9em;
+  font-size: var(--biblib-font-md);
   font-weight: 600;
-  margin-bottom: 6px;
-  color: var(--text-normal);
+  margin-bottom: var(--biblib-spacing-sm);
+  color: var(--text-accent);
 }
 
 .standard-rendering {
