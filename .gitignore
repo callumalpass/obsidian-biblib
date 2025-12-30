@@ -30,3 +30,9 @@ recording-region4.mp4
 main.css
 obsidian.md-1745733339505.log
 .clump/issues
+
+# E2E testing
+.obsidian-unpacked
+test-results/
+playwright-report/
+playwright/.cache/

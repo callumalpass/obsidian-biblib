@@ -29,6 +29,11 @@ Example:
   - Thanks to @bepolymathe for the feature request
 - **Testing infrastructure**: Jest testing framework with initial test suites for citekey generator and template engine
 - **Expanded test coverage**: Added 127 new tests across 5 test files (190 total tests), covering yaml-utils, citoid service, and template-variable-builder-service
+- **Integration tests for citation mapping**: Added 46 integration tests covering the complete Zotero-to-CSL mapping workflow, including all item types and edge cases
+- **End-to-end testing**: Playwright-based e2e tests that run against a real Obsidian instance
+  - Tests command palette integration, modal workflows, and DOI lookup
+  - Automated screenshots captured at key points for visual verification
+  - Linux support via CDP connection to unpacked AppImage
 - **New template variable `authorsDisplay`**: Formatted author string for display (e.g., "J. Smith", "J. Smith and B. Jones", "J. Smith et al.")
 - (#21) **Citation-js fallback for Citoid service**: When Citoid (Wikipedia's citation API) lacks coverage for certain items (e.g., some ISBNs no longer available via WorldCat), the plugin now falls back to citation-js using Google APIs
   - Thanks to @platon-ivanov for this contribution
@@ -49,6 +54,7 @@ Example:
 
 ## Fixed
 
+- (#18) **Filename template: author variables now work** - The `{{authors}}`, `{{author}}`, `{{authors_family}}`, and `{{authors_given}}` template variables now work in filename templates. Previously these variables were not populated when generating literature note filenames.
 - **Template engine: trailing whitespace preserved in formatter arguments** - Formatters like `join`, `prefix`, and `split` now correctly preserve trailing whitespace (e.g., `{{authors|join: and }}` produces "Smith and Jones" instead of "SmithandJones")
 - (#11) **Template engine: object property access in array iteration** - When iterating over arrays of objects, properties are now directly accessible (e.g., `{{#authors}}{{family}}{{/authors}}` works correctly)
   - Thanks to @bepolymathe for reporting
@@ -56,4 +62,4 @@ Example:
   - Fixed 404 errors for Templating, Key Features, and Troubleshooting pages
   - Updated Settings documentation to match the actual tab names and order in the plugin
   - Section names now match the UI: "File Organization", "Templates", "Citation Keys", "Custom Fields", "Modal Configuration", "Zotero Integration", "Bibliography Export"
-  - Thanks to @Zichen-Wang for reporting
+  - Thanks to @chenghuang-coder for reporting
