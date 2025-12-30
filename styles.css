@@ -99,11 +99,16 @@
    Base Modal Styles
    ========================================================================== */
 
+/* Target the modal container when it contains our content */
+.modal:has(.bibliography-modal),
+.modal:has(.bibliography-bulk-import-modal) {
+  width: 900px;
+  max-width: 90vw;
+}
+
 .bibliography-modal,
 .bibliography-bulk-import-modal {
   padding: var(--biblib-spacing-lg);
-  width: 900px;
-  max-width: 90vw;
   max-height: 80vh;
   overflow-y: auto;
   box-sizing: border-box;
