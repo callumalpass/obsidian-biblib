@@ -19,18 +19,43 @@
   --biblib-radius-lg: 8px;
 
   /* Transitions */
-  --biblib-transition-fast: 0.2s ease;
-  --biblib-transition-normal: 0.3s ease;
+  --biblib-transition-fast: 0.15s ease;
+  --biblib-transition-normal: 0.25s ease;
+  --biblib-transition-slow: 0.4s ease;
 
-  /* Shadows */
-  --biblib-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --biblib-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.12);
-  --biblib-shadow-lg: 0 3px 6px rgba(0, 0, 0, 0.12);
+  /* Shadows - with dark mode compatible values */
+  --biblib-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+  --biblib-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05), 0 3px 6px rgba(0, 0, 0, 0.1);
+  --biblib-shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.05), 0 6px 12px rgba(0, 0, 0, 0.1);
+  --biblib-shadow-focus: 0 0 0 3px rgba(var(--interactive-accent-rgb), 0.25);
 
   /* Font sizes */
   --biblib-font-sm: 0.85em;
   --biblib-font-md: 0.9em;
   --biblib-font-base: 14px;
+}
+
+/* ==========================================================================
+   Reduced Motion Support
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .biblib-tab-navigation,
+  .bibliography-modal,
+  .bibliography-bulk-import-modal,
+  .biblib-settings-container {
+    --biblib-transition-fast: 0.01ms;
+    --biblib-transition-normal: 0.01ms;
+    --biblib-transition-slow: 0.01ms;
+  }
+
+  .bibliography-modal *,
+  .bibliography-bulk-import-modal *,
+  .biblib-settings-container * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ==========================================================================
@@ -40,34 +65,45 @@
 .biblib-tab-navigation {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 20px;
+  gap: var(--biblib-spacing-xs);
+  margin-bottom: var(--biblib-spacing-lg);
   border-bottom: 1px solid var(--background-modifier-border);
-  padding-bottom: 8px;
+  padding-bottom: var(--biblib-spacing-sm);
 }
 
 .biblib-tab-button {
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  padding: 8px 16px;
+  border-radius: var(--biblib-radius-sm);
+  padding: var(--biblib-spacing-sm) var(--biblib-spacing-md);
   color: var(--text-muted);
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all var(--biblib-transition-fast);
   white-space: nowrap;
 }
 
 .biblib-tab-button:hover {
   background: var(--background-modifier-hover);
   color: var(--text-normal);
+  transform: translateY(-1px);
+}
+
+.biblib-tab-button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.biblib-tab-button:active {
+  transform: translateY(0);
 }
 
 .biblib-tab-button.active {
   background: var(--interactive-accent);
   color: var(--text-on-accent);
   border-color: var(--interactive-accent);
+  box-shadow: var(--biblib-shadow-sm);
 }
 
 .biblib-settings-container {
@@ -151,6 +187,27 @@
 .bibliography-modal.loading {
   pointer-events: none;
   opacity: 0.7;
+  position: relative;
+}
+
+.bibliography-modal.loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border: 3px solid var(--background-modifier-border);
+  border-top-color: var(--interactive-accent);
+  border-radius: 50%;
+  animation: biblib-spin 0.8s linear infinite;
+}
+
+@keyframes biblib-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ==========================================================================
@@ -241,15 +298,25 @@
 .bibliography-modal textarea:focus {
   border-color: var(--interactive-accent);
   outline: none;
-  box-shadow: 0 0 0 2px var(--background-modifier-border); /* Consider var(--interactive-accent-border) if exists */
+  box-shadow: var(--biblib-shadow-focus);
+}
+
+/* Enhanced focus-visible for keyboard navigation */
+.bibliography-modal input:focus-visible,
+.bibliography-modal select:focus-visible,
+.bibliography-modal textarea:focus-visible,
+.bibliography-modal button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+  box-shadow: var(--biblib-shadow-focus);
 }
 
 .custom-frontmatter-field textarea:focus,
-.custom-frontmatter-field-name:focus { 
-   background-color: var(--background-primary);
-   border-color: var(--interactive-accent);
-   box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
-   outline: none;
+.custom-frontmatter-field-name:focus {
+  background-color: var(--background-primary);
+  border-color: var(--interactive-accent);
+  box-shadow: var(--biblib-shadow-focus);
+  outline: none;
 }
 
 .bibliography-modal input:disabled,
@@ -282,13 +349,13 @@
 /* Base Button Styles */
 .bibliography-modal button,
 .bibliography-bibtex-button {
-  padding: 8px 16px;
-  border-radius: 4px;
+  padding: var(--biblib-spacing-sm) var(--biblib-spacing-md);
+  border-radius: var(--biblib-radius-sm);
   border: 1px solid var(--background-modifier-border);
   background-color: var(--background-primary);
   color: var(--text-normal);
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition: all var(--biblib-transition-fast);
   font-weight: 500;
   box-sizing: border-box;
 }
@@ -296,20 +363,39 @@
 .bibliography-modal button:hover,
 .bibliography-bibtex-button:hover {
   background-color: var(--background-modifier-hover);
+  transform: translateY(-1px);
 }
 
-/* Primary Action / Accent Buttons */
+.bibliography-modal button:active,
+.bibliography-bibtex-button:active {
+  transform: translateY(0);
+}
+
+.bibliography-modal button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Primary Action Buttons */
 .bibliography-modal .create-button,
 .bibliography-bibtex-button {
   background-color: var(--interactive-accent);
   color: var(--text-on-accent);
-  border: none; /* Override base border */
+  border: none;
   font-weight: 600;
+  box-shadow: var(--biblib-shadow-sm);
 }
 
 .bibliography-modal .create-button:hover,
 .bibliography-bibtex-button:hover {
   background-color: var(--interactive-accent-hover);
+  box-shadow: var(--biblib-shadow-md);
+}
+
+.bibliography-modal .create-button:active,
+.bibliography-bibtex-button:active {
+  box-shadow: var(--biblib-shadow-sm);
 }
 
 .bibliography-modal .create-button {
@@ -318,35 +404,41 @@
   align-items: center;
   width: 100%;
   margin-top: var(--biblib-spacing-lg);
+  padding: 12px var(--biblib-spacing-md);
 }
 
 .bibliography-bibtex-button {
-  display: block; /* Make block */
+  display: block;
   margin-top: 10px;
 }
 
-/* Secondary / Add Buttons */
+/* Secondary Buttons */
 .bibliography-add-contributor-button,
 .bibliography-add-field-button {
   margin: 10px 0;
   width: 100%;
   background-color: var(--background-secondary);
-  /* Inherits base hover */
+  border: 1px dashed var(--background-modifier-border);
 }
 
-/* Tertiary / Utility Buttons (e.g., Regenerate Citekey) */
+.bibliography-add-contributor-button:hover,
+.bibliography-add-field-button:hover {
+  border-style: solid;
+  border-color: var(--interactive-accent);
+  color: var(--text-accent);
+}
+
+/* Tertiary / Utility Buttons */
 .bibliography-modal .citekey-regenerate-button {
-  padding: 4px 8px; /* Smaller padding */
-  margin-left: 8px;
-  font-size: 14px; /* Specific size */
+  padding: var(--biblib-spacing-xs) var(--biblib-spacing-sm);
+  margin-left: var(--biblib-spacing-sm);
+  font-size: var(--biblib-font-base);
   background-color: var(--background-secondary);
-  /* Inherits base text color */
-  /* Inherits base border */
 }
 
 .bibliography-modal .citekey-regenerate-button:hover {
   background-color: var(--background-modifier-hover);
-  color: var(--text-accent); /* Specific hover color */
+  color: var(--text-accent);
 }
 
 /* Destructive / Remove Buttons */
@@ -404,20 +496,25 @@
   justify-content: space-between;
   align-items: center;
   user-select: none;
-  margin-bottom: 10px; /* Only when expanded */
-  padding-top: 16px; /* Add padding when collapsed to maintain click area */
-  padding-bottom: 16px; /* Add padding when collapsed */
+  margin-bottom: var(--biblib-spacing-sm);
+  padding: var(--biblib-spacing-md);
+  margin: calc(-1 * var(--biblib-spacing-md));
+  margin-bottom: var(--biblib-spacing-sm);
+  border-radius: var(--biblib-radius-lg);
+  transition: background-color var(--biblib-transition-fast);
 }
+
 .bibliography-citoid-container.collapsed .bibliography-citoid-toggle {
-   margin-bottom: 0;
+  margin-bottom: calc(-1 * var(--biblib-spacing-md));
 }
 
 .bibliography-citoid-toggle:hover {
+  background-color: var(--background-modifier-hover);
   color: var(--text-accent);
 }
 
 .bibliography-citoid-toggle-icon {
-  transition: transform 0.3s ease;
+  transition: transform var(--biblib-transition-normal);
 }
 
 .bibliography-citoid-container.collapsed .bibliography-citoid-toggle-icon {
@@ -426,8 +523,8 @@
 
 .bibliography-citoid-content {
   opacity: 1;
-  max-height: 1000px; /* Adjust as needed */
-  transition: opacity 0.3s ease, max-height 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+  max-height: 1000px;
+  transition: opacity var(--biblib-transition-normal), max-height var(--biblib-transition-normal);
   overflow: hidden;
 }
 
@@ -442,15 +539,17 @@
 
 .bibliography-citoid-input-container,
 .bibliography-bibtex-container {
-  margin: 12px 0;
+  margin: var(--biblib-spacing-md) 0;
 }
 
 .bibliography-zotero-notice {
-  font-size: 0.85em;
+  font-size: var(--biblib-font-sm);
   color: var(--text-accent);
   font-style: italic;
-  margin-left: 10px;
-  padding-left: 5px;
+  margin-left: var(--biblib-spacing-sm);
+  padding: var(--biblib-spacing-xs) var(--biblib-spacing-sm);
+  background-color: var(--background-secondary-alt);
+  border-radius: var(--biblib-radius-sm);
   border-left: 2px solid var(--interactive-accent);
 }
 
@@ -719,19 +818,28 @@
 .bibliography-contributors-list,
 .bibliography-additional-fields,
 .bibliography-additional-fields-list {
-  margin: 10px 0;
+  margin: var(--biblib-spacing-md) 0;
 }
 
 .bibliography-contributor,
 .bibliography-additional-field {
   display: grid;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: var(--biblib-spacing-sm);
+  margin-bottom: var(--biblib-spacing-sm);
+  padding: var(--biblib-spacing-sm);
   align-items: center;
+  background-color: var(--background-secondary);
+  border-radius: var(--biblib-radius-sm);
+  transition: background-color var(--biblib-transition-fast);
+}
+
+.bibliography-contributor:hover,
+.bibliography-additional-field:hover {
+  background-color: var(--background-modifier-hover);
 }
 
 .bibliography-contributor {
-  grid-template-columns: 1fr 1fr 1fr auto; /* Type, First, Last, Remove */
+  grid-template-columns: 1fr 1fr 1fr auto;
 }
 
 .bibliography-additional-field {
@@ -750,10 +858,10 @@
 .bibliography-additional-field.non-csl-field {
   background-color: var(--background-modifier-error-hover);
   border: 1px solid var(--text-error);
-  border-radius: var(--biblib-radius-sm);
-  padding: 5px;
-  margin-left: -5px;
-  margin-right: -5px;
+}
+
+.bibliography-additional-field.non-csl-field:hover {
+  background-color: var(--background-modifier-error-hover);
 }
 
 /* Container for value input in additional fields (if needed for specific styling) */
