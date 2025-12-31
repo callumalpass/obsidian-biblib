@@ -1,29 +1,19 @@
-import { App, Modal, Notice, Setting, TFile, ButtonComponent } from 'obsidian';
+import { App, Notice, Setting, TFile, ButtonComponent } from 'obsidian';
 import { NoteSuggestModal } from './note-suggest-modal';
-import { FileSuggestModal } from '../components/file-suggest-modal';
+import { BaseBibliographyModal } from './base-bibliography-modal';
 import { BibliographyPluginSettings } from '../../types/settings';
 import { Contributor, AdditionalField, Citation, AttachmentData, AttachmentType } from '../../types/citation';
-import { ContributorField } from '../components/contributor-field';
-import { AdditionalFieldComponent } from '../components/additional-field';
 import { CitekeyGenerator } from '../../utils/citekey-generator';
 import { NoteCreationService, CitationService } from '../../services';
 
 // Define type for book entries used in this modal
 type BookEntry = { id: string; title: string; path: string; frontmatter: any };
 
-export class ChapterModal extends Modal {
-    // Services
-    private noteCreationService: NoteCreationService;
-    private citationService: CitationService;
-    
-    // Data state
-    private additionalFields: AdditionalField[] = [];
-    private contributors: Contributor[] = [];
-    private bookEntries: BookEntry[] = []; // Use defined type
-    private relatedNotePaths: string[] = [];
-    private selectedBook: BookEntry | null = null; // Use defined type
-    private attachmentData: AttachmentData[] = [];
-    
+export class ChapterModal extends BaseBibliographyModal {
+    // Chapter-specific data state
+    private bookEntries: BookEntry[] = [];
+    private selectedBook: BookEntry | null = null;
+
     // Form elements
     private idInput: HTMLInputElement;
     private titleInput: HTMLInputElement;
@@ -35,16 +25,13 @@ export class ChapterModal extends Modal {
     private monthDropdown: HTMLSelectElement;
     private dayInput: HTMLInputElement;
     private abstractInput: HTMLTextAreaElement;
-    private contributorsListContainer: HTMLDivElement;
-    private additionalFieldsContainer: HTMLDivElement;
     private doiInput: HTMLInputElement;
-    
-    // Attachment elements
+
+    // Attachment elements (chapter-specific)
     private attachmentTypeSelect: HTMLSelectElement;
-    private filePathDisplay: HTMLElement; 
+    private filePathDisplay: HTMLElement;
     private importSettingEl: HTMLElement;
     private linkSettingEl: HTMLElement;
-    // Store ButtonComponent instances directly
     private linkButtonComponent: ButtonComponent | null = null;
     private importButtonComponent: ButtonComponent | null = null;
 
@@ -52,16 +39,12 @@ export class ChapterModal extends Modal {
 
     constructor(
         app: App,
-        private settings: BibliographyPluginSettings,
+        settings: BibliographyPluginSettings,
         citationService: CitationService,
         noteCreationService: NoteCreationService,
         initialBookPath?: string
     ) {
-        super(app);
-
-        // Store injected services
-        this.citationService = citationService;
-        this.noteCreationService = noteCreationService;
+        super(app, settings, citationService, noteCreationService);
 
         this.initialBookPath = initialBookPath;
     }
@@ -465,198 +448,6 @@ export class ChapterModal extends Modal {
         // Link to existing file - store references for use with link dialog
         this.linkSettingEl = document.createElement('div');
     }
-    
-    /**
-     * Handle adding an import attachment
-     */
-    private addImportAttachment(): void {
-        // Create file input element
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = '*.*'; // Allow all file types
-        
-        // Handle file selection
-        fileInput.addEventListener('change', () => {
-            if (fileInput.files && fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                
-                // Create a new attachment data object
-                const newAttachment: AttachmentData = {
-                    type: AttachmentType.IMPORT,
-                    file: file,
-                    filename: file.name
-                };
-                
-                // Add to attachments list
-                this.attachmentData.push(newAttachment);
-                
-                // Update the display
-                this.updateAttachmentsDisplay();
-            }
-        });
-        
-        // Trigger file dialog
-        fileInput.click();
-    }
-    
-    /**
-     * Handle adding a link attachment
-     */
-    private addLinkAttachment(): void {
-        // Create a modal to select file from vault
-        new FileSuggestModal(this.app, (file) => {
-            // Create a new attachment data object
-            const newAttachment: AttachmentData = {
-                type: AttachmentType.LINK,
-                path: file.path
-            };
-            
-            // Add to attachments list
-            this.attachmentData.push(newAttachment);
-            
-            // Update the display
-            this.updateAttachmentsDisplay();
-        }).open();
-    }
-    
-    /**
-     * Update the display of attachments
-     */
-    private updateAttachmentsDisplay(displayEl?: HTMLElement): void {
-        // Find the display element if not provided
-        const attachmentsDisplayEl = displayEl || this.contentEl.querySelector('.bibliography-attachments-display');
-        if (!attachmentsDisplayEl) return;
-        
-        attachmentsDisplayEl.empty(); // Clear previous display
-        
-        if (this.attachmentData.length === 0) {
-            attachmentsDisplayEl.setText('No attachments added.');
-            return;
-        }
-        
-        const listEl = attachmentsDisplayEl.createEl('ul', { cls: 'bibliography-attachments-list' });
-        
-        this.attachmentData.forEach((attachment, index) => {
-            const listItemEl = listEl.createEl('li');
-            
-            // Determine display name based on attachment type
-            let displayName = '';
-            if (attachment.type === AttachmentType.IMPORT && attachment.file) {
-                displayName = attachment.filename || attachment.file.name;
-                listItemEl.createSpan({
-                    cls: 'attachment-type-badge import',
-                    text: 'IMPORT'
-                });
-            } else if (attachment.type === AttachmentType.LINK && attachment.path) {
-                displayName = attachment.path.split('/').pop() || attachment.path;
-                listItemEl.createSpan({
-                    cls: 'attachment-type-badge link',
-                    text: 'LINK'
-                });
-            }
-            
-            // Add file name
-            const nameSpan = listItemEl.createSpan({ text: displayName });
-            
-            // Add remove button
-            const removeButton = listItemEl.createEl('button', {
-                cls: 'bibliography-remove-attachment-button',
-                text: 'Remove'
-            });
-            removeButton.onclick = () => {
-                this.attachmentData.splice(index, 1);
-                this.updateAttachmentsDisplay(attachmentsDisplayEl as HTMLElement); // Refresh display
-            };
-        });
-    }
-
-    /**
-     * Add a contributor field to the UI and data model
-     */
-    private addContributorField(
-        role: string = 'author', 
-        family: string = '', 
-        given: string = '',
-        literal: string = ''
-    ): Contributor {
-        // Make sure the contributors container has the right class
-        this.contributorsListContainer.addClass('bibliography-contributors');
-        
-        // Normalize empty values
-        family = family || '';
-        given = given || '';
-        literal = literal || '';
-        
-        // Create contributor object
-        const contributor: Contributor = {
-            role,
-            family,
-            given,
-            literal
-        };
-        
-        // Add to contributors array - we push directly since we're handling duplicates by clearing
-        this.contributors.push(contributor);
-        
-        // Create and append the component to the UI
-        const component = new ContributorField(
-            this.contributorsListContainer,
-            contributor,
-            (contributorToRemove) => {
-                // Remove from contributors array - use a proper comparison since we need to find by value
-                const index = this.contributors.findIndex(c => 
-                    c.role === contributorToRemove.role &&
-                    c.family === contributorToRemove.family &&
-                    c.given === contributorToRemove.given &&
-                    c.literal === contributorToRemove.literal
-                );
-                
-                if (index !== -1) {
-                    this.contributors.splice(index, 1);
-                }
-            }
-        );
-        
-        // Return the created contributor
-        return contributor;
-    }
-
-    /**
-     * Add an additional field to the UI and data model
-     */
-    private addAdditionalField(name: string = '', value: any = '', type: string = 'standard'): void {
-        // Make sure the container has the right class
-        this.additionalFieldsContainer.addClass('bibliography-additional-fields');
-        // Create field object
-        const additionalField: AdditionalField = {
-            name,
-            value,
-            type
-        };
-        
-        // Create and append the component
-        const component = new AdditionalFieldComponent(
-            this.additionalFieldsContainer,
-            additionalField,
-            (field) => {
-                // Remove from additionalFields array
-                const index = this.additionalFields.findIndex(f => 
-                    f.name === field.name &&
-                    f.value === field.value &&
-                    f.type === field.type
-                );
-                
-                if (index !== -1) {
-                    this.additionalFields.splice(index, 1);
-                }
-            }
-        );
-        
-        // Add to additionalFields array if name provided
-        if (name) {
-            this.additionalFields.push(additionalField);
-        }
-    }
 
     /**
      * Populate form fields from book data for chapter creation
@@ -804,38 +595,6 @@ export class ChapterModal extends Modal {
                 this.addAdditionalField(field, fm[field], 'standard');
             }
         }
-    }
-    
-    /**
-     * Update the display of related notes
-     * @param displayEl The HTML element to update
-     */
-    private updateRelatedNotesDisplay(displayEl: HTMLElement): void {
-        displayEl.empty(); // Clear previous display
-
-        if (this.relatedNotePaths.length === 0) {
-            displayEl.setText('No notes selected.');
-            return;
-        }
-
-        const listEl = displayEl.createEl('ul', { cls: 'bibliography-related-notes-list' });
-
-        this.relatedNotePaths.forEach(notePath => {
-            const listItemEl = listEl.createEl('li');
-            // Display basename for better readability
-            const basename = notePath.substring(notePath.lastIndexOf('/') + 1);
-            listItemEl.createSpan({ text: basename }); // Display note name/path
-
-            // Add remove button
-            const removeButton = listItemEl.createEl('button', {
-                cls: 'bibliography-remove-related-note-button',
-                text: 'Remove'
-            });
-            removeButton.onclick = () => {
-                this.relatedNotePaths = this.relatedNotePaths.filter(p => p !== notePath);
-                this.updateRelatedNotesDisplay(displayEl); // Refresh the display
-            };
-        });
     }
     
     /**

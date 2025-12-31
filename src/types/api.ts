@@ -1,3 +1,5 @@
+import { CslName, CslDate } from './citation';
+
 /**
  * Response from the Citoid API
  */
@@ -15,14 +17,12 @@ export interface CitoidResponse {
     page?: string;
     language?: string;
     abstract?: string;
-    author?: any[];
-    issued?: {
-        'date-parts': any[][];
-    };
+    author?: CslName[];
+    issued?: CslDate;
     year?: string | number;
     ISBN?: string | string[];
     ISSN?: string | string[];
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 /**
@@ -43,15 +43,10 @@ export interface CrossRefResponse {
         page?: string;
         language?: string;
         abstract?: string;
-        author?: Array<{
-            family?: string;
-            given?: string;
-        }>;
-        issued?: {
-            'date-parts': any[][];
-        };
+        author?: CslName[];
+        issued?: CslDate;
         ISBN?: string[];
         ISSN?: string[];
-        [key: string]: any;
+        [key: string]: unknown;
     };
 }

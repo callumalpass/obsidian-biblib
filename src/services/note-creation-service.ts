@@ -5,6 +5,7 @@ import { ReferenceParserService, ParsedReference } from './reference-parser-serv
 import { NoteContentBuilderService } from './note-content-builder-service';
 import { AttachmentManagerService } from './attachment-manager-service';
 import { CitekeyGenerator } from '../utils/citekey-generator';
+import { DateParser } from '../utils/date-parser';
 
 /**
  * Input for creating a single literature note
@@ -502,14 +503,17 @@ export class NoteCreationService {
   } {
     const cslObject = parsedRef.cslData;
     
+    // Extract date fields using DateParser
+    const dateFields = DateParser.extractFields(cslObject);
+
     // Build citation object
     const citation: Citation = {
       id: citekey,
       type: cslObject.type || 'document',
       title: cslObject.title || 'Untitled',
-      year: this.extractYear(cslObject),
-      month: this.extractMonth(cslObject),
-      day: this.extractDay(cslObject),
+      year: dateFields.year,
+      month: dateFields.month,
+      day: dateFields.day,
       'title-short': cslObject['title-short'] || '',
       URL: cslObject.URL || '',
       DOI: cslObject.DOI || '',
@@ -572,61 +576,7 @@ export class NoteCreationService {
     
     return { citation, contributors, additionalFields, annotationContent };
   }
-  
-  /**
-   * Extract year from CSL object
-   */
-  private extractYear(cslObject: any): string {
-    // Try to get year from issued date
-    if (cslObject.issued && cslObject.issued['date-parts'] && 
-        cslObject.issued['date-parts'][0] && cslObject.issued['date-parts'][0][0]) {
-      return cslObject.issued['date-parts'][0][0].toString();
-    }
-    
-    // Fall back to 'year' field if present
-    if (cslObject.year) {
-      return cslObject.year.toString();
-    }
-    
-    return '';
-  }
-  
-  /**
-   * Extract month from CSL object
-   */
-  private extractMonth(cslObject: any): string {
-    // Try to get month from issued date
-    if (cslObject.issued && cslObject.issued['date-parts'] && 
-        cslObject.issued['date-parts'][0] && cslObject.issued['date-parts'][0][1]) {
-      return cslObject.issued['date-parts'][0][1].toString();
-    }
-    
-    // Fall back to 'month' field if present
-    if (cslObject.month) {
-      return cslObject.month.toString();
-    }
-    
-    return '';
-  }
-  
-  /**
-   * Extract day from CSL object
-   */
-  private extractDay(cslObject: any): string {
-    // Try to get day from issued date
-    if (cslObject.issued && cslObject.issued['date-parts'] && 
-        cslObject.issued['date-parts'][0] && cslObject.issued['date-parts'][0][2]) {
-      return cslObject.issued['date-parts'][0][2].toString();
-    }
-    
-    // Fall back to 'day' field if present
-    if (cslObject.day) {
-      return cslObject.day.toString();
-    }
-    
-    return '';
-  }
-  
+
   /**
    * Extract contributors from CSL object
    */

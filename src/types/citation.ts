@@ -258,6 +258,24 @@ export interface ZoteroCreator {
 }
 
 /**
+ * Unified creator input format for mapping from various sources.
+ * Handles both Zotero-style (firstName/lastName) and CSL-style (given/family) formats.
+ */
+export interface CreatorInput {
+    // CSL-style fields
+    family?: string;
+    given?: string;
+    literal?: string;
+    // Zotero-style fields
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+    // Metadata
+    creatorType?: string;
+    fieldMode?: number;
+}
+
+/**
  * Zotero item structure before conversion to CSL
  */
 export interface ZoteroItem {
@@ -273,7 +291,50 @@ export interface ZoteroItem {
     abstractNote?: string;
     extra?: string;
     tags?: Array<{ tag: string }>;
+    attachments?: ZoteroAttachment[];
     [key: string]: unknown;
+}
+
+/**
+ * Zotero attachment structure before conversion
+ */
+export interface ZoteroAttachment {
+    id?: string;
+    key?: string;
+    itemType: 'attachment';
+    linkMode?: 'linked_url' | 'imported_file' | 'linked_file';
+    contentType?: string;
+    title?: string;
+    url?: string;
+    filename?: string;
+    path?: string;
+    parentItem?: string;
+}
+
+/**
+ * Session item for connector-server with typed attachments
+ */
+export interface SessionItem extends Omit<ZoteroItem, 'attachments'> {
+    attachments?: ZoteroAttachment[];
+    id?: string;
+}
+
+/**
+ * Result of date parsing operations
+ */
+export interface ParsedDate {
+    /** Parsed date components as [year], [year, month], or [year, month, day] */
+    dateParts?: number[];
+    /** Raw unparsed string when structured parsing fails */
+    raw?: string;
+    /** Whether this represents the current date */
+    isCurrent?: boolean;
+    /** Year component for easy access */
+    year?: number;
+    /** Month component (1-12) for easy access */
+    month?: number;
+    /** Day component (1-31) for easy access */
+    day?: number;
 }
 
 /**

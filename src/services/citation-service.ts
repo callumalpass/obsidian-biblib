@@ -1,9 +1,6 @@
 import Cite from 'citation-js';
 import '@citation-js/plugin-bibtex';
-// Import date functions if available, otherwise provide simple fallbacks
-// You might need to install this: npm install @citation-js/date
-import { parse as parseDate } from '@citation-js/date';
-import { Citation, CslName, CslDate, ZoteroItem, ZoteroCreator } from '../types/citation';
+import { Citation, CslName, CslDate, ZoteroItem, ZoteroCreator, CreatorInput } from '../types/citation';
 import {
     ZOTERO_TYPES_TO_CSL,
     EXTRA_FIELDS_CSL_MAP,
@@ -12,121 +9,8 @@ import {
     FieldMapping,
     ConverterType
 } from '../data/zotero-mappings';
-
-// Fallback date parser if @citation-js/date is not available or fails
-const simpleParseDateFallback = (dateString: string): { 'date-parts': number[][] } | { 'raw': string } | undefined => {
-    if (!dateString) return undefined;
-    // Try YYYY-MM-DD, YYYY/MM/DD, YYYY-MM, YYYY/MM, YYYY
-    const isoMatch = dateString.match(/^(\d{4})(?:[-/](\d{1,2}))?(?:[-/](\d{1,2}))?/);
-    if (isoMatch) {
-        const year = parseInt(isoMatch[1], 10);
-        if (!isNaN(year)) {
-            const dateParts: number[][] = [[year]];
-            if (isoMatch[2]) {
-                const month = parseInt(isoMatch[2], 10);
-                if (!isNaN(month)) dateParts[0].push(month);
-            }
-            if (isoMatch[3]) {
-                const day = parseInt(isoMatch[3], 10);
-                if (!isNaN(day) && dateParts[0].length === 2) dateParts[0].push(day);
-            }
-            return { 'date-parts': dateParts };
-        }
-    }
-    // If it doesn't look like a structured date, return raw
-    return { 'raw': dateString };
-};
-
-const parseDateRobust = (dateStr: string | undefined | any): any => {
-    if (!dateStr) return undefined;
-    
-    // Function to return current date in CSL format
-    const getCurrentDate = () => {
-        const now = new Date();
-        return { 
-            'date-parts': [[
-                now.getFullYear(), 
-                now.getMonth() + 1, // JavaScript months are 0-indexed
-                now.getDate()
-            ]] 
-        };
-    };
-    
-    // Check for various forms of current date markers
-    // 1. String values
-    if (typeof dateStr === 'string') {
-        if (dateStr === "CURRENT" || dateStr === "CURREN" || dateStr === "CURRENT_DATE") {
-            return getCurrentDate();
-        }
-    } 
-    // 2. Objects with special properties
-    else if (typeof dateStr === 'object' && dateStr !== null) {
-        // Check if it's an object with a raw property containing a current date marker
-        if ('raw' in dateStr && typeof dateStr.raw === 'string' && 
-            (dateStr.raw === "CURRENT" || dateStr.raw === "CURREN" || dateStr.raw === "CURRENT_DATE")) {
-            return getCurrentDate();
-        }
-        // Check if it's a CURRENT_DATE object
-        else if ('CURRENT_DATE' in dateStr || dateStr.constructor?.name === 'CURRENT_DATE') {
-            return getCurrentDate();
-        }
-        // Check if it's the exact object named CURRENT_DATE or contains that string
-        else if (Object.prototype.toString.call(dateStr) === '[object CURRENT_DATE]' ||
-                String(dateStr).includes('CURRENT_DATE')) {
-            return getCurrentDate();
-        }
-    }
-    
-    try {
-        // Handle object or string input appropriately
-        let dateString: string;
-        if (typeof dateStr === 'string') {
-            dateString = dateStr;
-        } else if (typeof dateStr === 'object' && dateStr !== null && 'raw' in dateStr && typeof dateStr.raw === 'string') {
-            dateString = dateStr.raw;
-        } else {
-            console.warn(`Unable to process date: ${JSON.stringify(dateStr)}`);
-            return { 'raw': String(dateStr) };
-        }
-        
-        // @citation-js/date expects YYYY-MM-DD format primarily
-        const datePart = dateString.split('T')[0];
-        // Basic validation before passing to parseDate
-        if (/^\d{4}(?:-\d{1,2}(?:-\d{1,2})?)?$/.test(datePart)) {
-             // Use @citation-js/date if available and format matches
-            if (typeof parseDate === 'function') {
-                const parsed = parseDate(datePart);
-                // Check if parseDate returned a valid structure
-                if (parsed && parsed['date-parts'] && parsed['date-parts'][0] && parsed['date-parts'][0][0]) {
-                    return parsed;
-                }
-            }
-        }
-        // Fallback for other formats or if parseDate failed/unavailable
-        return simpleParseDateFallback(datePart);
-    } catch (e) {
-        console.warn(`Date parsing failed for "${dateStr}", using fallback:`, e);
-        // Safely handle string conversion for error output
-        const safeStr = typeof dateStr === 'string' ? dateStr : 
-                       (typeof dateStr === 'object' && dateStr !== null && 'raw' in dateStr) ? 
-                       String(dateStr.raw) : String(dateStr);
-        
-        // Try to get a string to parse as fallback
-        let fallbackStr = "";
-        if (typeof dateStr === 'string') {
-            fallbackStr = dateStr;
-        } else if (typeof dateStr === 'object' && dateStr !== null && 'raw' in dateStr && typeof dateStr.raw === 'string') {
-            fallbackStr = dateStr.raw;
-        } else {
-            return { 'raw': String(dateStr) };
-        }
-        
-        return simpleParseDateFallback(fallbackStr.split('T')[0]);
-    }
-};
-// --- End Date Handling ---
-
-import { CitoidService } from './api/citoid'; // Adjust path if needed
+import { DateParser } from '../utils/date-parser';
+import { CitoidService } from './api/citoid';
 import { Notice } from 'obsidian';
 import { CitekeyGenerator } from '../utils/citekey-generator'; // Adjust path if needed
 
@@ -171,7 +55,7 @@ const mapZoteroCreatorToCsl = (creator: any): { literal: string } | { family: st
 const ZOTERO_CONVERTERS: Record<ConverterType, { toTarget: (value: unknown) => unknown }> = {
     DATE: {
         toTarget: (date: unknown): CslDate | undefined => {
-            return parseDateRobust(date as string | undefined);
+            return DateParser.toCslDate(DateParser.parse(date));
         }
     },
     CREATORS: {
@@ -232,13 +116,13 @@ function parseExtraField(extraString: string | undefined): Record<string, unknow
 
             // Basic type detection (can be enhanced)
             if (cslKey.toLowerCase().includes('date') || key.toLowerCase().includes('date')) {
-                 const parsedDate = parseDateRobust(value);
-                 // Check if parsing yielded a standard CSL date structure
-                 if (parsedDate && (parsedDate['date-parts'] || parsedDate['raw'] || parsedDate['literal'])) {
-                     fields[cslKey] = parsedDate;
-                 } else {
-                     fields[cslKey] = value; // Keep raw value if parsing fails completely
-                 }
+                const cslDate = DateParser.toCslDate(DateParser.parse(value));
+                // Check if parsing yielded a standard CSL date structure
+                if (cslDate && (cslDate['date-parts'] || cslDate['raw'] || cslDate['literal'])) {
+                    fields[cslKey] = cslDate;
+                } else {
+                    fields[cslKey] = value; // Keep raw value if parsing fails completely
+                }
             } else {
                 fields[cslKey] = value;
             }

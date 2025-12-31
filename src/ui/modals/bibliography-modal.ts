@@ -1,10 +1,8 @@
-import { App, Modal, Notice, Setting, ButtonComponent } from 'obsidian';
+import { App, Notice, Setting, ButtonComponent } from 'obsidian';
 import { NoteSuggestModal } from './note-suggest-modal';
-import { FileSuggestModal } from '../components/file-suggest-modal';
+import { BaseBibliographyModal } from './base-bibliography-modal';
 import { BibliographyPluginSettings } from '../../types/settings';
 import { Contributor, AdditionalField, Citation, AttachmentData, AttachmentType } from '../../types/citation';
-import { ContributorField } from '../components/contributor-field';
-import { AdditionalFieldComponent } from '../components/additional-field';
 import { CitoidService } from '../../services/api/citoid';
 import { CitationService } from '../../services/citation-service';
 import { CitekeyGenerator } from '../../utils/citekey-generator';
@@ -17,17 +15,10 @@ import {
     NOTICE_DURATION_SHORT
 } from '../../constants';
 
-export class BibliographyModal extends Modal {
-    // Services
+export class BibliographyModal extends BaseBibliographyModal {
+    // Additional services specific to this modal
     private citoidService: CitoidService;
-    protected citationService: CitationService;
-    private noteCreationService: NoteCreationService;
-    
-    // Data state
-    protected additionalFields: AdditionalField[] = [];
-    protected contributors: Contributor[] = [];
-    protected relatedNotePaths: string[] = [];
-    
+
     // Form elements for reference and updating
     private idInput: HTMLInputElement;
     private typeDropdown: HTMLSelectElement;
@@ -45,39 +36,27 @@ export class BibliographyModal extends Modal {
     private languageDropdown: HTMLSelectElement;
     private doiInput: HTMLInputElement;
     private abstractInput: HTMLTextAreaElement;
-    private contributorsListContainer: HTMLDivElement;
-    private additionalFieldsContainer: HTMLDivElement;
-    
-    // Attachment UI elements
-    protected attachmentsDisplayEl: HTMLElement;
-    
-    // Multiple attachments support
-    protected attachmentData: AttachmentData[] = [];
-    
+
     // Storage for user-defined default field inputs
     private defaultFieldInputs: Map<string, HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> = new Map();
-    
+
     // Flag for whether the modal is initialized
     private isInitialized: boolean = false;
 
     // Track how the modal was opened
     private openedViaCommand: boolean = true;
-    
+
     constructor(
         app: App,
-        protected settings: BibliographyPluginSettings,
+        settings: BibliographyPluginSettings,
         citoidService: CitoidService,
         citationService: CitationService,
         noteCreationService: NoteCreationService,
         openedViaCommand: boolean = true
     ) {
-        super(app);
+        super(app, settings, citationService, noteCreationService);
 
-        // Store injected services
         this.citoidService = citoidService;
-        this.citationService = citationService;
-        this.noteCreationService = noteCreationService;
-
         this.openedViaCommand = openedViaCommand;
     }
 
@@ -143,32 +122,6 @@ export class BibliographyModal extends Modal {
             // Update the attachments display
             this.updateAttachmentsDisplay();
         }
-    }
-    
-    /**
-     * Update the display of attachments
-     */
-    protected updateAttachmentsDisplay(): void {
-        if (!this.attachmentsDisplayEl) return;
-        this.attachmentsDisplayEl.empty();
-
-        if (this.attachmentData.length === 0) {
-            this.attachmentsDisplayEl.createSpan({ text: 'No attachments', cls: 'setting-item-description' });
-            return;
-        }
-
-        const list = this.attachmentsDisplayEl.createEl('ul', { cls: 'bibliography-attachments-list' });
-        this.attachmentData.forEach((attachment, index) => {
-            const li = list.createEl('li');
-            const type = attachment.type === AttachmentType.IMPORT ? 'Import' : 'Link';
-            const name = attachment.type === AttachmentType.IMPORT
-                ? (attachment.filename || attachment.file?.name || 'Unknown')
-                : (attachment.path?.split('/').pop() || 'Unknown');
-
-            li.createSpan({ text: `${type}: ${name}` });
-            li.createEl('button', { text: '×', cls: 'bibliography-remove-attachment-button' })
-                .onclick = () => { this.attachmentData.splice(index, 1); this.updateAttachmentsDisplay(); };
-        });
     }
 
     private createCitoidLookupSection(contentEl: HTMLElement) {
@@ -284,60 +237,8 @@ export class BibliographyModal extends Modal {
         this.attachmentsDisplayEl = contentEl.createDiv({ cls: 'bibliography-attachments-display' });
         this.updateAttachmentsDisplay();
     }
-    
-    /**
-     * Handle adding an import attachment
-     */
-    private addImportAttachment(): void {
-        // Create file input element
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = '*.*'; // Allow all file types, not just PDF/EPUB
-        
-        // Handle file selection
-        fileInput.addEventListener('change', () => {
-            if (fileInput.files && fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                
-                // Create a new attachment data object
-                const newAttachment: AttachmentData = {
-                    type: AttachmentType.IMPORT,
-                    file: file,
-                    filename: file.name
-                };
-                
-                // Add to attachments list
-                this.attachmentData.push(newAttachment);
-                
-                // Update the display
-                this.updateAttachmentsDisplay();
-            }
-        });
-        
-        // Trigger file dialog
-        fileInput.click();
-    }
-    
-    /**
-     * Handle adding a link attachment
-     */
-    private addLinkAttachment(): void {
-        // Create a modal to select file from vault
-        new FileSuggestModal(this.app, (file) => {
-            // Create a new attachment data object
-            const newAttachment: AttachmentData = {
-                type: AttachmentType.LINK,
-                path: file.path
-            };
-            
-            // Add to attachments list
-            this.attachmentData.push(newAttachment);
-            
-            // Update the display
-            this.updateAttachmentsDisplay();
-        }).open();
-    }
-    
+
+
     private createMainForm(contentEl: HTMLElement) {
         const formContainer = contentEl.createDiv({ cls: 'bibliography-form' });
 
@@ -723,85 +624,6 @@ export class BibliographyModal extends Modal {
     }
 
     /**
-     * Add a contributor field to the form
-     */
-    private addContributorField(
-        role: string = 'author', 
-        family: string = '', 
-        given: string = '',
-        literal: string = ''
-    ): void {
-        // Make sure the contributors container has the right class
-        this.contributorsListContainer.addClass('bibliography-contributors');
-        
-        // Create contributor object
-        const contributor: Contributor = {
-            role,
-            family,
-            given,
-            literal
-        };
-        
-        // Always add to contributors array, even if empty
-        // This ensures the contributor exists in the array as soon as the field is created
-        this.contributors.push(contributor);
-        
-        // Create and append the component
-        const component = new ContributorField(
-            this.contributorsListContainer,
-            contributor,
-            (contributor) => {
-                // Remove from contributors array
-                const index = this.contributors.findIndex(c => 
-                    c.role === contributor.role &&
-                    c.family === contributor.family &&
-                    c.given === contributor.given &&
-                    c.literal === contributor.literal
-                );
-                
-                if (index !== -1) {
-                    this.contributors.splice(index, 1);
-                }
-            }
-        );
-    }
-
-    /**
-     * Add an additional field to the form
-     */
-    private addAdditionalField(name: string = '', value: any = '', type: string = 'standard'): void {
-        // Make sure the container has the right class
-        this.additionalFieldsContainer.addClass('bibliography-additional-fields');
-        // Create field object
-        const additionalField: AdditionalField = {
-            name,
-            value,
-            type
-        };
-        
-        // Create and append the component
-        const component = new AdditionalFieldComponent(
-            this.additionalFieldsContainer,
-            additionalField,
-            (field) => {
-                // Remove from additionalFields array
-                const index = this.additionalFields.findIndex(f => 
-                    f.name === field.name &&
-                    f.value === field.value &&
-                    f.type === field.type
-                );
-                
-                if (index !== -1) {
-                    this.additionalFields.splice(index, 1);
-                }
-            }
-        );
-        
-        // Always add to additionalFields array - we'll filter out empty ones when saving
-        this.additionalFields.push(additionalField);
-    }
-
-    /**
      * Create user-defined default fields
      */
     private createDefaultFields(container: HTMLElement): void {
@@ -1016,31 +838,7 @@ export class BibliographyModal extends Modal {
         return citation;
     }
 
-    /**
-     * Update the display of related notes
-     * @param displayEl The HTML element to update
-     */
-    protected updateRelatedNotesDisplay(displayEl: HTMLElement): void {
-        displayEl.empty();
 
-        if (this.relatedNotePaths.length === 0) {
-            displayEl.createSpan({ text: 'No related notes', cls: 'setting-item-description' });
-            return;
-        }
-
-        const list = displayEl.createEl('ul', { cls: 'bibliography-related-notes-list' });
-        this.relatedNotePaths.forEach(notePath => {
-            const li = list.createEl('li');
-            const basename = notePath.substring(notePath.lastIndexOf('/') + 1);
-            li.createSpan({ text: basename });
-            li.createEl('button', { text: '×', cls: 'bibliography-remove-related-note-button' })
-                .onclick = () => {
-                    this.relatedNotePaths = this.relatedNotePaths.filter(p => p !== notePath);
-                    this.updateRelatedNotesDisplay(displayEl);
-                };
-        });
-    }
-    
     private validateForm(citation: Citation): boolean {
         let isValid = true;
         let message = 'Please complete all required fields:';
