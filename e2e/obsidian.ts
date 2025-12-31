@@ -27,16 +27,23 @@ export async function launchObsidian(): Promise<ObsidianApp> {
   const vaultUri = `obsidian://open?path=${encodeURIComponent(E2E_VAULT_DIR)}`;
 
   // Launch Obsidian manually and connect via CDP
+  // Use --user-data-dir to force a separate Electron instance (prevents single-instance detection)
   const remoteDebuggingPort = 9222;
+  const userDataDir = path.join(PROJECT_ROOT, '.obsidian-config-e2e');
 
   const obsidianProcess = spawn(obsidianBinary, [
     '--no-sandbox',
     `--remote-debugging-port=${remoteDebuggingPort}`,
+    `--user-data-dir=${userDataDir}`,
     'open',
     vaultUri,
   ], {
     cwd: UNPACKED_DIR,
     stdio: ['ignore', 'pipe', 'pipe'],
+    env: {
+      ...process.env,
+      OBSIDIAN_CONFIG_DIR: userDataDir,
+    },
   });
 
   // Wait for DevTools to be ready

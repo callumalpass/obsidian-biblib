@@ -33,6 +33,7 @@ obsidian.md-1745733339505.log
 
 # E2E testing
 .obsidian-unpacked
+.obsidian-config-e2e
 test-results/
 playwright-report/
 playwright/.cache/
