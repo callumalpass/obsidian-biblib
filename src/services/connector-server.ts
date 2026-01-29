@@ -1,23 +1,20 @@
-import { App, Notice } from 'obsidian';
-import * as http from 'http';
-import * as https from 'https';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
+import * as http from 'http';
+import { App, Notice } from 'obsidian';
+import * as os from 'os';
 import * as path from 'path';
 import * as stream from 'stream';
 import * as url from 'url';
-import * as crypto from 'crypto';
-import * as os from 'os';
 import { promisify } from 'util';
-import { BibliographyPluginSettings } from '../types/settings';
-import { 
-    DEFAULT_ZOTERO_PORT, 
-    LOCALHOST,
-    NOTICE_DURATION_SHORT,
-    HTTP_STATUS,
-    CONTENT_TYPE,
-    ERROR_MESSAGES,
-    SUCCESS_MESSAGES
+import {
+	DEFAULT_ZOTERO_PORT,
+	ERROR_MESSAGES,
+	LOCALHOST,
+	NOTICE_DURATION_SHORT,
+	SUCCESS_MESSAGES
 } from '../constants';
+import { BibliographyPluginSettings } from '../types/settings';
 
 const pipeline = promisify(stream.pipeline);
 
@@ -231,8 +228,7 @@ export class ConnectorServer {
 
     // --- Endpoint Handlers ---
 
-    private async handlePing(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-        const clientVersion = req.headers['x-zotero-version'] || 'Unknown';
+	private async handlePing(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
         const clientApiVersion = parseInt(req.headers['x-zotero-connector-api-version']?.toString() || '0', 10);
 
 
@@ -241,9 +237,9 @@ export class ConnectorServer {
              body = await this.readRequestBody(req);
              try {
                  const payload = JSON.parse(body);
-                 if (payload.activeURL) {
-                 }
-             } catch (e) { /* ignore */ }
+				 if (payload.activeURL) { /* empty */ }
+				 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+			 } catch (e) { /* ignore */ }
         }
 
         if (clientApiVersion > CONNECTOR_API_VERSION_SUPPORTED) {
@@ -273,7 +269,8 @@ export class ConnectorServer {
 
     private async handleSaveItems(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
         const body = await this.readRequestBody(req);
-        let data;
+		let data;
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
         try { data = JSON.parse(body); } catch (e) { this.sendResponse(res, 400, { error: 'Invalid JSON data' }); return; }
         if (!data.items || !Array.isArray(data.items) || data.items.length === 0) { this.sendResponse(res, 400, { error: 'No items provided' }); return; }
 
@@ -283,9 +280,13 @@ export class ConnectorServer {
 
         // Calculate expected attachment IDs
         const expectedAttachmentIds = new Set<string>();
-        (primaryItem.attachments || []).forEach((att: any) => {
-            if (att.linkMode !== 'linked_url' && att.id) {
-                expectedAttachmentIds.add(att.id);
+		const attachments = primaryItem.attachments || [];
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		attachments.forEach((att: any) => {
+			// Include all attachments that have IDs, regardless of linkMode or existing localPath
+			// Zotero may send them via saveAttachment even if they already have localPath
+			if (att.id) {
+				expectedAttachmentIds.add(att.id);
             }
         });
 
@@ -301,14 +302,26 @@ export class ConnectorServer {
             processedAttachmentPaths: new Set<string>()
         });
 
-
         this.sendResponse(res, 200, { sessionID: sessionID });
         new Notice(`Receiving item from Zotero.`);
+
+		// Check if the session is already complete (e.g., no attachments expected)
+		// and dispatch the event if ready
+		this.checkAndDispatchIfComplete(sessionID);
+
+		// Also schedule a delayed check in case of attachment ID mismatches
+		// This handles cases where expected attachment IDs never get processed
+		setTimeout(() => {
+			if (!this.sessions.get(sessionID)?.eventDispatched) {
+				this.checkAndDispatchIfComplete(sessionID);
+			}
+		}, 5000); // Check again after 5 seconds
     }
 
     private async handleSaveSnapshot(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
         const body = await this.readRequestBody(req);
         let data;
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
         try { data = JSON.parse(body); } catch (e) { this.sendResponse(res, 400, { error: 'Invalid JSON data' }); return; }
 
         const sessionID = data.sessionID || crypto.randomUUID();
@@ -373,12 +386,13 @@ export class ConnectorServer {
         if (!metadataHeader) { this.sendResponse(res, 400, { error: 'X-Metadata header is required' }); return; }
         
         let metadata: AttachmentMetadata;
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
         try { metadata = JSON.parse(metadataHeader); } catch (e) { this.sendResponse(res, 400, { error: 'Invalid X-Metadata header' }); return; }
         
         const attachmentId = metadata.id || crypto.randomUUID();
         const title = metadata.title || 'Attachment';
         const sourceUrlForFilename = metadata.url || session.uri;
-        
+
         // Generate filename and path
         const filename = this.generateFilename(title, contentType, sourceUrlForFilename);
         const filePath = path.join(this.tempDir, filename);
@@ -424,6 +438,7 @@ export class ConnectorServer {
         // 3. Check for duplicate by content (title + URL + mime type)
         const parentItem = session.items[0];
         if (parentItem && parentItem.attachments) {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
             const existingAttachment = parentItem.attachments.find((att: any) => 
                 att.title === title && 
                 att.url === metadata.url && 
@@ -452,8 +467,21 @@ export class ConnectorServer {
 
         
         // Add to expected attachment IDs if not already present
+		// If this is a PDF and we're expecting an HTML attachment, this is likely a replacement/upgrade
         if (!session.expectedAttachmentIds.has(attachmentId)) {
             session.expectedAttachmentIds.add(attachmentId);
+
+			// Check if this PDF might be replacing a lower-quality attachment (like HTML catalog pages)
+			if (contentType === 'application/pdf' && title && title.toLowerCase().includes('pdf')) {
+				// Look for HTML catalog/snapshot attachments in expected IDs that might be replaced by this PDF
+				for (const expectedId of session.expectedAttachmentIds) {
+					const existingStatus = session.attachmentStatus[expectedId];
+					if (!existingStatus || existingStatus.progress === 0) {
+						// This might be a placeholder that won't actually arrive since Zotero replaced it with this PDF
+						console.log(`[BIBLIB] PDF attachment ${attachmentId} may be replacing expected attachment ${expectedId}`);
+					}
+				}
+			}
         }
         
         // Initialize attachment status
@@ -486,6 +514,7 @@ export class ConnectorServer {
                 };
                 
                 // Check for existing attachment with same ID
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const existingIndex = parentItem.attachments.findIndex((att: any) => att.id === attachmentId);
                 
                 if (existingIndex > -1) {
@@ -521,6 +550,7 @@ export class ConnectorServer {
     private async handleSaveSingleFile(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
         const body = await this.readRequestBody(req);
         let data;
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
         try { data = JSON.parse(body); } catch (e) { this.sendResponse(res, 400, { error: 'Invalid JSON data' }); return; }
 
         const sessionID = data.sessionID;
@@ -610,6 +640,7 @@ export class ConnectorServer {
                 };
                 
                 // Remove any existing HTML snapshots
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const existingIndex = parentItem.attachments.findIndex((att: any) => 
                     att.mimeType === 'text/html' || att.id === attachmentId);
                     
@@ -653,6 +684,7 @@ export class ConnectorServer {
     private async handleSessionProgress(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
         const body = await this.readRequestBody(req);
         let data;
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
         try { data = JSON.parse(body); } catch (e) { this.sendResponse(res, 400, { error: 'Invalid JSON data' }); return; }
 
         const sessionID = data.sessionID;
@@ -668,11 +700,11 @@ export class ConnectorServer {
 
         // Build progress items for response
         const progressItems = (session.items || []).map(item => {
-            const attachmentProgressList: any[] = [];
+			const attachmentProgressList: unknown[] = [];
             
             for (const expectedId of session.expectedAttachmentIds) {
                 const status = session.attachmentStatus[expectedId];
-                const initialAttachment = (item.attachments || []).find((att:any) => att.id === expectedId);
+				const initialAttachment = (item.attachments || []).find((att: any) => att.id === expectedId);
                 attachmentProgressList.push({
                     id: expectedId,
                     progress: status?.progress ?? 0,
@@ -757,18 +789,20 @@ export class ConnectorServer {
 
     private checkAndDispatchIfComplete(sessionID: string): void {
         const session = this.sessions.get(sessionID);
-        if (!session) return;
-        
-        if (session.eventDispatched) return;
+		if (!session) return;
+
+		if (session.eventDispatched) return;
+
+		const isComplete = this.isSessionComplete(session);
 
         // Check if session is complete
-        if (this.isSessionComplete(session)) {
+		if (isComplete) {
             
             // Get successfully processed files
             const savedFiles = Object.values(session.attachmentStatus)
                 .filter(status => status.progress === 100 && status.localPath)
-                .map(status => status.localPath!);
-            
+				.map(status => status.localPath!);
+
             // Dispatch event
             this.dispatchZoteroItemEvent(session.items[0], savedFiles, sessionID);
             
@@ -842,14 +876,13 @@ export class ConnectorServer {
      * Dispatches the main event with item data
      */
     private dispatchZoteroItemEvent(item: any, newFiles: string[], sessionID: string): void {
-        if (typeof document === 'undefined') return;
+		if (typeof document === 'undefined') return;
 
         const session = this.sessions.get(sessionID);
-        if (!session) return;
+		if (!session) return;
 
-        const currentItemState = session.items.find(i => i.id === item.id);
-        if (!currentItemState) return;
-
+		// Use the item directly since it's already from the session
+		const currentItemState = item;
 
         const event = new CustomEvent('zotero-item-received', {
             detail: {
@@ -857,27 +890,48 @@ export class ConnectorServer {
                 files: newFiles,
                 sessionID: sessionID
             }
-        });
-        document.dispatchEvent(event);
+		});
+		document.dispatchEvent(event);
     }
 
     /**
      * Checks if all expected attachments have reported a final status
      */
     private isSessionComplete(session: SessionData): boolean {
-        if (!session || !session.items || session.items.length === 0) return true;
-        if (!session.expectedAttachmentIds || session.expectedAttachmentIds.size === 0) return true;
+		if (!session || !session.items || session.items.length === 0) return true;
+		if (!session.expectedAttachmentIds || session.expectedAttachmentIds.size === 0) return true;
 
         let processedCount = 0;
+		let orphanedCount = 0;
+		const sessionAge = Date.now() - session.startTime;
+		const ORPHAN_TIMEOUT = 4000; // 4 seconds - if an attachment hasn't started processing, consider it orphaned
 
         for (const expectedId of session.expectedAttachmentIds) {
             const status = session.attachmentStatus[expectedId];
             if (status && (status.progress === 100 || status.progress === -1)) {
                 processedCount++;
+			} else if (!status && sessionAge > ORPHAN_TIMEOUT) {
+				// This attachment ID was expected but never started processing
+				// This is common when Zotero replaces HTML catalog pages with actual PDF attachments
+				orphanedCount++;
             }
         }
 
-        return processedCount >= session.expectedAttachmentIds.size;
+		// Calculate effective expected count (excluding orphaned attachments)
+		const effectiveExpectedCount = session.expectedAttachmentIds.size - orphanedCount;
+
+		// Simplified completion logic: 
+		// If we have at least one successfully processed attachment (especially PDFs),
+		// and enough time has passed, consider the session complete
+		const hasProcessedAttachments = processedCount > 0;
+		const allProcessedOrLongEnoughWait = processedCount >= effectiveExpectedCount ||
+			(hasProcessedAttachments && sessionAge > 3000);
+
+		const isComplete = allProcessedOrLongEnoughWait || effectiveExpectedCount === 0;
+
+
+
+		return isComplete;
     }
 
     private cleanupOldSessions(): void {
@@ -892,7 +946,6 @@ export class ConnectorServer {
             }
         }
         
-        if (deletedCount > 0) {
-        }
+		if (deletedCount > 0) { /* empty */ }
     }
 } // End of ConnectorServer class

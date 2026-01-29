@@ -215,7 +215,7 @@ export class ZoteroConnectorManager {
             new Notice('Invalid Zotero item received');
             console.error('Invalid Zotero item data in event detail:', event.detail);
             return;
-        }
+		}
 
         const itemId = item.id || 'unknown';
         
@@ -335,10 +335,10 @@ export class ZoteroConnectorManager {
      */
     private processZoteroAttachments(files: any[], modal: BibliographyModal): void {
         // Process attachments if we have any
-        if (!files || !Array.isArray(files) || files.length === 0) {
+		if (!files || !Array.isArray(files) || files.length === 0) {
             return;
-        }
-        
+		}
+
         let attachmentsAdded = 0;
         
         // Track already processed attachments to prevent duplicates
@@ -378,6 +378,7 @@ export class ZoteroConnectorManager {
                 }
                 // If 'files' contains paths (requires Node 'fs' on desktop):
                 else if (typeof filePath === 'string' && !Platform.isMobile) {
+					// eslint-disable-next-line @typescript-eslint/no-require-imports
                     const fs = require('fs');
                     if (fs.existsSync(filePath)) {
                         const fileName = filePath.split(/[/\\]/).pop() || 'document.pdf';
@@ -425,8 +426,8 @@ export class ZoteroConnectorManager {
      * This is specifically for slow-loading attachments like PDFs
      */
     private handleAdditionalAttachments(event: CustomEvent): void {
-        const { itemId, files, sessionID } = event.detail;
-        
+		const { itemId, files } = event.detail;
+
         if (!files || !Array.isArray(files) || files.length === 0) {
             return;
         }
