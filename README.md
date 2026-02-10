@@ -1,6 +1,6 @@
 # BibLib for Obsidian
 
-BibLib is an Obsidian plugin for managing bibliographic references. Each reference is stored as a Markdown note with metadata in YAML frontmatter using the [CSL-JSON](https://citeproc-js.readthedocs.io/en/latest/csl-json/markup.html) format.
+BibLib is an Obsidian plugin for managing bibliographic references. Each reference is stored as a Markdown note with metadata in YAML frontmatter using the [CSL-JSON](https://citeproc-js.readthedocs.io/en/latest/csl-json/markup.html) format. There is no database — references are plain text files in your vault, editable with any text editor and compatible with Git.
 
 Looking for a command-line workflow? See [biblib-cli](https://github.com/callumalpass/biblib-cli).
 
@@ -11,10 +11,9 @@ Looking for a command-line workflow? See [biblib-cli](https://github.com/calluma
 
 ## Overview
 
-- References are stored as Markdown files with CSL-JSON metadata in YAML frontmatter
-- Metadata can be fetched automatically via DOI, ISBN, PubMed ID, arXiv ID, or URL
-- The Zotero browser connector can send references directly to Obsidian (desktop only)
-- Bibliography files can be exported in CSL-JSON or BibTeX format for use with Pandoc
+References are stored as Markdown files with CSL-JSON metadata in YAML frontmatter. Because they are ordinary Obsidian notes, they can be linked, tagged, searched, and organized like any other note in your vault.
+
+Metadata can be fetched automatically via DOI, ISBN, PubMed ID, arXiv ID, or URL. The Zotero browser connector can send references directly to Obsidian (desktop only). Bibliography files can be exported in CSL-JSON or BibTeX format for use with Pandoc.
 
 ## Installation
 
@@ -39,10 +38,7 @@ Looking for a command-line workflow? See [biblib-cli](https://github.com/calluma
 
 ### Generating Bibliography Files
 
-- "BibLib: Build bibliography" creates `bibliography.json` (CSL-JSON format)
-- "BibLib: Export bibliography as BibTeX" creates `bibliography.bib`
-
-These files can be used with Pandoc for citation formatting.
+Run "BibLib: Build bibliography" to create `bibliography.json` (CSL-JSON) or "BibLib: Export bibliography as BibTeX" to create `bibliography.bib`. These files can be used with Pandoc for citation formatting.
 
 ## Data Format
 
@@ -69,7 +65,7 @@ tags:
 ```
 
 > [!NOTE]
-> Obsidian's Properties panel may show warnings for nested YAML fields like `author` arrays. This is a display limitation in Obsidian's metadata parser - the data is stored correctly and works with external tools.
+> Obsidian's Properties panel may show warnings for nested YAML fields like `author` arrays. This is a display limitation in Obsidian's metadata parser — the data is stored correctly and works with external tools.
 
 ## Settings
 

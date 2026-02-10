@@ -1,28 +1,24 @@
 # Getting Started
 
-This guide provides the basic steps to start using BibLib.
-
 ## Installation
 
-1.  Install the plugin through the Obsidian Community Plugins interface.
-2.  Enable the plugin in the "Community Plugins" section of Obsidian's settings.
+Install BibLib through the Community Plugins interface in Obsidian's settings. Search for "BibLib", install it, and enable it.
 
-## Initial Configuration
+## Initial configuration
 
-After installation, a few settings can be configured to suit your workflow.
+After installation, there are a few settings worth configuring before you start.
 
-1.  **Literature Note Tag:** Set a specific tag for your literature notes (default: `literature_note`). This tag is used by the plugin to identify reference notes in your vault.
-2.  **File Paths:**
-    *   **Literature note location:** Specify the folder where new literature notes will be saved.
-    *   **Attachment folder path:** Designate a folder for storing imported attachments like PDFs.
-3.  **Open note on create:** Choose whether to automatically open a new literature note after it's created.
+The **literature note tag** (default: `literature_note`) is how BibLib identifies reference notes in your vault. It is added to the frontmatter of every new literature note and is used when generating bibliography files. If you already use a tagging convention for references, you can change this to match.
 
-## Creating Your First Reference
+Under **file organization**, you can set the folder where new literature notes are saved and the folder where imported attachments (typically PDFs) are stored. By default, notes are created at the vault root and attachments go into a `biblib` folder. Setting a dedicated folder for literature notes (e.g., `references/`) keeps them grouped together.
 
-1.  Open the command palette (`Ctrl/Cmd + P`).
-2.  Run the command **"BibLib: Create Literature Note"**.
-3.  In the modal that appears, you can either manually fill in the bibliographic details or use the metadata lookup feature.
-    *   **Metadata Lookup:** Enter a DOI, ISBN, or URL in the "Auto-lookup" field and click "Lookup" to automatically populate the form.
-4.  Once the fields are filled, click **"Create Note"**.
+The **open note on create** setting controls whether new literature notes are opened automatically after creation.
 
-This will create a new Markdown file in the location you specified, with the bibliographic data stored in the YAML frontmatter.
+## Creating your first reference
+
+1. Open the command palette (`Ctrl/Cmd + P`).
+2. Run **"BibLib: Create Literature Note"**.
+3. In the modal, either fill in the bibliographic details manually or enter a DOI, ISBN, or URL in the "Auto-lookup" field and click **Lookup** to fetch the metadata automatically.
+4. Review the populated fields and click **"Create Note"**.
+
+This creates a Markdown file at the configured location with the bibliographic data in the YAML frontmatter. From here you can open the note and start annotating, or continue adding more references.

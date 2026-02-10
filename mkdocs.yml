@@ -55,6 +55,7 @@ nav:
   - 'Usage Guide': 'usage-guide.md'
   - 'Settings': 'settings.md'
   - 'Templating': 'templating-system-guide.md'
+  - 'Command-Line Interface': 'cli.md'
   - 'Bases View': 'bases-view.md'
   - 'Troubleshooting & FAQ': 'troubleshooting-faq.md'
   # - 'User Guide':

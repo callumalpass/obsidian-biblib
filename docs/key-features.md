@@ -1,43 +1,31 @@
 # Features
 
-## Literature Note Management
+## Literature note management
 
-- **Create Literature Notes**: Add references via modal interface with manual entry or automatic metadata lookup (DOI, ISBN, PubMed ID, arXiv ID, URL).
-- **Edit Literature Notes**: Modify existing reference metadata.
-- **Book Chapter Support**: Create chapter entries that link to parent book references.
+References are created through a modal interface. You can fill in fields manually, or provide an identifier (DOI, ISBN, PubMed ID, arXiv ID, or URL) to fetch metadata automatically. Pasting a BibTeX entry is also supported. Existing literature notes can be edited through a similar modal that pre-fills the current metadata.
 
-## Metadata Lookup
+BibLib includes support for book chapters as a distinct reference type. Chapter notes link to a parent book note, inheriting shared metadata (publisher, editors) while recording chapter-specific details like title, page range, and chapter authors.
 
-BibLib can fetch bibliographic metadata from:
+## Metadata lookup
 
-- **DOI**: Crossref
-- **ISBN**: Open Library
-- **PubMed ID**: PubMed
-- **arXiv ID**: arXiv
-- **URL**: Citoid service (extracts metadata from web pages)
+When creating a reference, you can enter an identifier and BibLib will fetch the bibliographic metadata from an appropriate source. DOIs are resolved via Crossref, ISBNs via Open Library, and PubMed and arXiv IDs via their respective APIs. For URLs, the Citoid service (maintained by the Wikimedia Foundation) extracts metadata from web pages. The fetched data is converted to CSL-JSON and used to populate the creation form.
 
-## Templating System
+## Templating
 
-Templates use Handlebars-style syntax and can customize:
+BibLib uses a Handlebars-style template engine for generating citekeys, filenames, note content, and custom frontmatter fields. Templates can reference any bibliographic field, apply formatters (case conversion, truncation, abbreviation), use conditionals, and iterate over arrays. This makes it possible to customize how references are named, filed, and structured without modifying the plugin itself.
 
-- **Citekeys**: Generate citation keys from bibliographic data
-- **Filenames**: Control file naming and folder organization
-- **Note Content**: Define the structure of new literature notes
-- **Custom Frontmatter**: Add fields to YAML frontmatter with templated values
+See the [Templating](templating-system-guide.md) page for the full syntax and available formatters.
 
-See the [Templating](templating-system-guide.md) page for details.
+## Import and export
 
-## Import and Export
+References can be bulk-imported from BibTeX (`.bib`) or CSL-JSON (`.json`) files. During import you can choose whether to use the existing citekeys or generate new ones, how to handle attachments, and what to do when a citekey already exists in the vault.
 
-- **Bulk Import**: Import references from BibTeX (`.bib`) or CSL-JSON (`.json`) files.
-- **Bibliography Export**: Generate CSL-JSON or BibTeX files from your literature notes.
+For export, BibLib generates CSL-JSON and BibTeX bibliography files from the literature notes in your vault. These files can be used with Pandoc or any other tool that accepts standard bibliography formats.
 
 ## Zotero Connector
 
-On desktop, BibLib can receive references from the Zotero Connector browser extension. This requires the Zotero desktop application to be closed (both use the same port).
+On desktop, BibLib can act as a receiver for the Zotero Connector browser extension. When enabled, clicking the Zotero button in your browser sends the reference data to Obsidian instead of Zotero, opening the creation modal with the fields pre-filled. PDFs are imported automatically when available. This requires the Zotero desktop application to be closed, since both use the same network port.
 
-## Attachment Management
+## Attachment management
 
-- **Import Attachments**: Copy PDFs and other files into your vault.
-- **Link Existing Files**: Connect literature notes to files already in your vault.
-- **Organized Storage**: Optionally create subfolders for each reference's attachments.
+Files can be imported into the vault (copied to a configurable attachment folder) or linked if they already exist in the vault. An optional setting creates a subfolder per reference, keeping attachments organized. During bulk import from Zotero-exported BibTeX files, BibLib resolves file paths from the BibTeX `file` field and imports the associated PDFs.
