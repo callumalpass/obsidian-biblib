@@ -2,6 +2,8 @@
 
 BibLib is an Obsidian plugin for managing bibliographic references. Each reference is stored as a Markdown note with metadata in YAML frontmatter using the [CSL-JSON](https://citeproc-js.readthedocs.io/en/latest/csl-json/markup.html) format.
 
+Looking for a command-line workflow? See [biblib-cli](https://github.com/callumalpass/biblib-cli).
+
 > [!NOTE]
 > For detailed documentation, see the [docs site](https://callumalpass.github.io/obsidian-biblib)
 
