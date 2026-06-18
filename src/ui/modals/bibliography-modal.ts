@@ -535,11 +535,6 @@ export class BibliographyModal extends BaseBibliographyModal {
                 this.idInput.value = id;
             }
             
-            // Auto-generate ID if not present but we have author and year
-            if (!id && (cslData.author || cslData.issued)) {
-                const citekey = CitekeyGenerator.generate(cslData, this.settings.citekeyOptions);
-                this.idInput.value = citekey;
-            }
             
             // Type dropdown - find closest match to CSL type
             const cslType = getString(cslData, 'type');
@@ -684,6 +679,12 @@ export class BibliographyModal extends BaseBibliographyModal {
                 }
             }
             
+            // Auto-generate ID only after the other information got  brought in
+            if (!this.idInput.value) {
+                const generatedId = CitekeyGenerator.generate(cslData, this.settings.citekeyOptions);
+                this.idInput.value = generatedId;
+            }
+            
         } catch (error) {
             console.error('Error populating form from CSL data:', error);
             new Notice('Error populating form. Some fields may be incomplete.');
@@ -786,10 +787,7 @@ export class BibliographyModal extends BaseBibliographyModal {
     protected getFormValues(): Citation {
         // Build citation object from form fields
         const citation: Citation = {
-            id: this.idInput.value || CitekeyGenerator.generate({ 
-                title: this.titleInput.value,
-                author: this.contributors.filter(c => c.role === 'author')
-            }, this.settings.citekeyOptions),
+            id: '', // Temporary - will be set at the end
             type: this.typeDropdown.value as (typeof CSL_TYPES)[number],
             title: this.titleInput.value,
             'title-short': this.titleShortInput.value || undefined,
@@ -890,6 +888,12 @@ export class BibliographyModal extends BaseBibliographyModal {
                 citation[fieldName] = value;
             }
         });
+        
+        if (!this.idInput.value) {
+            citation.id = CitekeyGenerator.generate(citation, this.settings.citekeyOptions);
+        } else {
+            citation.id = this.idInput.value;
+        }
         
         return citation;
     }
