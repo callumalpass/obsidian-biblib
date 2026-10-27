@@ -17,7 +17,9 @@ export class StatusBarService {
      * @param toggleCallback Optional callback function to toggle the server state
      */
     public addZoteroStatusBarItem(plugin: Plugin, toggleCallback?: () => Promise<void>): void {
-        // Create status bar item
+        // The connector is desktop-only. Avoid duplicate items on reinitialization.
+        if (Platform.isMobile || this.statusBarItem) return;
+
         this.statusBarItem = plugin.addStatusBarItem();
         
         // Add null check
@@ -55,6 +57,7 @@ export class StatusBarService {
         
         if (this.connectorServer) {
             // Server is running
+            this.statusBarItem.show();
             this.statusBarItem.empty();
             this.statusBarItem.addClass('active');
             this.statusBarItem.removeClass('inactive');
@@ -64,19 +67,13 @@ export class StatusBarService {
             iconSpan.textContent = '●'; // Filled circle for active
             
             const textSpan = this.statusBarItem.createSpan({ cls: 'status-text' });
-            textSpan.textContent = 'Zotero connected';
+            textSpan.textContent = 'Zotero connector active';
         } else {
-            // Server is not running
+            // A disabled connector should not occupy status bar space. Startup
+            // failures are reported by the connector manager through notices.
+            this.statusBarItem.hide();
             this.statusBarItem.empty();
-            this.statusBarItem.addClass('inactive');
             this.statusBarItem.removeClass('active');
-            
-            // Add icon and text
-            const iconSpan = this.statusBarItem.createSpan({ cls: 'status-icon' });
-            iconSpan.textContent = '○'; // Empty circle for inactive
-            
-            const textSpan = this.statusBarItem.createSpan({ cls: 'status-text' });
-            textSpan.textContent = 'Zotero disconnected';
         }
     }
 

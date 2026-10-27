@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 See [unreleased.md](docs/releases/unreleased.md) for upcoming changes.
 
+## [1.8.3] - 2026-10-27
+
+### Fixed
+
+- Hide the Zotero status-bar indicator when the connector is stopped or disabled, and omit it on mobile (#38).
+- Label the running connector accurately as "Zotero connector active" and prevent duplicate status-bar items.
+
 ## [1.8.2] - 2026-05-14
 
 ### Fixed
