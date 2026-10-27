@@ -282,7 +282,11 @@ export class NoteCreationService {
 	          if (importSettings.citekeyPreference === 'imported' && importedCitekey) {
 	            citekey = importedCitekey;
           } else {
-            citekey = CitekeyGenerator.generate(parsedRef.cslData, this.settings.citekeyOptions);
+            // remove the ID. otherwise the imported key always wins even if the user
+			// used importSettings.citekeyPreference to generate instead of use imported
+            const cslDataForGeneration = { ...parsedRef.cslData };
+            delete cslDataForGeneration.id;
+            citekey = CitekeyGenerator.generate(cslDataForGeneration, this.settings.citekeyOptions);
           }
           
           // Sanitize citekey
