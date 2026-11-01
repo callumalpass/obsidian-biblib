@@ -197,8 +197,13 @@ export class CitationService {
             }
             const data: unknown = JSON.parse(jsonString);
             const entry = this.normalizeCitationData(data, 'Citoid returned empty or invalid data.');
-            // Optionally prefix non-Zotero IDs if desired, e.g.,
-            // else { entry.id = `bib_${entry.id}`; }
+
+            // The id here is the BibTeX label Citoid made up (e.g. smith_title_2020), not the
+            // user's key: apply the citekey template unless "Use Zotero keys" is on.
+            if (!this.citekeyOptions.useZoteroKeys) {
+                entry.id = CitekeyGenerator.generate(entry, this.citekeyOptions);
+                delete (entry as MutableCitation)['citation-key'];
+            }
 
             return entry;
         } catch (error: unknown) {

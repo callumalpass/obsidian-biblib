@@ -68,7 +68,7 @@ export function renderCitekeyGenerationSection(
     // Citekey options
     new Setting(containerEl)
         .setName('Use Zotero keys (if available)')
-        .setDesc('When importing from Zotero, use their citekey instead of generating one using the template above.')
+        .setDesc('When importing from Zotero or looking up a DOI/URL/ISBN, keep the citekey Zotero assigns instead of generating one using the template above.')
         .addToggle(toggle => toggle
             .setValue(plugin.settings.citekeyOptions.useZoteroKeys)
             .onChange(async (value) => {

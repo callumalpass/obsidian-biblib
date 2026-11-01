@@ -36,3 +36,7 @@ Example:
 - Bulk import's "Generate new citekeys" option now applies the citekey template even when "Use Zotero keys" is enabled
   - Previously the imported key was kept, because the generator returned it when "Use Zotero keys" was on
   - Thanks to @maddie-m for spotting this in #35
+- DOI/URL/ISBN lookups in the new literature note modal now apply your citekey template
+  - Previously the citekey field was filled with the BibTeX label Citoid generates (e.g. `smith_deep_2020`), so the template was ignored unless you pressed "Regenerate citekey"
+  - Turn on "Use Zotero keys" to keep the previous behaviour
+  - Thanks to @Noctis-Xu for reporting in #18
