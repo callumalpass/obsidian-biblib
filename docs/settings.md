@@ -82,3 +82,5 @@ Controls which CSL-JSON fields appear as primary inputs in the creation modal. T
 **BibTeX file path** — Where the exported BibTeX file is written (default: `biblib/bibliography.bib`).
 
 **Rebuild automatically** — When enabled, the bibliography JSON, citekey list and BibTeX file are rebuilt a few seconds after a literature note is created, edited, renamed or deleted, so tools such as Pandoc Reference List always see current data (default: off).
+
+**Export profiles** — Extra bibliography files limited to some of your literature notes, for example one per project. Each profile has a name, an optional **folder** (only notes in that folder and its subfolders) and an optional **tag** (only notes that also carry that tag, case-insensitive), plus a JSON path and/or a BibTeX path. Profiles are written by the same *Build bibliography* and *Export bibliography as bibtex* commands as the main files, and by automatic rebuilds. To tag notes by project when you create them, add the project tag to the *Literature note tag* setting or define a custom frontmatter field.

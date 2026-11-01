@@ -27,6 +27,8 @@ Example:
 
 - (#32) **Automatic bibliography rebuild**: a new "Rebuild automatically" setting (Bibliography export) rebuilds the bibliography JSON, citekey list and BibTeX file a few seconds after a literature note is created, edited, renamed or deleted
   - Thanks to @bepolymathe for the suggestion
+- (#22) **Export profiles**: write extra bibliography JSON and/or BibTeX files limited to the literature notes in a folder and/or with a tag, for example one bibliography per project. Configure them under Bibliography export → Export profiles
+  - Thanks to @NgChongKai for the suggestion
 
 ## Fixed
 
