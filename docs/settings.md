@@ -12,7 +12,9 @@ The settings interface is organized into tabs. This page documents each tab and 
 
 **Attachment folder path** — The folder where imported attachments are stored (default: `biblib`).
 
-**Create subfolder for attachments** — When enabled, each reference's attachments are placed in a subfolder named after the citekey (e.g., `biblib/smith2023/document.pdf`).
+**Create subfolder for attachments** — When enabled, each reference's attachments are placed in a subfolder named after the citekey (e.g., `biblib/smith2023/smith2023.pdf`).
+
+**Attachment filename template** — A template for imported attachment filenames, without the extension (default: `{{citekey}}`). It supports the same variables as the note filename template, such as `{{author}} {{year}} - {{title}}`. Forward slashes create subfolders. Characters that aren't allowed in filenames or links are replaced with `_`, and if a file with the same name exists, a suffix such as `_1` is added rather than overwriting it.
 
 **Literature note location** — The folder where new literature notes are saved. Defaults to the vault root.
 

@@ -7,6 +7,7 @@ import { AttachmentManagerService } from './attachment-manager-service';
 import { CitekeyGenerator } from '../utils/citekey-generator';
 import { DateParser } from '../utils/date-parser';
 import { TemplateEngine } from '../utils/template-engine';
+import { buildFilenameVariables } from '../utils/filename-variables';
 import { CSL_TYPES } from '../utils/csl-variables';
 import {
   asRecordArray,
@@ -103,7 +104,7 @@ export class NoteCreationService {
           if (attachment.type !== AttachmentType.NONE) {
             let path = '';
             if (attachment.type === AttachmentType.IMPORT && attachment.file) {
-              path = await this.attachmentManager.importAttachment(attachment, citation.id) || '';
+              path = await this.attachmentManager.importAttachment(attachment, citation.id, citation) || '';
             } else if (attachment.type === AttachmentType.LINK && attachment.path) {
               path = this.attachmentManager.resolveLinkedAttachmentPath(attachment) || '';
             }
@@ -308,7 +309,7 @@ export class NoteCreationService {
             if (attachmentPath) {
               // If found in vault, move to proper location
               attachmentPath = await this.attachmentManager.organizeImportedAttachment(
-                attachmentPath, citekey
+                attachmentPath, citekey, parsedRef.cslData
               ) || '';
               
               if (attachmentPath) attachmentsImported++;
@@ -389,7 +390,7 @@ export class NoteCreationService {
                       };
 
                       // Import the attachment
-                      attachmentPath = await this.attachmentManager.importAttachment(attachmentData, citekey) || '';
+                      attachmentPath = await this.attachmentManager.importAttachment(attachmentData, citekey, parsedRef.cslData) || '';
                       if (attachmentPath) {
                         attachmentsImported++;
                         break; // Stop after first successful import for this reference
@@ -631,55 +632,7 @@ export class NoteCreationService {
       // First get the filename template
       const filenameTemplate = this.settings.filenameTemplate;
       
-      // Set up the variables to use in the template
-	      const variables: Record<string, unknown> = {
-	        citekey: id,
-        // Add date-related variables
-        currentDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
-      };
-      
-      // If citation data is available, add those variables too
-	      const citationRecord = isRecord(citation) ? citation : undefined;
-	      if (citationRecord) {
-	        Object.assign(variables, {
-	          title: getString(citationRecord, 'title') || '',
-	          // Bulk imports and edited notes carry the date only in CSL `issued`
-	          year: DateParser.extractFields(citationRecord).year,
-	          type: getString(citationRecord, 'type') || '',
-	          'container-title': getString(citationRecord, 'container-title') || '',
-	        });
-
-	        // Add author-related template variables
-	        // Extract authors from citation.author (CSL-JSON format)
-	        const authors = asRecordArray(citationRecord.author);
-	        if (authors.length > 0) {
-	          // authors: Array of formatted full names (e.g., ["John Smith", "Jane Doe"])
-	          variables.authors = authors.map((a) => {
-	            const literal = getString(a, 'literal');
-	            if (literal) return literal;
-	            const family = getString(a, 'family') || '';
-	            const given = getString(a, 'given') || '';
-	            if (family && given) return `${given} ${family}`;
-	            return family || given || '';
-	          }).filter(Boolean);
-
-	          // authors_family: Array of family names only
-	          variables.authors_family = authors
-	            .map((a) => getString(a, 'family') || getString(a, 'literal') || '')
-	            .filter(Boolean);
-
-	          // authors_given: Array of given names only
-	          variables.authors_given = authors
-	            .map((a) => getString(a, 'given') || '')
-	            .filter(Boolean);
-
-          // author: First author's family name (for citekey-style templates)
-	          const firstAuthor = authors[0];
-	          if (firstAuthor) {
-	            variables.author = getString(firstAuthor, 'family') || getString(firstAuthor, 'literal') || '';
-	          }
-	        }
-	      }
+      const variables = buildFilenameVariables(id, citation);
 	      
 	      // Use template engine to render the filename
 	      fileName = TemplateEngine.render(filenameTemplate, variables);

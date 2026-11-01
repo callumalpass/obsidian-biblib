@@ -98,6 +98,7 @@ export interface BibliographyPluginSettings {
         literatureNotePath: string;
         filenameTemplate: string; // Filename template option
         createAttachmentSubfolder: boolean;
+        attachmentFilenameTemplate: string; // Template for imported attachment filenames
         // Bibliography and file options
         bibliographyJsonPath: string;
         citekeyListPath: string;
@@ -139,6 +140,7 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         literatureNotePath: '/',
         filenameTemplate: '@{{citekey}}',
         createAttachmentSubfolder: true,
+        attachmentFilenameTemplate: '{{citekey}}',
         bibliographyJsonPath: 'biblib/bibliography.json',
         citekeyListPath: 'citekeylist.md',
         bibtexFilePath: 'biblib/bibliography.bib',
