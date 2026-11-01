@@ -29,6 +29,8 @@ Example:
   - Thanks to @bepolymathe for the suggestion
 - (#22) **Export profiles**: write extra bibliography JSON and/or BibTeX files limited to the literature notes in a folder and/or with a tag, for example one bibliography per project. Configure them under Bibliography export → Export profiles
   - Thanks to @NgChongKai for the suggestion
+- (#10) **Attachment filename template**: a new setting (File organization) names imported attachments using the same variables as note filenames, e.g. `{{author}} {{year}} - {{title}}`; use `/` for subfolders. The default `{{citekey}}` keeps the current naming
+  - Thanks to @bepolymathe for the suggestion
 
 ## Fixed
 

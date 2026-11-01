@@ -39,6 +39,17 @@ export function renderFilePathSettings(
             }));
 
     new Setting(containerEl)
+        .setName('Attachment filename template')
+        .setDesc('Template for imported attachment filenames, without the extension. Supports the same variables as the note filename template; use "/" for subfolders. Existing files are never overwritten.')
+        .addText(text => text
+            .setPlaceholder('{{citekey}}')
+            .setValue(plugin.settings.attachmentFilenameTemplate)
+            .onChange(async (value) => {
+                plugin.settings.attachmentFilenameTemplate = value.trim() || '{{citekey}}';
+                await plugin.saveSettings();
+            }));
+
+    new Setting(containerEl)
         .setName('Literature note location')
         .setDesc('The folder where literature notes will be stored. Use forward slashes for subfolders. Use "/" for vault.')
         .addText(text => text
