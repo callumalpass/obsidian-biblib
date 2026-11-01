@@ -485,7 +485,8 @@ export class BibliographyModal extends BaseBibliographyModal {
                 btn.setIcon('reset').setTooltip('Regenerate citekey').onClick(() => {
                     const formData = this.getFormValues();
                     if (formData.title || formData.author?.length) {
-                        this.idInput.value = CitekeyGenerator.generate(formData, this.settings.citekeyOptions);
+                        // Drop the current key so "Use Zotero keys" doesn't hand it straight back
+                        this.idInput.value = CitekeyGenerator.generate({ ...formData, id: '' }, this.settings.citekeyOptions);
                     } else {
                         new Notice('Add author and title first to generate citekey');
                     }
@@ -786,10 +787,8 @@ export class BibliographyModal extends BaseBibliographyModal {
     protected getFormValues(): Citation {
         // Build citation object from form fields
         const citation: Citation = {
-            id: this.idInput.value || CitekeyGenerator.generate({ 
-                title: this.titleInput.value,
-                author: this.contributors.filter(c => c.role === 'author')
-            }, this.settings.citekeyOptions),
+            // Generated at the end if empty, once date and authors are filled in
+            id: this.idInput.value,
             type: this.typeDropdown.value as (typeof CSL_TYPES)[number],
             title: this.titleInput.value,
             'title-short': this.titleShortInput.value || undefined,
@@ -890,6 +889,10 @@ export class BibliographyModal extends BaseBibliographyModal {
                 citation[fieldName] = value;
             }
         });
+
+        if (!citation.id) {
+            citation.id = CitekeyGenerator.generate(citation, this.settings.citekeyOptions);
+        }
         
         return citation;
     }
