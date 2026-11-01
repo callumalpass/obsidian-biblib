@@ -30,7 +30,7 @@ See the [Templating](templating-system-guide.md) page for the full syntax refere
 
 **Citekey template** — The template for generating citekeys (default: `{{author|lowercase}}{{title|titleword}}{{year}}`). Any bibliographic field can be used, along with formatters.
 
-**Use Zotero keys (if available)** — When enabled, references imported via the Zotero Connector or from Zotero-exported files use the citekey assigned by Zotero instead of generating a new one.
+**Use Zotero keys (if available)** — When enabled, references imported via the Zotero Connector or from Zotero-exported files, and DOI/URL/ISBN lookups (which go through Wikipedia's Zotero-based Citoid service), use the citekey assigned by Zotero instead of generating a new one.
 
 **Minimum citekey length** — If a generated citekey is shorter than this value (default: 6), a random numeric suffix is appended.
 
