@@ -29,3 +29,7 @@ Example:
   - Templates such as `{{authors_family.0|lowercase}}{{year}}`, which the settings tab suggests, previously dropped the author and produced keys like `2023`
   - The citekey template's "Reset to default" button now restores the actual default template
   - Thanks to @Noctis-Xu for reporting
+- Citekeys generated in the new literature note modal now use the full form data
+  - When the citekey field was left empty, the key was generated from only the title and authors, so templates using `{{year}}` produced keys without a year
+  - The "Regenerate citekey" button now applies the template even when "Use Zotero keys" is enabled
+  - Thanks to @maddie-m for the original fix in #35
