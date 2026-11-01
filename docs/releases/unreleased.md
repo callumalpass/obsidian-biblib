@@ -40,3 +40,7 @@ Example:
   - Previously the citekey field was filled with the BibTeX label Citoid generates (e.g. `smith_deep_2020`), so the template was ignored unless you pressed "Regenerate citekey"
   - Turn on "Use Zotero keys" to keep the previous behaviour
   - Thanks to @Noctis-Xu for reporting in #18
+- Renaming a note after a citekey change now uses the same filename as note creation
+  - Filename templates with subfolders (e.g. `{{type}}/@{{citekey}}`) move the note into that subfolder instead of renaming it to `article-journal-@key.md`
+  - Notes at the vault root are renamed correctly
+- `{{year}}` in filename templates now works for bulk-imported references and edited notes, which store the date only in `issued`

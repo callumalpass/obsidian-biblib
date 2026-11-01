@@ -620,9 +620,10 @@ export class NoteCreationService {
   }
   
   /**
-   * Get the full, normalized path for a literature note
+   * Get the full, normalized path for a literature note, from the filename template.
+   * Also used by the edit modal when renaming a note after a citekey change.
    */
-	  private getLiteratureNotePath(id: string, citation?: unknown): string {
+	  getLiteratureNotePath(id: string, citation?: unknown): string {
 	    let fileName = '';
     
     // If using the new filename template, use it to generate the filename
@@ -642,7 +643,8 @@ export class NoteCreationService {
 	      if (citationRecord) {
 	        Object.assign(variables, {
 	          title: getString(citationRecord, 'title') || '',
-	          year: getStringOrNumber(citationRecord, 'year') || '',
+	          // Bulk imports and edited notes carry the date only in CSL `issued`
+	          year: DateParser.extractFields(citationRecord).year,
 	          type: getString(citationRecord, 'type') || '',
 	          'container-title': getString(citationRecord, 'container-title') || '',
 	        });
