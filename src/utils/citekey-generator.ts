@@ -270,6 +270,8 @@ export class CitekeyGenerator {
         * - `title` - Full title
         * - `shorttitle` - First 3 significant words
         * - `authors` - Array of author objects for iteration
+        * - `authors_family` / `authors_given` - Arrays of author family/given names,
+        *   matching the note and filename template variables (e.g. `{{authors_family.0}}`)
         *
         * These variables can be used in templates with formatters:
         * `{{author|lowercase}}{{year}}` or `{{shorttitle|upper}}`
@@ -293,6 +295,8 @@ export class CitekeyGenerator {
         * //   title: 'The Art of Computer Programming',
         * //   shorttitle: 'artcomputerprogramming',
         * //   authors: [{family: 'Smith'}],
+        * //   authors_family: ['Smith'],
+        * //   authors_given: [],
         * //   ...
         * // }
         * ```
@@ -300,6 +304,7 @@ export class CitekeyGenerator {
        private static prepareCitekeyVariables(citationData: UnknownRecord, config: CitekeyOptions): { [key: string]: unknown } {
            const creatorAuthors = asRecordArray(citationData.creators)
                .filter((creator) => getString(creator, 'creatorType') === 'author');
+           const authorRecords = Array.isArray(citationData.author) ? asRecordArray(citationData.author) : creatorAuthors;
            const variables: { [key: string]: unknown } = {
                // Include the full citation data
                ...citationData,
@@ -314,6 +319,14 @@ export class CitekeyGenerator {
                
                // Include authors array for iteration, etc.
                authors: Array.isArray(citationData.author) ? citationData.author : creatorAuthors,
+
+               // Name arrays (CSL-JSON or Zotero creators), same shape as in note templates
+               authors_family: authorRecords
+                   .map((a) => getString(a, 'family') || getString(a, 'lastName') || getString(a, 'literal') || getString(a, 'name') || '')
+                   .filter(Boolean),
+               authors_given: authorRecords
+                   .map((a) => getString(a, 'given') || getString(a, 'firstName') || '')
+                   .filter(Boolean),
            };
            
            return variables;

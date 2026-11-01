@@ -22,7 +22,7 @@ Obsidian's Properties panel may display warnings for these nested structures. Th
 
 A citekey is a short, unique identifier for a reference. In BibLib it serves as the `id` field in the frontmatter, the basis for the filename, and the string you use when citing the reference in Pandoc (`[@smith2023]`) or linking to it in Obsidian (`[[@smith2023]]`).
 
-Citekeys are generated from a template. The default template is `{{authors_family.0|lowercase}}{{year}}`, which produces keys like `smith2023`. The template can use any bibliographic field and apply formatters — for example, `{{authors_family.0|lowercase}}{{title|titleword}}{{year}}` would produce `smithexample2023` for a paper titled "An Example of Something" by Smith.
+Citekeys are generated from a template. The default template is `{{author|lowercase}}{{title|titleword}}{{year}}`, which produces `smithexample2023` for a paper titled "An Example of Something" by Smith. The template can use any bibliographic field and apply formatters — for example, `{{authors_family.0|lowercase}}{{year}}` would produce `smith2023`.
 
 Generated citekeys follow Pandoc's syntax rules: they must start with a letter, digit, or underscore, and may contain alphanumerics and a set of punctuation characters (`:.#$%&-+?<>~/`). If a generated citekey is shorter than a configurable minimum length, a random numeric suffix is appended to reduce the chance of collisions.
 

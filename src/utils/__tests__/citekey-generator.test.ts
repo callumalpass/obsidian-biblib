@@ -108,6 +108,59 @@ describe('CitekeyGenerator', () => {
       // Should use first author
       expect(result).toBe('smith2023');
     });
+
+    it('should support authors_family index access (issue #18)', () => {
+      const citation = {
+        author: [{ family: 'Smith', given: 'Jo' }],
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{authors_family.0|lowercase}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      expect(result).toBe('smith2023');
+    });
+
+    it('should support the multi-author patterns suggested in settings', () => {
+      const options = { useZoteroKeys: false, minCitekeyLength: 6 };
+      const twoAuthors = {
+        author: [{ family: 'Smith' }, { family: 'Jones' }],
+        issued: { 'date-parts': [[2023]] }
+      };
+      const oneAuthor = {
+        author: [{ family: 'Smith' }],
+        issued: { 'date-parts': [[2023]] }
+      };
+      const initialOfSecond = '{{authors_family.0|lowercase}}{{#authors_family.1}}{{authors_family.1|abbr1}}{{/authors_family.1}}{{year}}';
+
+      expect(CitekeyGenerator.generate(twoAuthors, { ...options, citekeyTemplate: initialOfSecond })).toBe('smithJ2023');
+      expect(CitekeyGenerator.generate(oneAuthor, { ...options, citekeyTemplate: initialOfSecond })).toBe('smith2023');
+      expect(CitekeyGenerator.generate(twoAuthors, {
+        ...options,
+        citekeyTemplate: '{{authors_family.0|lowercase}}_{{authors_family.1|lowercase}}_{{year}}'
+      })).toBe('smith_jones_2023');
+    });
+
+    it('should populate authors_family from Zotero creators', () => {
+      const zoteroItem = {
+        creators: [
+          { creatorType: 'editor', lastName: 'Editor' },
+          { creatorType: 'author', firstName: 'Jo', lastName: 'Smith' }
+        ],
+        date: '2023'
+      };
+
+      const result = CitekeyGenerator.generate(zoteroItem, {
+        citekeyTemplate: '{{authors_family.0|lowercase}}{{authors_given.0|abbr1}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      expect(result).toBe('smithJ2023');
+    });
   });
 
   describe('generate - Pandoc compliance', () => {

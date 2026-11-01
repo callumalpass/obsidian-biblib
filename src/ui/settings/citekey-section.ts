@@ -1,5 +1,6 @@
 import { Setting, TextAreaComponent } from 'obsidian';
 import BibliographyPlugin from '../../../main';
+import { DEFAULT_SETTINGS } from '../../types/settings';
 import { SettingsUIHelpers } from './settings-ui-helpers';
 
 /**
@@ -42,7 +43,7 @@ export function renderCitekeyGenerationSection(
             .setIcon('reset')
             .setTooltip('Reset to default')
             .onClick(async () => {
-                plugin.settings.citekeyOptions.citekeyTemplate = '{{authors_family.0|lowercase}}{{year}}';
+                plugin.settings.citekeyOptions.citekeyTemplate = DEFAULT_SETTINGS.citekeyOptions.citekeyTemplate;
                 await plugin.saveSettings();
                 refreshDisplay();
             })
