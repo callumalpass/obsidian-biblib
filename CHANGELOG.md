@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 See [unreleased.md](docs/releases/unreleased.md) for upcoming changes.
 
+## [1.9.0] - 2026-11-01
+
+### Added
+
+- Automatic bibliography rebuild: a "Rebuild automatically" setting rebuilds the bibliography JSON, citekey list and BibTeX file shortly after literature notes change (#32).
+- Export profiles: extra bibliography JSON and/or BibTeX files limited to literature notes in a folder and/or with a tag (#22).
+- Attachment filename template setting for imported attachments, using the same variables as note filenames (#10).
+
+### Fixed
+
+- Citekey templates can use `{{authors_family}}` and `{{authors_given}}`, and "Reset to default" restores the real default template (#18).
+- Citekeys generated in the new literature note modal use the full form data, and "Regenerate citekey" applies the template even when "Use Zotero keys" is enabled (#35).
+- Bulk import's "Generate new citekeys" option applies the citekey template even when "Use Zotero keys" is enabled.
+- DOI/URL/ISBN lookups apply the citekey template unless "Use Zotero keys" is enabled.
+- Renaming a note after a citekey change uses the same filename template as note creation, including subfolders and notes at the vault root.
+- `{{year}}` in filename templates works for references that store the date only in `issued`.
+- Zotero Connector: the literature note modal opens for items whose attachments never arrive (#26).
+
 ## [1.8.3] - 2026-10-27
 
 ### Fixed
@@ -122,7 +140,9 @@ See [unreleased.md](docs/releases/unreleased.md) for upcoming changes.
 
 - Template preview component (replaced by template playground)
 
-[Unreleased]: https://github.com/callumalpass/obsidian-biblib/compare/1.8.2...HEAD
+[Unreleased]: https://github.com/callumalpass/obsidian-biblib/compare/1.9.0...HEAD
+[1.9.0]: https://github.com/callumalpass/obsidian-biblib/compare/1.8.3...1.9.0
+[1.8.3]: https://github.com/callumalpass/obsidian-biblib/compare/1.8.2...1.8.3
 [1.8.2]: https://github.com/callumalpass/obsidian-biblib/compare/1.8.1...1.8.2
 [1.8.1]: https://github.com/callumalpass/obsidian-biblib/compare/1.8.0...1.8.1
 [1.7.2]: https://github.com/callumalpass/obsidian-biblib/compare/1.7.1...1.7.2
