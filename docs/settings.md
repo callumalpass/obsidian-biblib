@@ -28,7 +28,7 @@ See the [Templating](templating-system-guide.md) page for the full syntax refere
 
 ## Citation keys
 
-**Citekey template** — The template for generating citekeys (default: `{{authors_family.0|lowercase}}{{year}}`). Any bibliographic field can be used, along with formatters.
+**Citekey template** — The template for generating citekeys (default: `{{author|lowercase}}{{title|titleword}}{{year}}`). Any bibliographic field can be used, along with formatters.
 
 **Use Zotero keys (if available)** — When enabled, references imported via the Zotero Connector or from Zotero-exported files use the citekey assigned by Zotero instead of generating a new one.
 

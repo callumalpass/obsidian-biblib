@@ -23,4 +23,9 @@ Example:
 
 -->
 
-No unreleased changes yet.
+## Fixed
+
+- (#18) Citekey templates can now use `{{authors_family}}` and `{{authors_given}}`
+  - Templates such as `{{authors_family.0|lowercase}}{{year}}`, which the settings tab suggests, previously dropped the author and produced keys like `2023`
+  - The citekey template's "Reset to default" button now restores the actual default template
+  - Thanks to @Noctis-Xu for reporting
