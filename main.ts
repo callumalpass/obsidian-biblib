@@ -4,6 +4,7 @@ import { SettingsManager } from './src/managers/settings-manager';
 import { ServiceManager } from './src/managers/service-manager';
 import { CommandRegistry } from './src/managers/command-registry';
 import { ZoteroConnectorManager } from './src/managers/zotero-connector-manager';
+import { BibliographyAutoExporter } from './src/services/bibliography-auto-export';
 import type { BibliographyPluginSettings } from './src/types/settings';
 
 export default class BibliographyPlugin extends Plugin {
@@ -34,6 +35,9 @@ export default class BibliographyPlugin extends Plugin {
 
         // Register commands
         this.commandRegistry.registerCommands();
+
+        // Keep bibliography files up to date when the setting is on
+        new BibliographyAutoExporter(this.app, () => this.settings).register(this);
 
         // Initialize Zotero connector manager if needed
         void this.initializeZoteroConnector();

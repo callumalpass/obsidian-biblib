@@ -80,3 +80,5 @@ Controls which CSL-JSON fields appear as primary inputs in the creation modal. T
 **Citekey list path** — Where the Markdown citekey list is written (default: `citekeylist.md`).
 
 **BibTeX file path** — Where the exported BibTeX file is written (default: `biblib/bibliography.bib`).
+
+**Rebuild automatically** — When enabled, the bibliography JSON, citekey list and BibTeX file are rebuilt a few seconds after a literature note is created, edited, renamed or deleted, so tools such as Pandoc Reference List always see current data (default: off).
