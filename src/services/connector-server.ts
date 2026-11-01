@@ -16,6 +16,10 @@ const ZOTERO_APP_NAME = 'Obsidian BibLib';
 const CONNECTOR_API_VERSION_SUPPORTED = 3;
 const SESSION_CLEANUP_INTERVAL = 600000; // 10 minutes
 const SESSION_MAX_AGE = 1800000; // 30 minutes (extended for slow attachments)
+// Open the modal anyway if attachments stop arriving for this long. Zotero sometimes replaces
+// an announced attachment (e.g. an HTML snapshot) with one under a new ID, so the announced
+// ID never arrives. Anything that lands later is sent as an additional attachment.
+const ATTACHMENT_WAIT_TIMEOUT = 10000; // 10 seconds
 
 // --- Interfaces ---
 interface AttachmentStatus {
@@ -33,6 +37,7 @@ interface SessionData {
     eventDispatched: boolean;
     processedSnapshots: Set<string>; // Track processed HTML snapshots
     processedAttachmentPaths: Set<string>; // Track processed attachment paths
+    completionTimer?: number; // Fallback dispatch if expected attachments never arrive
 }
 interface AttachmentMetadata {
     id?: string;
@@ -184,6 +189,11 @@ export class ConnectorServer {
                 this.server.close(() => {
                     new Notice('Zotero connector server stopped', NOTICE_DURATION_SHORT);
                     this.server = null;
+                    for (const session of this.sessions.values()) {
+                        if (session.completionTimer !== undefined) {
+                            window.clearTimeout(session.completionTimer);
+                        }
+                    }
                     this.sessions.clear();
                     resolve();
                 });
@@ -359,6 +369,9 @@ export class ConnectorServer {
 
         this.sendResponse(res, 200, { sessionID: sessionID });
         new Notice('Receiving item from Zotero.');
+
+        // With no attachments to wait for (e.g. "Save without snapshot"), open the modal now
+        this.checkAndDispatchIfComplete(sessionID);
     }
 
     private async handleSaveSnapshot(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -417,6 +430,8 @@ export class ConnectorServer {
 
         this.sendResponse(res, 200, { sessionID: sessionID });
         new Notice(`Receiving snapshot for ${title}.`);
+
+        this.checkAndDispatchIfComplete(sessionID);
     }
 
     private async handleSaveAttachment(req: IncomingMessage, res: ServerResponse, isStandalone: boolean): Promise<void> {
@@ -529,6 +544,7 @@ export class ConnectorServer {
         
         // Initialize attachment status
         session.attachmentStatus[attachmentId] = { progress: 0 };
+        this.armCompletionTimeout(sessionID);
 
         try {
             await this.node.pipeline(req, this.node.fs.createWriteStream(filePath));
@@ -656,6 +672,7 @@ export class ConnectorServer {
         
         // Initialize attachment status
         session.attachmentStatus[attachmentId] = { progress: 0 };
+        this.armCompletionTimeout(sessionID);
         
         try {
             await this.node.fs.promises.writeFile(filePath, snapshotContent, 'utf-8');
@@ -846,31 +863,61 @@ export class ConnectorServer {
 
         // Check if session is complete
         if (this.isSessionComplete(session)) {
-            
-            // Get successfully processed files
-            const savedFiles = Object.values(session.attachmentStatus)
-                .filter(status => status.progress === 100 && status.localPath)
-                .map(status => status.localPath!);
-            
-            // Dispatch event
-            this.dispatchZoteroItemEvent(session.items[0], savedFiles, sessionID);
-            
-            // Mark as dispatched but keep the session alive
-            // This is a key change - we don't delete the session here
-            session.eventDispatched = true;
-            this.sessions.set(sessionID, session);
-            
-            // Set up monitoring for additional attachments
-            this.monitorForAdditionalAttachments(sessionID);
+            this.dispatchSession(sessionID);
+        } else {
+            this.armCompletionTimeout(sessionID);
         }
+    }
+
+    /**
+     * (Re)start the fallback timer that dispatches a session whose expected
+     * attachments stop arriving.
+     */
+    private armCompletionTimeout(sessionID: string): void {
+        const session = this.sessions.get(sessionID);
+        if (!session || session.eventDispatched) return;
+
+        if (session.completionTimer !== undefined) {
+            window.clearTimeout(session.completionTimer);
+        }
+        session.completionTimer = window.setTimeout(() => {
+            session.completionTimer = undefined;
+            this.dispatchSession(sessionID);
+        }, ATTACHMENT_WAIT_TIMEOUT);
+    }
+
+    private dispatchSession(sessionID: string): void {
+        const session = this.sessions.get(sessionID);
+        if (!session || session.eventDispatched) return;
+
+        if (session.completionTimer !== undefined) {
+            window.clearTimeout(session.completionTimer);
+            session.completionTimer = undefined;
+        }
+
+        // Get successfully processed files
+        const savedFiles = Object.values(session.attachmentStatus)
+            .filter(status => status.progress === 100 && status.localPath)
+            .map(status => status.localPath!);
+        
+        // Dispatch event
+        this.dispatchZoteroItemEvent(session.items[0], savedFiles, sessionID);
+        
+        // Mark as dispatched but keep the session alive
+        // This is a key change - we don't delete the session here
+        session.eventDispatched = true;
+        this.sessions.set(sessionID, session);
+        
+        // Set up monitoring for additional attachments
+        this.monitorForAdditionalAttachments(sessionID, savedFiles.length);
     }
 
     /**
      * Monitor for additional attachments that might arrive late
      */
-    private monitorForAdditionalAttachments(sessionID: string): void {
+    private monitorForAdditionalAttachments(sessionID: string, alreadyDispatchedCount: number): void {
         let checkCount = 0;
-        let lastFileCount = 0;
+        let lastFileCount = alreadyDispatchedCount;
         
         
         const monitor = window.setInterval(() => {
