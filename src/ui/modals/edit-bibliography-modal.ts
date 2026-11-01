@@ -481,12 +481,13 @@ export class EditBibliographyModal extends BibliographyModal {
             
             // Handle file renaming if citekey changed
             if (newCitekey !== currentCitekey && this.settings.editRenameFileOnCitekeyChange) {
-                const newFileName = await this.generateFileName(finalFrontmatterOutput);
-                const newPath = this.fileToEdit.parent?.path 
-                    ? `${this.fileToEdit.parent.path}/${newFileName}.md`
-                    : `${newFileName}.md`;
-                
+                const newPath = this.getRenamedNotePath(newCitekey, finalFrontmatterOutput);
+
                 if (newPath !== this.fileToEdit.path) {
+                    const folderPath = newPath.substring(0, newPath.lastIndexOf('/'));
+                    if (folderPath && !this.app.vault.getAbstractFileByPath(folderPath)) {
+                        await this.app.vault.createFolder(folderPath);
+                    }
                     await this.app.fileManager.renameFile(this.fileToEdit, newPath);
                 }
             }
@@ -501,23 +502,19 @@ export class EditBibliographyModal extends BibliographyModal {
     }
     
     /**
-     * Generate filename from frontmatter data
+     * Path for a note whose citekey changed: the name note creation would give it.
+     * Notes stay in their current folder unless the filename template itself
+     * places notes in subfolders (e.g. `{{type}}/@{{citekey}}`).
      */
-    private async generateFileName(frontmatter: UnknownRecord): Promise<string> {
-        const templateVariableBuilder = new TemplateVariableBuilderService();
-        const templateVariables = templateVariableBuilder.buildVariables(
-            frontmatter as Citation,
-            this.contributors,
-            this.attachmentData.map(a => a.path).filter((p): p is string => p !== undefined),
-            this.relatedNotePaths
-        );
+    private getRenamedNotePath(citekey: string, frontmatter: UnknownRecord): string {
+        const templatePath = this.noteCreationService.getLiteratureNotePath(citekey, frontmatter);
+        if (this.settings.filenameTemplate.includes('/')) {
+            return templatePath;
+        }
 
-        let filename = TemplateEngine.render(this.settings.filenameTemplate, templateVariables);
-
-        // Sanitize filename
-        filename = filename.replace(/[\\/:*?"<>|]/g, '-');
-
-        return filename;
+        const fileName = templatePath.substring(templatePath.lastIndexOf('/') + 1);
+        const folder = this.fileToEdit.parent?.path;
+        return !folder || folder === '/' ? fileName : `${folder}/${fileName}`;
     }
 
     /**
