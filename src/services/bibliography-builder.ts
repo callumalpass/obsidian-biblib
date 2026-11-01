@@ -1,5 +1,5 @@
 import { App, Notice, TFile, normalizePath } from 'obsidian';
-import { BibliographyPluginSettings, parseLiteratureNoteTags } from '../types';
+import { BibliographyExportProfile, BibliographyPluginSettings, parseLiteratureNoteTags } from '../types';
 import Cite from 'citation-js';
 import '@citation-js/plugin-bibtex';
 import { AttachmentManagerService } from './attachment-manager-service';
@@ -37,6 +37,27 @@ function hasLiteratureNoteTag(frontmatter: UnknownRecord, literatureNoteTag: str
     const tags = frontmatter.tags;
     const configuredTags = parseLiteratureNoteTags(literatureNoteTag);
     return Array.isArray(tags) && configuredTags.some(configuredTag => tags.includes(configuredTag));
+}
+
+/**
+ * Select the literature notes an export profile covers: notes inside its folder
+ * (including subfolders) that also carry its tag. Empty filters match everything.
+ */
+export function filterNotesForProfile<T extends { file: { path: string }; frontmatter: UnknownRecord }>(
+    notes: T[],
+    profile: Pick<BibliographyExportProfile, 'folder' | 'tag'>
+): T[] {
+    const folder = normalizePath(profile.folder.trim()).replace(/^\/+|\/+$/g, '');
+    // Obsidian tags are case-insensitive
+    const tag = profile.tag.trim().replace(/^#/, '').toLowerCase();
+    return notes.filter(note => {
+        if (folder && !note.file.path.startsWith(`${folder}/`)) return false;
+        if (tag) {
+            const tags = note.frontmatter.tags;
+            if (!Array.isArray(tags) || !tags.some(t => typeof t === 'string' && t.toLowerCase() === tag)) return false;
+        }
+        return true;
+    });
 }
 
 /**
@@ -121,7 +142,12 @@ export class BibliographyBuilder {
         
         try {
             await this.createCitekeyList(literatureNotes);
-            await this.createBibliographyJson(literatureNotes);
+            await this.createBibliographyJson(literatureNotes, this.settings.bibliographyJsonPath);
+            for (const profile of this.settings.bibliographyExportProfiles) {
+                if (profile.jsonPath.trim()) {
+                    await this.createBibliographyJson(filterNotesForProfile(literatureNotes, profile), profile.jsonPath);
+                }
+            }
             if (!options.quiet) new Notice(`Bibliography files created/updated with ${literatureNotes.length} entries.`);
         } catch {
              // Errors are logged within the creation functions
@@ -290,7 +316,7 @@ export class BibliographyBuilder {
      * // [{"id": "author2023", "type": "article-journal", ...}, ...]
      * ```
      */
-    private async createBibliographyJson(literatureNotes: LiteratureNote[]): Promise<void> {
+    private async createBibliographyJson(literatureNotes: LiteratureNote[], outputPath: string): Promise<void> {
         // Prepare the data for each literature note
         const bibliographyData = literatureNotes.map(note => {
             // Extract the relevant data from frontmatter
@@ -310,17 +336,11 @@ export class BibliographyBuilder {
         const bibliographyJson = JSON.stringify(bibliographyData, null, 2);
         
         // Determine the output file path
-        const outputFilePath = normalizePath(this.settings.bibliographyJsonPath);
+        const outputFilePath = normalizePath(outputPath);
         
         // Write the file using modify/create
         try {
-             const existingFile = this.app.vault.getAbstractFileByPath(outputFilePath);
-            if (existingFile instanceof TFile) {
-                await this.app.vault.modify(existingFile, bibliographyJson);
-            } else {
-                if (existingFile) await this.attachmentManager.trashFile(existingFile.path);
-                await this.app.vault.create(outputFilePath, bibliographyJson);
-            }
+            await this.writeFile(outputFilePath, bibliographyJson);
         } catch (error) {
             console.error(`Error writing bibliography JSON file (${outputFilePath}):`, error);
             new Notice('Error creating bibliography JSON file. Check console.');
@@ -360,73 +380,98 @@ export class BibliographyBuilder {
             return;
         }
         try {
-            // Process the frontmatter data to handle empty date arrays
-            const dataArray = literatureNotes.map(note => {
-                const processedData = { ...note.frontmatter };
-                
-                // Fix for empty date-parts arrays in date fields
-                const dateFields = ['issued', 'accessed', 'container', 'event-date', 'original-date', 'submitted'];
-                for (const field of dateFields) {
-                    const dateValue = processedData[field];
-                    if (isRecord(dateValue) && Array.isArray(dateValue['date-parts'])) {
-                        
-                        // Check if date-parts contains empty arrays or has no valid date information
-                        const dateParts = dateValue['date-parts'];
-                        
-                        // More robust checking for valid date-parts structure
-                        let isValid = false;
-                        if (dateParts.length > 0) {
-                            for (const part of dateParts) {
-                                // Check if this part is an array and has valid date components
-                                if (Array.isArray(part) && part.length > 0) {
-                                    // Check if at least one component is a valid number
-                                    const hasValidComponent = part.some((component: unknown) => 
-                                        component !== null && 
-                                        component !== undefined && 
-                                        !isNaN(Number(component))
-                                    );
-                                    if (hasValidComponent) {
-                                        isValid = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        if (!isValid) {
-                            // Remove this date field entirely to avoid the error
-                            delete processedData[field];
-                        }
-                    }
+            const bibtexPath = normalizePath(this.settings.bibtexFilePath);
+            await this.writeFile(bibtexPath, this.toBibTeX(literatureNotes));
+            for (const profile of this.settings.bibliographyExportProfiles) {
+                if (profile.bibtexPath.trim()) {
+                    const profileNotes = filterNotesForProfile(literatureNotes, profile);
+                    await this.writeFile(normalizePath(profile.bibtexPath), this.toBibTeX(profileNotes));
                 }
-
-                // Preserve the citation key by copying `id` to `citation-key`
-                // citation-js uses `citation-key` for BibTeX output labels
-                if (processedData.id) {
-                    processedData['citation-key'] = processedData.id;
-                }
-
-                return processedData;
-            });
-            
-            const bib = new Cite(dataArray as Citation[]).get({ style: 'bibtex', type: 'string' }) as unknown;
-            if (typeof bib !== 'string') {
-                throw new Error('Citation.js returned non-string bibtex output.');
-            }
-            // Use the configured BibTeX file path directly
-            let bibtexPath = this.settings.bibtexFilePath;
-            bibtexPath = normalizePath(bibtexPath);
-            const existing = this.app.vault.getAbstractFileByPath(bibtexPath);
-            if (existing instanceof TFile) {
-                await this.app.vault.modify(existing, bib);
-            } else {
-                if (existing) await this.attachmentManager.trashFile(existing.path);
-                await this.app.vault.create(bibtexPath, bib);
             }
             if (!options.quiet) new Notice(`Bibtex file exported to ${bibtexPath}`);
         } catch (error) {
             console.error('Error exporting BibTeX file:', error);
             new Notice('Error exporting bibtex file. See console for details.');
         }
+    }
+
+    /**
+     * Convert literature notes to a BibTeX string, keeping their citekeys.
+     */
+    private toBibTeX(literatureNotes: LiteratureNote[]): string {
+        if (literatureNotes.length === 0) return '';
+
+        // Process the frontmatter data to handle empty date arrays
+        const dataArray = literatureNotes.map(note => {
+            const processedData = { ...note.frontmatter };
+            
+            // Fix for empty date-parts arrays in date fields
+            const dateFields = ['issued', 'accessed', 'container', 'event-date', 'original-date', 'submitted'];
+            for (const field of dateFields) {
+                const dateValue = processedData[field];
+                if (isRecord(dateValue) && Array.isArray(dateValue['date-parts'])) {
+                    
+                    // Check if date-parts contains empty arrays or has no valid date information
+                    const dateParts = dateValue['date-parts'];
+                    
+                    // More robust checking for valid date-parts structure
+                    let isValid = false;
+                    if (dateParts.length > 0) {
+                        for (const part of dateParts) {
+                            // Check if this part is an array and has valid date components
+                            if (Array.isArray(part) && part.length > 0) {
+                                // Check if at least one component is a valid number
+                                const hasValidComponent = part.some((component: unknown) => 
+                                    component !== null && 
+                                    component !== undefined && 
+                                    !isNaN(Number(component))
+                                );
+                                if (hasValidComponent) {
+                                    isValid = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (!isValid) {
+                        // Remove this date field entirely to avoid the error
+                        delete processedData[field];
+                    }
+                }
+            }
+
+            // Preserve the citation key by copying `id` to `citation-key`
+            // citation-js uses `citation-key` for BibTeX output labels
+            if (processedData.id) {
+                processedData['citation-key'] = processedData.id;
+            }
+
+            return processedData;
+        });
+
+        const bib = new Cite(dataArray as Citation[]).get({ style: 'bibtex', type: 'string' }) as unknown;
+        if (typeof bib !== 'string') {
+            throw new Error('Citation.js returned non-string bibtex output.');
+        }
+        return bib;
+    }
+
+    /**
+     * Create or overwrite a vault file, creating its parent folder if needed.
+     */
+    private async writeFile(path: string, content: string): Promise<void> {
+        const existing = this.app.vault.getAbstractFileByPath(path);
+        if (existing instanceof TFile) {
+            await this.app.vault.modify(existing, content);
+            return;
+        }
+        if (existing) await this.attachmentManager.trashFile(existing.path);
+
+        const folderPath = path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '';
+        if (folderPath && !this.app.vault.getAbstractFileByPath(folderPath)) {
+            await this.app.vault.createFolder(folderPath);
+        }
+        await this.app.vault.create(path, content);
     }
 }

@@ -1725,3 +1725,11 @@ body.biblib-csl-styling-enabled .cm-s-obsidian .cm-line span.cm-meta.cm-yaml-key
   font-size: 0.9em;
   color: var(--text-normal);
 }
+
+/* Bibliography export profiles (settings) */
+.biblib-export-profile {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--biblib-radius-md);
+  padding: 0 var(--biblib-spacing-md);
+  margin-bottom: var(--biblib-spacing-md);
+}

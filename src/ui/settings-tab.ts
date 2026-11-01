@@ -107,7 +107,7 @@ export class BibliographySettingTab extends PluginSettingTab {
 				}
 				break;
 			case 'export':
-				renderBibliographyBuilderSection(containerEl, this.plugin);
+				renderBibliographyBuilderSection(containerEl, this.plugin, refreshDisplay);
 				break;
 			default:
 				renderGeneralSettings(containerEl, this.plugin);

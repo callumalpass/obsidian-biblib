@@ -81,6 +81,18 @@ export function parseLiteratureNoteTags(tagString: string): string[] {
 
 // --- Interface for Overall Plugin Settings ---
 
+/**
+ * An extra bibliography export restricted to some literature notes (issue #22).
+ * Empty filters match every literature note; empty output paths are skipped.
+ */
+export interface BibliographyExportProfile {
+        name: string;
+        folder: string; // Only notes in this folder and its subfolders
+        tag: string; // Only notes that also carry this tag
+        jsonPath: string;
+        bibtexPath: string;
+}
+
 export interface BibliographyPluginSettings {
         attachmentFolderPath: string;
         literatureNotePath: string;
@@ -91,6 +103,7 @@ export interface BibliographyPluginSettings {
         citekeyListPath: string;
         bibtexFilePath: string;
         autoExportBibliography: boolean; // Rebuild bibliography files when literature notes change
+        bibliographyExportProfiles: BibliographyExportProfile[];
         // Template options
         headerTemplate: string;
         chapterHeaderTemplate: string;
@@ -130,6 +143,7 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         citekeyListPath: 'citekeylist.md',
         bibtexFilePath: 'biblib/bibliography.bib',
         autoExportBibliography: false,
+        bibliographyExportProfiles: [],
         headerTemplate: '# {{#title}}{{title}}{{/title}}{{^title}}{{citekey}}{{/title}} \n\n _Notes_',
         chapterHeaderTemplate: '# {{#pdflink}}[[{{pdflink}}|{{title}}]]{{/pdflink}}{{^pdflink}}{{title}}{{/pdflink}} (in {{container-title}})',
         literatureNoteTag: 'literature_note',
