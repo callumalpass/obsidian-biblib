@@ -22,6 +22,34 @@ interface LiteratureNote {
 }
 
 /**
+ * Options for a bibliography build or export.
+ */
+export interface BibliographyBuildOptions {
+    /** Skip success and "nothing to export" notices (used by automatic rebuilds). Errors are still shown. */
+    quiet?: boolean;
+}
+
+/**
+ * Returns true if frontmatter carries one of the configured literature note tags
+ * (the setting may hold several comma/space-separated tags).
+ */
+function hasLiteratureNoteTag(frontmatter: UnknownRecord, literatureNoteTag: string): boolean {
+    const tags = frontmatter.tags;
+    const configuredTags = parseLiteratureNoteTags(literatureNoteTag);
+    return Array.isArray(tags) && configuredTags.some(configuredTag => tags.includes(configuredTag));
+}
+
+/**
+ * Returns true if cached frontmatter belongs to a literature note that can be exported:
+ * it has a literature note tag and a citekey (`id`).
+ */
+export function isLiteratureNoteFrontmatter(frontmatter: unknown, literatureNoteTag: string): frontmatter is UnknownRecord {
+    return isRecord(frontmatter)
+        && hasLiteratureNoteTag(frontmatter, literatureNoteTag)
+        && Boolean(getString(frontmatter, 'id'));
+}
+
+/**
  * Service responsible for building bibliography files from literature notes stored in the vault.
  *
  * This service scans the vault for notes tagged as literature notes (via the configured tag),
@@ -79,11 +107,11 @@ export class BibliographyBuilder {
      * // Creates: bibliography.json, citekeylist.md, citekeylist.txt
      * ```
      */
-    async buildBibliography(): Promise<void> {
+    async buildBibliography(options: BibliographyBuildOptions = {}): Promise<void> {
         const literatureNotes = await this.findLiteratureNotes();
         
         if (literatureNotes.length === 0) {
-            new Notice('No literature notes found in the vault.');
+            if (!options.quiet) new Notice('No literature notes found in the vault.');
             return;
         }
         
@@ -94,7 +122,7 @@ export class BibliographyBuilder {
         try {
             await this.createCitekeyList(literatureNotes);
             await this.createBibliographyJson(literatureNotes);
-            new Notice(`Bibliography files created/updated with ${literatureNotes.length} entries.`);
+            if (!options.quiet) new Notice(`Bibliography files created/updated with ${literatureNotes.length} entries.`);
         } catch {
              // Errors are logged within the creation functions
              // Notice is shown within the creation functions
@@ -112,7 +140,6 @@ export class BibliographyBuilder {
      * operation very fast even with thousands of notes in the vault.
      *
      * @returns Promise resolving to array of literature notes with their files and frontmatter
-     * @private
      *
      * @example
      * ```typescript
@@ -120,7 +147,7 @@ export class BibliographyBuilder {
      * // notes = [{file: TFile, frontmatter: {...}}, ...]
      * ```
      */
-    private async findLiteratureNotes(): Promise<LiteratureNote[]> {
+    async findLiteratureNotes(): Promise<LiteratureNote[]> {
         const literatureNotes: LiteratureNote[] = [];
 
         // Get all markdown files in the vault
@@ -133,21 +160,8 @@ export class BibliographyBuilder {
                 const cache = this.app.metadataCache.getFileCache(file);
                 const frontmatter: unknown = cache?.frontmatter;
 
-                // Skip files without frontmatter
-                if (!isRecord(frontmatter)) {
-                    continue;
-                }
-
-                // Check if the note has any of the configured literature note tags
-                // Parse the literatureNoteTag setting which may contain multiple comma/space-separated tags
-                const tags = frontmatter.tags;
-                const configuredTags = parseLiteratureNoteTags(this.settings.literatureNoteTag);
-                const hasLiteratureTag =
-                    tags &&
-                    Array.isArray(tags) &&
-                    configuredTags.some(configuredTag => tags.includes(configuredTag));
-
-                if (!hasLiteratureTag) {
+                // Skip files without frontmatter or a literature note tag
+                if (!isRecord(frontmatter) || !hasLiteratureNoteTag(frontmatter, this.settings.literatureNoteTag)) {
                     continue;
                 }
 
@@ -339,10 +353,10 @@ export class BibliographyBuilder {
      * // Creates: biblib/bibliography.bib
      * ```
      */
-    async exportBibTeX(): Promise<void> {
+    async exportBibTeX(options: BibliographyBuildOptions = {}): Promise<void> {
         const literatureNotes = await this.findLiteratureNotes();
         if (literatureNotes.length === 0) {
-            new Notice('No literature notes found to export bibtex.');
+            if (!options.quiet) new Notice('No literature notes found to export bibtex.');
             return;
         }
         try {
@@ -409,7 +423,7 @@ export class BibliographyBuilder {
                 if (existing) await this.attachmentManager.trashFile(existing.path);
                 await this.app.vault.create(bibtexPath, bib);
             }
-            new Notice(`Bibtex file exported to ${bibtexPath}`);
+            if (!options.quiet) new Notice(`Bibtex file exported to ${bibtexPath}`);
         } catch (error) {
             console.error('Error exporting BibTeX file:', error);
             new Notice('Error exporting bibtex file. See console for details.');

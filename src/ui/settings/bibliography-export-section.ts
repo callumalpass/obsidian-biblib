@@ -44,4 +44,14 @@ export function renderBibliographyBuilderSection(containerEl: HTMLElement, plugi
                 plugin.settings.bibtexFilePath = normalizePath(value.trim());
                 await plugin.saveSettings();
             }));
+
+    new Setting(containerEl)
+        .setName('Rebuild automatically')
+        .setDesc('Rebuild the bibliography JSON, citekey list and bibtex file a few seconds after a literature note is created, edited, renamed or deleted.')
+        .addToggle(toggle => toggle
+            .setValue(plugin.settings.autoExportBibliography)
+            .onChange(async (value) => {
+                plugin.settings.autoExportBibliography = value;
+                await plugin.saveSettings();
+            }));
 }

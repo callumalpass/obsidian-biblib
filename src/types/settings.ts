@@ -90,6 +90,7 @@ export interface BibliographyPluginSettings {
         bibliographyJsonPath: string;
         citekeyListPath: string;
         bibtexFilePath: string;
+        autoExportBibliography: boolean; // Rebuild bibliography files when literature notes change
         // Template options
         headerTemplate: string;
         chapterHeaderTemplate: string;
@@ -128,6 +129,7 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         bibliographyJsonPath: 'biblib/bibliography.json',
         citekeyListPath: 'citekeylist.md',
         bibtexFilePath: 'biblib/bibliography.bib',
+        autoExportBibliography: false,
         headerTemplate: '# {{#title}}{{title}}{{/title}}{{^title}}{{citekey}}{{/title}} \n\n _Notes_',
         chapterHeaderTemplate: '# {{#pdflink}}[[{{pdflink}}|{{title}}]]{{/pdflink}}{{^pdflink}}{{title}}{{/pdflink}} (in {{container-title}})',
         literatureNoteTag: 'literature_note',

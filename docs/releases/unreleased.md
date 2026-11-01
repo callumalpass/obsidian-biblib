@@ -23,6 +23,11 @@ Example:
 
 -->
 
+## Added
+
+- (#32) **Automatic bibliography rebuild**: a new "Rebuild automatically" setting (Bibliography export) rebuilds the bibliography JSON, citekey list and BibTeX file a few seconds after a literature note is created, edited, renamed or deleted
+  - Thanks to @bepolymathe for the suggestion
+
 ## Fixed
 
 - (#18) Citekey templates can now use `{{authors_family}}` and `{{authors_given}}`
