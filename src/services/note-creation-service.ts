@@ -282,7 +282,8 @@ export class NoteCreationService {
 	          if (importSettings.citekeyPreference === 'imported' && importedCitekey) {
 	            citekey = importedCitekey;
           } else {
-            citekey = CitekeyGenerator.generate(parsedRef.cslData, this.settings.citekeyOptions);
+            // Clear the imported id so "Use Zotero keys" can't override the choice to generate
+            citekey = CitekeyGenerator.generate({ ...parsedRef.cslData, id: '' }, this.settings.citekeyOptions);
           }
           
           // Sanitize citekey

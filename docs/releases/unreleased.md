@@ -33,3 +33,6 @@ Example:
   - When the citekey field was left empty, the key was generated from only the title and authors, so templates using `{{year}}` produced keys without a year
   - The "Regenerate citekey" button now applies the template even when "Use Zotero keys" is enabled
   - Thanks to @maddie-m for the original fix in #35
+- Bulk import's "Generate new citekeys" option now applies the citekey template even when "Use Zotero keys" is enabled
+  - Previously the imported key was kept, because the generator returned it when "Use Zotero keys" was on
+  - Thanks to @maddie-m for spotting this in #35
