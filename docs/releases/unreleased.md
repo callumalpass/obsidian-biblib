@@ -44,3 +44,7 @@ Example:
   - Filename templates with subfolders (e.g. `{{type}}/@{{citekey}}`) move the note into that subfolder instead of renaming it to `article-journal-@key.md`
   - Notes at the vault root are renamed correctly
 - `{{year}}` in filename templates now works for bulk-imported references and edited notes, which store the date only in `issued`
+- (#26) Zotero Connector: the literature note modal now opens for items whose attachments never arrive
+  - Saving without a snapshot left the "Receiving item from Zotero" notice with no modal; the modal now opens straight away
+  - On sites such as PubMed Central, Zotero replaces an announced attachment with one under a new ID, so BibLib waited forever. The modal now opens after 10 seconds without new attachments, and files that arrive later are still added to it
+  - Thanks to @ancaemcken for reporting and for the analysis in #28
