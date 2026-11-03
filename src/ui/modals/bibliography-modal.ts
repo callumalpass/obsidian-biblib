@@ -88,6 +88,10 @@ export class BibliographyModal extends BaseBibliographyModal {
     // Storage for user-defined default field inputs
     private defaultFieldInputs: Map<string, HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> = new Map();
 
+    // The generated citekey in the form and the form values it was generated from.
+    // While the field still holds this key, later edits to the form regenerate it.
+    private generatedCitekey: { id: string; formValues: string } | null = null;
+
     // Flag for whether the modal is initialized
     private isInitialized: boolean = false;
 
@@ -238,7 +242,7 @@ export class BibliographyModal extends BaseBibliographyModal {
                     try {
                         const cslData = await this.citationService.fetchNormalized(identifier);
                         if (cslData) {
-                            this.populateFormFromCitoid(cslData);
+                            this.populateFormWithGeneratedCitekey(cslData);
                             new Notice('Citation data loaded');
                         } else {
                             new Notice('No citation data found');
@@ -487,6 +491,7 @@ export class BibliographyModal extends BaseBibliographyModal {
                     if (formData.title || formData.author?.length) {
                         // Drop the current key so "Use Zotero keys" doesn't hand it straight back
                         this.idInput.value = CitekeyGenerator.generate({ ...formData, id: '' }, this.settings.citekeyOptions);
+                        this.trackGeneratedCitekey();
                     } else {
                         new Notice('Add author and title first to generate citekey');
                     }
@@ -515,6 +520,28 @@ export class BibliographyModal extends BaseBibliographyModal {
     }
 
     /**
+     * Populate the form from a lookup or Zotero import. Its citekey came from the template,
+     * so it follows later edits to the form, unless "Use Zotero keys" says to keep it.
+     */
+    public populateFormWithGeneratedCitekey(cslData: unknown): void {
+        this.populateFormFromCitoid(cslData);
+        if (this.isInitialized && !this.settings.citekeyOptions.useZoteroKeys) {
+            this.trackGeneratedCitekey();
+        }
+    }
+
+    private trackGeneratedCitekey(): void {
+        this.generatedCitekey = null;
+        const citation = this.getFormValues();
+        this.generatedCitekey = { id: citation.id, formValues: JSON.stringify({ ...citation, id: '' }) };
+    }
+
+    private isGeneratedCitekeyStale(citation: Citation): boolean {
+        return this.generatedCitekey?.id === citation.id
+            && this.generatedCitekey.formValues !== JSON.stringify({ ...citation, id: '' });
+    }
+
+    /**
      * Populate form fields from CSL data (e.g., from Citoid or Zotero)
      */
     public populateFormFromCitoid(cslData: unknown): void {
@@ -523,6 +550,8 @@ export class BibliographyModal extends BaseBibliographyModal {
             console.warn('Cannot populate form before it is initialized');
             return;
         }
+
+        this.generatedCitekey = null;
 
         if (!isRecord(cslData)) {
             console.warn('Cannot populate form from invalid CSL data');
@@ -890,8 +919,8 @@ export class BibliographyModal extends BaseBibliographyModal {
             }
         });
 
-        if (!citation.id) {
-            citation.id = CitekeyGenerator.generate(citation, this.settings.citekeyOptions);
+        if (!citation.id || this.isGeneratedCitekeyStale(citation)) {
+            citation.id = CitekeyGenerator.generate({ ...citation, id: '' }, this.settings.citekeyOptions);
         }
         
         return citation;
