@@ -326,7 +326,7 @@ export class ZoteroConnectorManager {
             const populateModal = debounce(() => {
                 try {
                     // First populate with the citation data
-                    modal.populateFormFromCitoid(cslData);
+                    modal.populateFormWithGeneratedCitekey(cslData);
                     
                     // Then process any attachments we have now
                     void this.processZoteroAttachments(files, modal);
