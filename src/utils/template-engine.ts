@@ -65,6 +65,25 @@ export interface TemplateOptions {
  */
 export class TemplateEngine {
     /**
+     * Formatter names handled by `formatValue`. A format containing `|` is applied as a chain
+     * only when every part names one of these, so `|` inside arguments keeps working.
+     */
+    private static readonly KNOWN_FORMATTERS: ReadonlySet<string> = new Set([
+        'upper', 'uppercase', 'lower', 'lowercase', 'capitalize', 'sentence', 'title',
+        'truncate', 'ellipsis', 'replace', 'trim', 'prefix', 'suffix', 'pad', 'slice',
+        'number', 'json', 'count', 'date', 'abbr', 'abbr1', 'abbr2', 'abbr3', 'abbr4',
+        'titleword', 'shorttitle', 'split', 'join', 'urlencode', 'urldecode'
+    ]);
+
+    /** Whether `name` is a formatter, including the numbered forms `rand5`, `truncate30`, `abbr5`. */
+    private static isKnownFormatter(name: string): boolean {
+        return this.KNOWN_FORMATTERS.has(name)
+            || /^rand\d+$/.test(name)
+            || /^truncate\d+$/.test(name)
+            || /^abbr\d+$/.test(name);
+    }
+
+    /**
      * Render a template string with variables and optional formatting.
      *
      * This is the main entry point for template rendering. It processes templates
@@ -76,7 +95,7 @@ export class TemplateEngine {
      * 5. Optional YAML array formatting
      *
      * **Formatter Chaining:**
-     * You can chain formatters: `{{title|lowercase|truncate:20}}`
+     * You can chain formatters left to right: `{{title|titleword|upper}}`
      *
      * **Special Variables:**
      * - In array iterations: `.`, `@index`, `@first`, `@last`, `@odd`, `@even`
@@ -325,7 +344,7 @@ export class TemplateEngine {
             // Use trimStart() to preserve trailing whitespace which may be intentional
             // (e.g., {{authors|join: and }} should keep the space after "and")
             if (format) {
-                return this.formatValue(value, format.trimStart());
+                return this.applyFormatters(value, format.trimStart());
             }
             
             // Otherwise, return the value as string
@@ -340,6 +359,42 @@ export class TemplateEngine {
             // Return string value
             return formatUnknown(value);
         });
+    }
+
+    /**
+     * Apply a format such as `lowercase|truncate:20` left to right.
+     *
+     * The format is read as one formatter, as before (#56), unless every part is a known
+     * formatter and every `replace` part has both its arguments. This keeps `replace:a|b:X`
+     * (a regex with `|`) and `join: | ` (a delimiter with `|`) working. After the first
+     * formatter the value is a string, so array formatters only work first in a chain.
+     */
+    private static applyFormatters(value: unknown, format: string): string {
+        // Trim parts without arguments so `{{name | lowercase | capitalize}}` chains;
+        // keep trailing spaces in arguments, as in `{{authors|join: and |upper}}`
+        const segments = format.split('|').map(segment =>
+            segment.includes(':') ? segment.trimStart() : segment.trim()
+        );
+
+        if (segments.length === 1 || !segments.every(segment => this.isChainSegment(segment))) {
+            return this.formatValue(value, format);
+        }
+
+        let current: unknown = value;
+        for (const segment of segments) {
+            current = this.formatValue(current, segment);
+        }
+        return String(current);
+    }
+
+    /** Whether one part of a `|`-separated format can be applied on its own. */
+    private static isChainSegment(segment: string): boolean {
+        const [name, ...args] = segment.split(':');
+        // `replace` needs a pattern and a replacement; with fewer, the `|` belongs to its regex
+        if (name === 'replace') {
+            return args.length >= 2;
+        }
+        return this.isKnownFormatter(name);
     }
     
     /**
@@ -483,6 +538,7 @@ export class TemplateEngine {
         const stringValue = String(value);
         
         // Process formatters with their potential arguments
+        // Add new formatter names to KNOWN_FORMATTERS when extending this switch.
         switch (formatName) {
             // Text case formatters
             case 'upper':
