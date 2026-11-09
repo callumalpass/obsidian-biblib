@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 See [unreleased.md](docs/releases/unreleased.md) for upcoming changes.
 
+## [1.9.2] - 2026-11-10
+
+### Fixed
+
+- The default `related` custom frontmatter field writes a flat list of links (`{{links|json}}`) instead of a nested list (`[[]]`). A `related` field still on the old default `[{{links}}]` is updated when the plugin loads (#53).
+
 ## [1.9.1] - 2026-11-05
 
 ### Fixed
@@ -146,7 +152,8 @@ See [unreleased.md](docs/releases/unreleased.md) for upcoming changes.
 
 - Template preview component (replaced by template playground)
 
-[Unreleased]: https://github.com/callumalpass/obsidian-biblib/compare/1.9.1...HEAD
+[Unreleased]: https://github.com/callumalpass/obsidian-biblib/compare/1.9.2...HEAD
+[1.9.2]: https://github.com/callumalpass/obsidian-biblib/compare/1.9.1...1.9.2
 [1.9.1]: https://github.com/callumalpass/obsidian-biblib/compare/1.9.0...1.9.1
 [1.9.0]: https://github.com/callumalpass/obsidian-biblib/compare/1.8.3...1.9.0
 [1.8.3]: https://github.com/callumalpass/obsidian-biblib/compare/1.8.2...1.8.3
