@@ -76,7 +76,9 @@ export class TemplateEngine {
      * 5. Optional YAML array formatting
      *
      * **Formatter Chaining:**
-     * You can chain formatters: `{{title|lowercase|truncate:20}}`
+     * You can chain formatters: `{{title|lowercase|truncate:20}}`. They are applied
+     * left to right, each to the previous result. A `|` followed by text that is not
+     * a formatter name is part of the previous formatter's argument.
      *
      * **Special Variables:**
      * - In array iterations: `.`, `@index`, `@first`, `@last`, `@odd`, `@even`
@@ -291,6 +293,59 @@ export class TemplateEngine {
     }
     
     /**
+     * Formatter names recognised by {@link formatValue}, used to decide where a
+     * formatter chain splits. Keep in sync with the `switch` in `formatValue`.
+     */
+    private static readonly FORMATTER_NAMES = new Set([
+        'upper', 'uppercase', 'lower', 'lowercase', 'capitalize', 'sentence', 'title',
+        'truncate', 'ellipsis', 'replace', 'trim', 'prefix', 'suffix', 'pad', 'slice',
+        'number', 'json', 'count', 'date', 'abbr', 'titleword', 'shorttitle',
+        'split', 'join', 'urlencode', 'urldecode'
+    ]);
+
+    /** Formatter names with a numeric suffix: `rand5`, `truncate30`, `abbr3`. */
+    private static readonly NUMBERED_FORMATTER = /^(?:rand|truncate|abbr)\d+$/;
+
+    private static isFormatterName(name: string): boolean {
+        const trimmed = name.trim();
+        return this.FORMATTER_NAMES.has(trimmed) || this.NUMBERED_FORMATTER.test(trimmed);
+    }
+
+    /**
+     * Split the text after the first `|` of a variable into a chain of formatters.
+     *
+     * A `|` starts a new formatter only when the text after it begins with a known
+     * formatter name. Otherwise the `|` is part of the previous formatter's argument,
+     * as in `{{title|replace:a|b:X}}` (regex `a|b`) or `{{authors|join: | }}`.
+     * A `replace` that does not yet have both its arguments also keeps the `|`
+     * (`{{title|replace:a|upper:X}}` replaces the regex `a|upper`).
+     *
+     * Each formatter's name is trimmed, so spaces around pipes are allowed;
+     * whitespace in arguments is kept (`{{authors|join: and |upper}}`).
+     *
+     * @example
+     * splitFormatterChain('lowercase|truncate:20'); // => ['lowercase', 'truncate:20']
+     * splitFormatterChain('replace:a|b:X|upper');   // => ['replace:a|b:X', 'upper']
+     */
+    private static splitFormatterChain(format: string): string[] {
+        const chain: string[] = [];
+        for (const part of format.split('|')) {
+            const current = chain.length > 0 ? chain[chain.length - 1] : undefined;
+            const name = part.split(':')[0];
+            const currentNeedsArgs = current !== undefined &&
+                current.split(':')[0] === 'replace' && current.split(':').length < 3;
+
+            if (current === undefined || (this.isFormatterName(name) && !currentNeedsArgs)) {
+                const colon = part.indexOf(':');
+                chain.push(colon === -1 ? part.trim() : part.slice(0, colon).trim() + part.slice(colon));
+            } else {
+                chain[chain.length - 1] = current + '|' + part;
+            }
+        }
+        return chain;
+    }
+
+    /**
      * Process variable replacements {{variable}} or {{variable|format}}
      * Also supports special case {{rand|N}} or {{randN}} for random strings
      */
@@ -321,11 +376,13 @@ export class TemplateEngine {
                 return '';
             }
             
-            // If a format is specified, apply it
-            // Use trimStart() to preserve trailing whitespace which may be intentional
-            // (e.g., {{authors|join: and }} should keep the space after "and")
+            // If a format is specified, apply each formatter in the chain in turn
             if (format) {
-                return this.formatValue(value, format.trimStart());
+                let result: unknown = value;
+                for (const formatter of this.splitFormatterChain(format)) {
+                    result = this.formatValue(result, formatter);
+                }
+                return String(result);
             }
             
             // Otherwise, return the value as string
@@ -482,7 +539,8 @@ export class TemplateEngine {
         // Get the string representation of the value for text operations
         const stringValue = String(value);
         
-        // Process formatters with their potential arguments
+        // Process formatters with their potential arguments.
+        // When adding a formatter, also add its name to FORMATTER_NAMES so it can be chained.
         switch (formatName) {
             // Text case formatters
             case 'upper':
