@@ -26,6 +26,8 @@ The **citekey** is available as `{{citekey}}`. **Date parts** are available as `
 
 ## Formatters
 
+**Chaining**: formatters run left to right, each on the previous result: `{{title|titleword|uppercase}}` gives `ART` for "The Art of Computer Programming". Only the first formatter sees the original value, so array formatters (`join`, `count`, `json`) go first: `{{authors|join:, |uppercase}}`. A `|` inside an argument still works: unless every part after the first `|` is a complete formatter, the whole text is read as one formatter, so `{{title|replace:a|b:X}}` replaces `a` or `b` with `X`.
+
 **Text case**: `|uppercase`, `|lowercase`, `|capitalize` (first letter of each word), `|sentence` (first letter of the string).
 
 **Length**: `|truncate:N` (cut to N characters), `|ellipsis:N` (cut to N characters with trailing ellipsis).
