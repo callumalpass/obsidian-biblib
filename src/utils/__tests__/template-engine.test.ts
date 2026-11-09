@@ -428,6 +428,11 @@ describe('TemplateEngine', () => {
       expect(r('{{title|lowercase|truncate:6|suffix:!}}', { title: 'HELLO WORLD' })).toBe('hello !');
     });
 
+    // From #58 by @dhmmasson
+    it('applies trim at the start of a three-formatter chain', () => {
+      expect(r('{{t|trim|lowercase|truncate:3}}', { t: '  HELLO WORLD  ' })).toBe('hel');
+    });
+
     it('allows spaces around the pipes', () => {
       expect(r('{{name | lowercase | capitalize}}', { name: 'JOHN SMITH' })).toBe('John Smith');
     });
@@ -454,6 +459,8 @@ describe('TemplateEngine', () => {
       expect(r('{{name|suffix:x|nosuch}}', { name: 'a' })).toBe('ax|nosuch');
       // an unknown formatter on its own still leaves the value unchanged
       expect(r('{{name|nosuch|upper}}', { name: 'a' })).toBe('A');
+      // From #58 by @dhmmasson: an unknown name after a known one leaves the value unchanged
+      expect(r('{{x|upper|nosuch}}', { x: 'hello' })).toBe('hello');
     });
 
     describe('pipes inside arguments (unchanged from 1.9.2)', () => {

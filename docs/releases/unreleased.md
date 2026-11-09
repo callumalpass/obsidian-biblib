@@ -28,4 +28,4 @@ Example:
 - (#56) Chained formatters such as `{{title|lowercase|truncate:20}}` are applied left to right, as the templating guide describes. Before, a chain left the value unformatted.
   - Templates that already contain a chain produce different output from now on, e.g. `{{author|abbr3|uppercase}}{{year}}` gives `SMI2023` rather than `smith2023`. This affects new citekeys, filenames and frontmatter values; existing notes are not changed.
   - A `|` followed by something other than a formatter name is still part of the previous formatter's parameter, so templates like `{{authors|join: | }}` and `{{title|replace:a|b:X}}` render as before.
-  - Thanks to @dhmmasson for the report and the analysis
+  - Thanks to @dhmmasson for the report, the analysis and test cases (#58)
