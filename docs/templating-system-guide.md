@@ -52,6 +52,14 @@ A custom frontmatter field for Obsidian aliases:
 ["{{title|sentence}}", "{{citekey}}"]
 ```
 
+A custom frontmatter field listing related notes as wikilinks (the default `related` field):
+
+```
+{{links|json}}
+```
+
+`{{links}}` is already a list, so the `json` formatter writes it as a flat YAML list, such as `["[[A.md]]", "[[B.md]]"]`, even when note names contain commas or quotes. Wrapping it in brackets (`[{{links}}]`) produces a list inside a list.
+
 A citekey template using the first author's last name and the year:
 
 ```

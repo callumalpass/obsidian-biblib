@@ -1,5 +1,10 @@
 import { Plugin } from 'obsidian';
-import { BibliographyPluginSettings, DEFAULT_SETTINGS } from '../types/settings';
+import {
+    BibliographyPluginSettings,
+    DEFAULT_SETTINGS,
+    LEGACY_RELATED_FIELD_TEMPLATE,
+    RELATED_FIELD_DEFAULT_TEMPLATE
+} from '../types/settings';
 import { getString, isRecord } from '../utils/type-guards';
 
 /**
@@ -91,6 +96,7 @@ export class SettingsManager {
 
         // Handle legacy settings migrations
         this.migrateFromLegacySettings(mergedSettings, loadedData);
+        this.migrateRelatedFieldTemplate(mergedSettings);
 
         return mergedSettings;
     }
@@ -123,5 +129,17 @@ export class SettingsManager {
         if (oldAttachmentFolder && !loadedData.attachmentFolderPath) {
             mergedSettings.attachmentFolderPath = oldAttachmentFolder;
         }
+    }
+
+    /**
+     * Replace the old default `related` template (`[{{links}}]`), which wrote a nested list,
+     * with the current default. Customised templates are left unchanged (#53).
+     */
+    private migrateRelatedFieldTemplate(settings: BibliographyPluginSettings): void {
+        settings.customFrontmatterFields = settings.customFrontmatterFields.map(field =>
+            field.name === 'related' && field.template === LEGACY_RELATED_FIELD_TEMPLATE
+                ? { ...field, template: RELATED_FIELD_DEFAULT_TEMPLATE }
+                : field
+        );
     }
 }

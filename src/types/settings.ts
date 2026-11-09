@@ -135,6 +135,18 @@ export interface BibliographyPluginSettings {
 
 // --- Default Plugin Settings ---
 
+/**
+ * Default template for the `related` custom frontmatter field.
+ * `{{links}}` is an array, so the `json` formatter writes it as a flat JSON array of wikilinks.
+ */
+export const RELATED_FIELD_DEFAULT_TEMPLATE = '{{links|json}}';
+
+/**
+ * Former default template for the `related` field. `{{links}}` already renders as a JSON array,
+ * so the extra brackets produced a nested list (`[[]]`). See #53.
+ */
+export const LEGACY_RELATED_FIELD_TEMPLATE = '[{{links}}]';
+
 export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
         attachmentFolderPath: 'biblib',
         literatureNotePath: '/',
@@ -187,7 +199,7 @@ export const DEFAULT_SETTINGS: BibliographyPluginSettings = {
                 },
                 {
                         name: 'related',
-                        template: '[{{links}}]',
+                        template: RELATED_FIELD_DEFAULT_TEMPLATE,
                         enabled: true
                 }
         ],
