@@ -23,4 +23,10 @@ Example:
 
 -->
 
-No unreleased changes yet.
+## Fixed
+
+- (#53) Fixed the default `related` custom frontmatter field writing a nested list
+  - New notes got `related: [[]]`, or `[["[[A.md]]","[[B.md]]"]]` with related notes selected, because `{{links}}` already renders as a list
+  - The default template is now `{{links|json}}`, which writes `related: []` or `["[[A.md]]", "[[B.md]]"]`, including for note names that contain commas or quotes
+  - If your `related` field still uses the old default `[{{links}}]`, it is updated when the plugin loads. Customised templates are not changed, and existing notes are not rewritten
+  - Thanks to @dhmmasson for the diagnosis and the proposed fix
