@@ -410,13 +410,88 @@ describe('TemplateEngine', () => {
   });
 
   describe('render - chained formatters', () => {
-    // Note: Current implementation may not support true chaining
-    // This documents the expected vs actual behavior
     it('should apply single formatter from pipe', () => {
       const result = TemplateEngine.render('{{name|lowercase}}', {
         name: 'SMITH'
       });
       expect(result).toBe('smith');
+    });
+
+    it('should apply chained lowercase and capitalize formatters', () => {
+      const result = TemplateEngine.render('{{name|lowercase|capitalize}}', {
+        name: 'SMITH'
+      });
+      expect(result).toBe('Smith');
+    });
+
+    it('should apply chained truncate and uppercase formatters', () => {
+      const result = TemplateEngine.render('{{title|truncate:5|upper}}', {
+        title: 'hello world'
+      });
+      expect(result).toBe('HELLO');
+    });
+
+    it('should apply titleword before uppercase', () => {
+      const result = TemplateEngine.render('{{title|titleword|upper}}', {
+        title: 'The Art of Computer Programming'
+      });
+      expect(result).toBe('ART');
+    });
+
+    it('should apply three chained formatters in order', () => {
+      const result = TemplateEngine.render('{{t|trim|lowercase|truncate:3}}', {
+        t: '  HELLO WORLD  '
+      });
+      expect(result).toBe('hel');
+    });
+
+    it('should preserve replace patterns containing a pipe', () => {
+      const result = TemplateEngine.render('{{t|replace:a|b:X}}', {
+        t: 'abc'
+      });
+      expect(result).toBe('XXc');
+    });
+
+    it('should preserve join delimiters containing a pipe', () => {
+      const result = TemplateEngine.render('{{list|join: | }}', {
+        list: ['a', 'b']
+      });
+      expect(result).toBe('a | b');
+    });
+
+    it('should keep replace patterns whose alternatives look like formatter names', () => {
+      const result = TemplateEngine.render('{{t|replace:a|upper:X}}', {
+        t: 'a upper b'
+      });
+      expect(result).toBe('X X b');
+    });
+
+    it('should chain formatters written with spaces around the pipes', () => {
+      const result = TemplateEngine.render('{{name | lowercase | capitalize}}', {
+        name: 'SMITH'
+      });
+      expect(result).toBe('Smith');
+    });
+
+    it('should pass the original array to the first formatter of a chain', () => {
+      const result = TemplateEngine.render('{{list|join:, |upper}}', {
+        list: ['a', 'b']
+      });
+      expect(result).toBe('A, B');
+    });
+
+    it('should chain formatters inside array iteration', () => {
+      const result = TemplateEngine.render('{{#list}}{{.|upper|prefix:-}}{{/list}}', {
+        list: ['a', 'b']
+      });
+      expect(result).toBe('-A-B');
+    });
+
+    it('should leave the value unchanged when a chain contains an unknown formatter', () => {
+      const result = TemplateEngine.render('{{x|upper|nosuch}}', {
+        x: 'hello'
+      });
+      expect(result).toBe('hello');
     });
   });
 
