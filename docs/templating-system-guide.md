@@ -6,7 +6,9 @@ BibLib uses a template engine with Handlebars/Mustache-style syntax. Templates a
 
 **Variables** are written as `{{variableName}}` — for example, `{{title}}` or `{{DOI}}`. Nested data is accessed with dot notation: `{{issued.date-parts.0.0}}` gives the publication year from a CSL date.
 
-**Formatters** transform a variable's value and are appended with a pipe: `{{variableName|formatterName}}`. Some formatters take a parameter, written with a colon: `{{title|truncate:50}}`. Formatters can be chained: `{{title|lowercase|truncate:30}}`.
+**Formatters** transform a variable's value and are appended with a pipe: `{{variableName|formatterName}}`. Some formatters take a parameter, written with a colon: `{{title|truncate:50}}`. Formatters can be chained: `{{title|lowercase|truncate:30}}` applies `lowercase`, then `truncate:30` to the result. Spaces around the pipes are allowed (`{{title | lowercase | truncate:30}}`).
+
+A `|` starts the next formatter only when it is followed by a formatter name. Otherwise it is part of the previous formatter's parameter, so `{{authors|join: | }}` joins with ` | ` and `{{title|replace:a|b:X}}` replaces the regular expression `a|b`. Each formatter after the first works on the text produced by the one before it, so list formatters such as `join` and `count` only see a list when they come first.
 
 **Conditionals** render content only when a variable exists: `{{#variableName}}...{{/variableName}}`. The inverted form `{{^variableName}}...{{/variableName}}` renders when the variable does not exist.
 

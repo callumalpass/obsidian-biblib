@@ -410,13 +410,79 @@ describe('TemplateEngine', () => {
   });
 
   describe('render - chained formatters', () => {
-    // Note: Current implementation may not support true chaining
-    // This documents the expected vs actual behavior
+    const r = (template: string, vars: Record<string, unknown>) => TemplateEngine.render(template, vars);
+
     it('should apply single formatter from pipe', () => {
-      const result = TemplateEngine.render('{{name|lowercase}}', {
-        name: 'SMITH'
+      expect(r('{{name|lowercase}}', { name: 'SMITH' })).toBe('smith');
+    });
+
+    it('applies two formatters left to right', () => {
+      expect(r('{{title|lowercase|truncate:20}}', { title: 'A Very Long Title For Testing Things' }))
+        .toBe('a very long title fo');
+      expect(r('{{name|lowercase|capitalize}}', { name: 'JOHN SMITH' })).toBe('John Smith');
+      expect(r('{{name|truncate:5|upper}}', { name: 'abcdefgh' })).toBe('ABCDE');
+      expect(r('{{title|titleword|uppercase}}', { title: 'The Art of Computer Programming' })).toBe('ART');
+    });
+
+    it('applies a chain of three formatters', () => {
+      expect(r('{{title|lowercase|truncate:6|suffix:!}}', { title: 'HELLO WORLD' })).toBe('hello !');
+    });
+
+    // From #58 by @dhmmasson
+    it('applies trim at the start of a three-formatter chain', () => {
+      expect(r('{{t|trim|lowercase|truncate:3}}', { t: '  HELLO WORLD  ' })).toBe('hel');
+    });
+
+    it('allows spaces around the pipes', () => {
+      expect(r('{{name | lowercase | capitalize}}', { name: 'JOHN SMITH' })).toBe('John Smith');
+    });
+
+    it('keeps trailing spaces in arguments', () => {
+      expect(r('{{authors|join: and |upper}}', { authors: ['a', 'b'] })).toBe('A AND B');
+    });
+
+    it('passes an array to the first formatter', () => {
+      expect(r('{{items|join:, |upper}}', { items: ['a', 'b'] })).toBe('A, B');
+    });
+
+    it('chains inside an array iteration', () => {
+      expect(r('{{#list}}{{.|upper|prefix:-}}{{/list}}', { list: ['a', 'b'] })).toBe('-A-B');
+    });
+
+    it('supports numbered formatters in a chain', () => {
+      expect(r('{{name|abbr3|upper}}', { name: 'smith' })).toBe('SMI');
+      expect(r('{{name|upper|truncate4}}', { name: 'smith' })).toBe('SMIT');
+    });
+
+    it('treats an unknown name after a pipe as part of the previous argument', () => {
+      // `nosuch` is not a formatter, so `|nosuch` stays part of the suffix argument
+      expect(r('{{name|suffix:x|nosuch}}', { name: 'a' })).toBe('ax|nosuch');
+      // an unknown formatter on its own still leaves the value unchanged
+      expect(r('{{name|nosuch|upper}}', { name: 'a' })).toBe('A');
+      // From #58 by @dhmmasson: an unknown name after a known one leaves the value unchanged
+      expect(r('{{x|upper|nosuch}}', { x: 'hello' })).toBe('hello');
+    });
+
+    describe('pipes inside arguments (unchanged from 1.9.2)', () => {
+      it('keeps a regex alternation in replace', () => {
+        expect(r('{{title|replace:a|b:X}}', { title: 'abc' })).toBe('XXc');
       });
-      expect(result).toBe('smith');
+
+      it('keeps a replace pattern whose alternative is a formatter name', () => {
+        expect(r('{{title|replace:a|upper:X}}', { title: 'a upper b' })).toBe('X X b');
+      });
+
+      it('keeps a pipe as a join separator', () => {
+        expect(r('{{authors|join: | }}', { authors: ['a', 'b'] })).toBe('a | b');
+      });
+
+      it('keeps a pipe as a prefix', () => {
+        expect(r('{{title|prefix:|}}', { title: 'a' })).toBe('|a');
+      });
+
+      it('can chain after a replace whose pattern contains a pipe', () => {
+        expect(r('{{title|replace:a|b:x|upper}}', { title: 'abc' })).toBe('XXC');
+      });
     });
   });
 

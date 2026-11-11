@@ -90,6 +90,21 @@ describe('CitekeyGenerator', () => {
       expect(result).toBe('smi2023');
     });
 
+    it('should apply chained formatters (issue #56)', () => {
+      const citation = {
+        author: [{ family: 'Smith', given: 'John' }],
+        issued: { 'date-parts': [[2023]] }
+      };
+
+      const result = CitekeyGenerator.generate(citation, {
+        citekeyTemplate: '{{author|abbr3|uppercase}}{{year}}',
+        useZoteroKeys: false,
+        minCitekeyLength: 6
+      });
+
+      expect(result).toBe('SMI2023');
+    });
+
     it('should handle multiple authors', () => {
       const citation = {
         author: [
