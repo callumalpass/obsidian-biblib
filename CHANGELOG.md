@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 See [unreleased.md](docs/releases/unreleased.md) for upcoming changes.
 
+## [1.9.3] - 2026-11-11
+
+### Fixed
+
+- Chained formatters such as `{{title|lowercase|truncate:20}}` are applied left to right. Before, a chain left the value unformatted. A `|` that is not followed by a formatter name is still part of the previous formatter's parameter (#56).
+
 ## [1.9.2] - 2026-11-10
 
 ### Fixed
@@ -152,7 +158,8 @@ See [unreleased.md](docs/releases/unreleased.md) for upcoming changes.
 
 - Template preview component (replaced by template playground)
 
-[Unreleased]: https://github.com/callumalpass/obsidian-biblib/compare/1.9.2...HEAD
+[Unreleased]: https://github.com/callumalpass/obsidian-biblib/compare/1.9.3...HEAD
+[1.9.3]: https://github.com/callumalpass/obsidian-biblib/compare/1.9.2...1.9.3
 [1.9.2]: https://github.com/callumalpass/obsidian-biblib/compare/1.9.1...1.9.2
 [1.9.1]: https://github.com/callumalpass/obsidian-biblib/compare/1.9.0...1.9.1
 [1.9.0]: https://github.com/callumalpass/obsidian-biblib/compare/1.8.3...1.9.0
